@@ -1,4 +1,8 @@
 xk-*/
 /mutagen.yml
 /mutagen.yml.lock
-/mobile/node_modules/
+/mobile/
+node_modules/
+__pycache__/
+*.pyc
+*.env
