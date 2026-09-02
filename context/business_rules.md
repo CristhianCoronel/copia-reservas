@@ -29,6 +29,7 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
 | **Información de canchas desactualizada**: llegar al local y encontrar mala superficie, falta de estacionamiento o sin iluminación. | **Después** | Campos específicos en la tabla correspondiente para indicar cualidades (tipo de superficie, si es techada) y almacenar infromación adicional (servicios como quiosco, estacionamiento, duchas). Galería de fotos validada y sistema de comentarios calificados de usuarios comprobados. |
 | **Falta de seriedad / tardanzas de compañeros**: jugadores que se comprometen pero no van o llegan tarde. | **Después** | Índice de confiabilidad y puntualidad del jugador basado en la calificación mutua post-partido. La reputación de un usuario es visible. |
 | **Integración de pagos en línea en partidos grupales**: automatizar el recaudo individual de la cuota de cada jugador mediante la app. | **A futuro** | Se resolverá más adelante con billeteras digitales integradas en la app. Inicialmente, los jugadores coordinan de forma externa quién y cómo transfiere el dinero al organizador (comunicación interna). |
+| **Desafíos y retos entre equipos**: equipos formados que buscan desafiar formalmente a otros equipos a jugar. | **A futuro lejano / Nunca** | Es una necesidad real de los jugadores, pero no se implementará un flujo nativo (objeto tipo Reto) por ahora debido a la alta complejidad técnica de coordinar agendas de dos grupos distintos, elegir una cancha neutral y unificar el pago de ambos equipos. Se deja para que lo coordinen de forma externa. |
 
 ---
 
@@ -50,24 +51,29 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
 1. **Configuración de sistema (`int_sistema_configuracion`)**:
    - Almacena parámetros globales de la plataforma "Toca revancha" (estado operativo del sistema, versiones de la app, comisiones globales si aplican, banderas de mantenimiento).
 
-2. **Usuarios, personas y empresas (modelo de herencia / especialización)**:
+2. **Geografía y Localización**:
+   - **`geografia_peru`**: Tablas maestras de Ubigeo que contienen Departamento, Provincia y Distrito para la ubicación exacta de sedes y segmentación de jugadores.
+   - **`pais` y `prefijo_telefonico`**: Tablas maestras para gestionar el código de país (ej. +51 para Perú) necesario en el registro de cuentas (validación SMS/WhatsApp) y estandarización de números de contacto.
+
+3. **Usuarios, personas, empresas y suscripciones**:
    - **`usuario`**: Entidad principal de autenticación (credenciales como email/teléfono, hash de contraseña, rol base `ADMIN | OWNER | PLAYER`, fecha de registro).
    - **Especialización exclusiva (disjunta)**: Todo `usuario` pertenece exactamente a una **`persona`** o a una **`empresa`**.
    - **`persona`**: Perfil físico del usuario (nombres, apellidos, tipo/número de documento, teléfono de contacto, foto de perfil, reputación de juego). Aplica para jugadores, organizadores o trabajadores de sedes.
-   - **`empresa`**: Entidad corporativa / comercial (RUC/tax ID, razón social, nombre comercial, contacto legal, logotipo). Es la propietaria de los complejos deportivos.
+   - **`empresa`**: Entidad corporativa / comercial (RUC/tax ID, razón social, nombre comercial, contacto legal, logotipo). Es la propietaria de los complejos deportivos. Las empresas deben poder indicar libremente sus **términos y condiciones** particulares aplicables a sus reservas.
+   - **`plan_suscripcion` y `suscripcion_empresa`**: Un `plan_suscripcion` agrupa los beneficios del sistema y tiene una vigencia general (vigente/disponible o no). La `suscripcion_empresa` gestiona por cuánto tiempo está suscrita una empresa a dicho plan (fechas de inicio y fin), controlando así el acceso y operatividad del complejo en la plataforma.
 
-3. **Sedes, contratos y personal de sede**:
+4. **Sedes, contratos y personal de sede**:
    - Una `empresa` gestiona de 1 a N **`sedes`** (complejos deportivos locales con dirección, coordenadas GPS para geolocalización, teléfono de contacto y estado).
    - **`contrato`**: Define la vigencia y relación laboral de un trabajador (`persona`) en una `sede` específica. Asigna el rol/permisos operativos dentro del complejo (ej. `ADMIN_SEDE`, `RECEPCIONISTA`, `OPERADOR_MANTENIMIENTO`), con fechas de inicio, fin y estado activo/inactivo.
 
-4. **Canchas, servicios y detalles particulares de sede**:
+5. **Canchas, servicios y detalles particulares de sede**:
    - **`cancha`**: Pertenece a una `sede`. Define el tipo de deporte (`FUTBOL5`, `FUTBOL7`, `PADEL`, `TENIS`, `BASQUET`), tipo de superficie (`SINTETICO`, `CESPED`, `LOZA`, `PARQUET`), si es techada y si cuenta con iluminación nocturna.
    - **`servicio_sede`**: Catálogo de servicios adicionales del complejo.
      - *Ejemplos*: estacionamiento privado, duchas/vestuarios con agua caliente, quiosco/bar/snack, WiFi gratis, iluminación LED, alquiler de balones y petos, zona de parrilla/barbacoa, cajas de seguridad, vigilancia 24/7.
    - **`detalle_particular_sede`**: Reglas, políticas y cualidades en texto definidas libremente por la empresa para su local.
      - *Ejemplos*: "Se prohíbe el uso de choperas o toperoles de metal", "Es obligatorio presentar DNI físico o digital en recepción antes de ingresar a la cancha", "Prohibido el ingreso de bebidas alcohólicas externas", "Tolerancia de espera máxima: 10 minutos post inicio de hora", "Se permiten mascotas únicamente en áreas abiertas circundantes".
 
-5. **Horarios, tarifas dinámicas y políticas de reserva de la empresa**:
+6. **Horarios, tarifas dinámicas y políticas de reserva de la empresa**:
    - **`cancha_horario`**: Configuración de franjas horarias operativas por día de la semana (`day_of_week`: 0=lunes a 6=domingo).
    - **Esquemas de precios**:
      - *Precio fijo*: tarifa uniforme por hora para la cancha sin variación de horario.
@@ -76,11 +82,11 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
      - *Máximo de horas*: La `empresa` configura el límite máximo de horas continuas que una persona/equipo puede reservar por transacción (ej. máximo 2 horas consecutivas).
      - *Promociones propias de la empresa*: La empresa registra promociones textuales y su vigencia (ej: "20% de descuento de lunes a miércoles de 14:00 a 17:00", con rango de `fecha_inicio` y `fecha_fin`).
 
-6. **Calificaciones y reputación mutua**:
+7. **Calificaciones y reputación mutua**:
    - **`calificacion_empresa` / `calificacion_sede`** y **`calificacion_cancha`**: Puntuación de 1 a 5 estrellas + comentarios otorgados por los jugadores (`persona`) que asistieron y completaron una reserva.
    - Se requiere un vínculo a una reserva completada (`COMPLETED`) para evitar valoraciones falsas o malintencionadas.
 
-7. **Reservas, formas de reserva, pagos y asistentes**:
+8. **Reservas, formas de reserva, pagos y asistentes**:
    - **Tipos de origen de reserva**:
      - **Reserva por persona**: Una `persona` individual efectúa la reserva para uso privado.
      - **Reserva por equipo**: Un `equipo` (grupo constituido de personas con nombre/escudo) hace la reserva. El vínculo a la persona física responsable de la transacción se almacena en el campo `organizador` (`persona_organizadora_id`).
@@ -91,6 +97,18 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
    - **Pagos múltiples por reserva (`pago_reserva`)**:
      - Una reserva puede liquidarse en 1 a N pagos (abonos parciales o cuotas divididas).
      - Cada pago es realizado por una `persona` (no siempre la misma; ej: el organizador efectúa el pago inicial del 50% como seña/garantía y los demás integrantes aportan cuotas individuales para cubrir el saldo restante).
+
+9. **Sistema de Mensajería y Objetos Interactivos (`chat` y `mensaje`)**:
+   - Herramienta para comunicación interna con canales definidos:
+     - **Jugador ↔ Jugador**: Mensajes directos para coordinar o conversar.
+     - **Jugadores ↔ Equipos**: Comunicación interna de la plantilla del equipo.
+     - **Jugadores ↔ Juntas**: Chat temporal para los participantes de una pichanga.
+     - **Jugador ↔ Empresa**: Consultas directas, coordinación y envíos de comprobantes.
+   - **Mensajes tipo "Objeto"** (Mensajes estructurados en el chat):
+     - **Texto / Imagen / Audio**: Elementos de comunicación regular.
+     - **Comprobante de Pago**: Un mensaje interactivo (con o sin imagen adjunta) que el sistema reconoce estructuralmente como el envío de un pago total o parcial. Permite a la empresa u organizador de la junta gestionar el cobro nativamente dentro del chat, con un estado de aprobación (Aprobado/Rechazado).
+     - **Invitación**: Un bloque interactivo (con botones Aceptar/Rechazar) para unirse a un equipo, una junta o invitar a un amigo al sistema.
+     - **Notificación / Resumen de Reserva**: Tarjeta informativa con los detalles de la reserva (cancha, fecha, costo) enviada al chat del usuario o grupo a modo de confirmación, facilitando su revisión y compartición.
 
 ---
 
@@ -149,8 +167,17 @@ Al evaluar el dominio de negocio, se han identificado las siguientes reglas y en
    - Especificar en la entidad `contrato` los privilegios del trabajador (ej. `ADMIN_SEDE` puede editar precios y cancelar; `RECEPCIONISTA` solo puede confirmar pagos y ver calendario).
 8. **Regla de acumulabilidad de cupones**:
    - Determinar si un cupón interno de Toca revancha (`int_descuentos`) se puede aplicar en reservas que ya cuentan con una promoción activa de la empresa.
-
-
-
-
-
+9. **Tiempo Real y WebSockets**:
+   - Para soportar el sistema de chat nativo, notificaciones instantáneas de pago y actualizaciones en vivo de cupos en las juntas, se requerirá infraestructura de conexión bidireccional (ej. WebSockets, Server-Sent Events, o servicios como Firebase/Pusher).
+10. **Almacenamiento Interno de Archivos**:
+    - Dado que los datos se manejarán internamente (sin AWS/GCP), los comprobantes, audios y fotos de sedes deberán persistirse en el sistema de archivos (File System) del servidor. Es recomendable usar un servidor web optimizado para despachar archivos estáticos (ej. Nginx) y, para no perder las ventajas de escalabilidad, se sugiere implementar un Object Storage de código abierto autoalojado (como **MinIO**). Es obligatorio configurar políticas estrictas de copias de seguridad (backups) físicas para este volumen de disco.
+11. **Manejo de Tareas Asíncronas y Colas (Workers/Cron)**:
+    - El sistema tiene varias reglas dependientes del tiempo: "liberar la cancha si el pago no se confirma en 15 min", "enviar push 2 horas antes del partido", "vencer suscripciones". Esto requiere un gestor de colas de tareas en segundo plano (ej. Celery, RabbitMQ, BullMQ o AWS EventBridge) desconectado del hilo principal de peticiones.
+12. **Auditoría y Trazabilidad (Audit Logs)**:
+    - Implementar un registro inmutable (tabla de auditoría) para acciones críticas. Se debe rastrear de forma exacta quién (ID del recepcionista/admin) canceló una reserva, aprobó un comprobante o modificó un precio, y en qué fecha/hora. Esto es crítico para la resolución de disputas con el usuario final y para auditorías internas de las empresas.
+13. **Estandarización de Zonas Horarias (Timezones)**:
+    - Es vital que la capa de persistencia (Base de Datos) guarde todas las fechas y horas (horarios de canchas, reservas, mensajes) estrictamente en formato UTC. La conversión a la zona horaria local (`America/Lima`) debe ser responsabilidad exclusiva del frontend/app móvil para evitar bugs lógicos ante futuras expansiones geográficas.
+14. **Políticas de Retención y Purga (Data Archiving)**:
+   - Los chats masivos temporales (juntas) y las imágenes de comprobantes consumirán mucho almacenamiento rápidamente. Se debe diseñar una estrategia para archivar (mover a storage más barato) o purgar datos transaccionales históricos "fríos" mayores a N meses, evitando encarecer y degradar la base de datos principal.
+15. **Seguridad Multi-inquilino (Multi-tenant Security)**:
+    - Al ser una plataforma B2B2C, a nivel de backend (API) deben existir middlewares estrictos de autorización (RBAC) para garantizar que un token JWT de un trabajador de la "Empresa A" no pueda leer chats, confirmar reservas, ni consultar los balances financieros de la "Empresa B" manipulando los IDs de la URL.
