@@ -23,7 +23,7 @@ Información personal, monedero virtual y referidos.
     },
     "walletBalance": 30.00,
     "referral": {
-      "code": "TOCA-JUAN77",
+      "code": "ALTOKE-JUAN77",
       "successfulReferrals": 3,
       "totalEarned": 45.00
     }

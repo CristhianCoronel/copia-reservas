@@ -1,6 +1,6 @@
 # Configuración del Sistema y Descuentos (Sistema)
 
-Reglas gestionadas por "Toca revancha" globalmente.
+Reglas gestionadas por "Separa Altoke" globalmente.
 
 ### Endpoint: Obtener promociones y descuentos globales
 **Lógica:** Trae los cupones internos (`int_descuentos`) válidos para ser aplicados en reservas.

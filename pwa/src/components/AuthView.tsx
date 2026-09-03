@@ -40,9 +40,9 @@ export function AuthView({ onLogin }: AuthViewProps) {
   return (
     <div style={{ padding: 24, display: 'flex', flexDirection: 'column', minHeight: '100vh', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', marginBottom: 40 }}>
-        <img src="/logo.png" alt="Toca Revancha Logo" style={{ width: 120, height: 120, marginBottom: 16 }} />
+        <img src="/logo.png" alt="Separa Altoke Logo" style={{ width: 120, height: 120, marginBottom: 16 }} />
         <Text fw={800} size="h1" mb="xs">
-          Toca <Text span c="tocaOrange">Revancha</Text>
+          Separa <Text span c="tocaOrange">Altoke</Text>
         </Text>
         <Text c="dimmed" size="sm" px="xl">
           {isRegister ? 'Crea una cuenta para unirte a los partidos' : 'Inicia sesión para gestionar tus reservas o tu cancha'}

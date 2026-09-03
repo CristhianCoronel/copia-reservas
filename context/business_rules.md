@@ -1,6 +1,6 @@
-# Apuntes: reglas de negocio y flujos del sistema - "Toca revancha"
+# Apuntes: reglas de negocio y flujos del sistema - "Separa Altoke"
 
-Este documento contiene la matriz de problemáticas clasificadas por segmento (empresas B2B, jugadores B2C y el proyecto "Toca revancha") con su planificación de resolución en el software, seguido de las reglas lógicas y matemáticas del negocio.
+Este documento contiene la matriz de problemáticas clasificadas por segmento (empresas B2B, jugadores B2C y el proyecto "Separa Altoke") con su planificación de resolución en el software, seguido de las reglas lógicas y matemáticas del negocio.
 
 ---
 
@@ -33,7 +33,7 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
 
 ---
 
-### C. Requisitos y retos de "Toca revancha" (la plataforma)
+### C. Requisitos y retos de "Separa Altoke" (la plataforma)
 
 | Problema / reto | Momento de arreglo | Cómo se resuelve (lógica de software) |
 | :--- | :--- | :--- |
@@ -49,7 +49,7 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
 ### A. Entidades principales y relaciones del sistema
 
 1. **Configuración de sistema (`int_sistema_configuracion`)**:
-   - Almacena parámetros globales de la plataforma "Toca revancha" (estado operativo del sistema, versiones de la app, comisiones globales si aplican, banderas de mantenimiento).
+   - Almacena parámetros globales de la plataforma "Separa Altoke" (estado operativo del sistema, versiones de la app, comisiones globales si aplican, banderas de mantenimiento).
 
 2. **Geografía y Localización**:
    - **`geografia_peru`**: Tablas maestras de Ubigeo que contienen Departamento, Provincia y Distrito para la ubicación exacta de sedes y segmentación de jugadores.
@@ -114,10 +114,10 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
 
 ### B. Estrategias de llegada al mercado e integraciones internas (`int_`)
 
-Las tablas con prefijo `int_` representan módulos y mecanismos internos administrados exclusivamente por el proyecto **"Toca revancha"** para traccionar usuarios y gestionar la economía de la plataforma:
+Las tablas con prefijo `int_` representan módulos y mecanismos internos administrados exclusivamente por el proyecto **"Separa Altoke"** para traccionar usuarios y gestionar la economía de la plataforma:
 
 1. **`int_descuentos`**:
-   - Catálogo global de cupones y reglas de descuento expedidos por Toca revancha (tipo monto fijo o porcentaje, monto máximo de descuento, tope de usos globales y por usuario, fecha inicio/fin de campaña).
+   - Catálogo global de cupones y reglas de descuento expedidos por Separa Altoke (tipo monto fijo o porcentaje, monto máximo de descuento, tope de usos globales y por usuario, fecha inicio/fin de campaña).
 2. **`int_programas_referidos`**:
    - Configuración de las campañas de referidos (ej. "Invita a un amigo y ambos reciben $5 / S/. 15 de crédito virtual al completar su 1er partido"). Define los incentivos para el referente y el referido.
 3. **`int_codigos_referidos`**:
@@ -166,7 +166,7 @@ Al evaluar el dominio de negocio, se han identificado las siguientes reglas y en
 7. **Niveles de permiso en contratos de personal**:
    - Especificar en la entidad `contrato` los privilegios del trabajador (ej. `ADMIN_SEDE` puede editar precios y cancelar; `RECEPCIONISTA` solo puede confirmar pagos y ver calendario).
 8. **Regla de acumulabilidad de cupones**:
-   - Determinar si un cupón interno de Toca revancha (`int_descuentos`) se puede aplicar en reservas que ya cuentan con una promoción activa de la empresa.
+   - Determinar si un cupón interno de Separa Altoke (`int_descuentos`) se puede aplicar en reservas que ya cuentan con una promoción activa de la empresa.
 9. **Tiempo Real y WebSockets**:
    - Para soportar el sistema de chat nativo, notificaciones instantáneas de pago y actualizaciones en vivo de cupos en las juntas, se requerirá infraestructura de conexión bidireccional (ej. WebSockets, Server-Sent Events, o servicios como Firebase/Pusher).
 10. **Almacenamiento Interno de Archivos**:

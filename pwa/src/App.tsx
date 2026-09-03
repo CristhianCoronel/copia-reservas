@@ -65,7 +65,7 @@ export default function App() {
         <header style={{ height: 60, borderBottom: '1px solid var(--mantine-color-default-border)', flexShrink: 0 }}>
           <Group h="100%" px="md" justify="space-between">
             <Group>
-              <img src="/logo.png" alt="Toca Revancha" height={24} />
+              <img src="/logo.png" alt="Separa Altoke" height={24} />
             </Group>
             
             {/* Avatar interactivo en lugar del botón */}
@@ -170,7 +170,7 @@ export default function App() {
         </Card>
 
         <Text fw={700} size="sm" c="dimmed" mb="xs">EMPRESAS Y SEDES</Text>
-        <Text size="xs" fw={800} mb="xs">🏢 Toca Revancha Norte</Text>
+        <Text size="xs" fw={800} mb="xs">🏢 Separa Altoke Norte</Text>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <Card 
             padding="sm" 

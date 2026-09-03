@@ -12,7 +12,7 @@ Maneja el inicio de sesión y la generación de tokens JWT.
   "message": "Inicio de sesión exitoso",
   "status": true,
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mocked_token.TocaRevancha2026",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mocked_token.SeparaAltoke2026",
     "user": {
       "id": "u1",
       "fullName": "Juan Pérez",

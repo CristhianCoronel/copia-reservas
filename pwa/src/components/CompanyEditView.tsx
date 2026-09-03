@@ -12,7 +12,7 @@ export function CompanyEditView() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 32 }}>
         <TextInput 
           label={<Text size="xs" fw={700} c="tocaTeal" style={{ letterSpacing: 1 }}>NOMBRE DEL LOCAL</Text>}
-          defaultValue="Canchas Toca Revancha Norte"
+          defaultValue="Canchas Separa Altoke Norte"
         />
         <TextInput 
           label={<Text size="xs" fw={700} c="tocaTeal" style={{ letterSpacing: 1 }}>DIRECCIÓN</Text>}

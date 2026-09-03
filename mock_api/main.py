@@ -11,7 +11,7 @@ load_dotenv()
 EXPOSE_SWAGGER = os.getenv("EXPOSE_SWAGGER", "true").lower() == "true"
 
 app = FastAPI(
-    title="Mock API Toca Revancha",
+    title="Mock API Separa Altoke",
     description="Falso backend que lee dinámicamente de los archivos Markdown. Si cambias los .md, los endpoints y el Swagger se actualizan automáticamente.",
     docs_url="/api" if EXPOSE_SWAGGER else None,
     redoc_url=None
