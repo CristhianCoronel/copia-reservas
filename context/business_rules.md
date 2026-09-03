@@ -56,15 +56,14 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
    - **`pais` y `prefijo_telefonico`**: Tablas maestras para gestionar el código de país (ej. +51 para Perú) necesario en el registro de cuentas (validación SMS/WhatsApp) y estandarización de números de contacto.
 
 3. **Usuarios, personas, empresas y suscripciones**:
-   - **`usuario`**: Entidad principal de autenticación (credenciales como email/teléfono, hash de contraseña, rol base `ADMIN | OWNER | PLAYER`, fecha de registro).
-   - **Especialización exclusiva (disjunta)**: Todo `usuario` pertenece exactamente a una **`persona`** o a una **`empresa`**.
-   - **`persona`**: Perfil físico del usuario (nombres, apellidos, tipo/número de documento, teléfono de contacto, foto de perfil, reputación de juego). Aplica para jugadores, organizadores o trabajadores de sedes.
-   - **`empresa`**: Entidad corporativa / comercial (RUC/tax ID, razón social, nombre comercial, contacto legal, logotipo). Es la propietaria de los complejos deportivos. Las empresas deben poder indicar libremente sus **términos y condiciones** particulares aplicables a sus reservas.
+   - **`usuario`**: Entidad principal de autenticación (credenciales como email/teléfono, hash de contraseña opcional, rol base `ADMIN | PLAYER`, fecha de registro). El login se implementa con **Google (OAuth 2.0 / OIDC)**: la app móvil obtiene el token de identidad de Google y el backend crea o reconoce al usuario. Todo `usuario` es, sin excepción, una **persona física**; no existen cuentas de acceso corporativas.
+   - **`persona`**: Perfil físico del usuario (nombres, apellidos, tipo/número de documento, teléfono de contacto, foto de perfil, reputación de juego). Aplica para jugadores, organizadores, trabajadores de sedes y también quienes administran empresas.
+   - **`empresa`**: Entidad corporativa / comercial (RUC/tax ID, razón social, nombre comercial, contacto legal, logotipo). Es la propietaria de los complejos deportivos, pero **no tiene usuario ni login propio**: las **personas registran sus empresas** en la plataforma (quien la registra queda como administradora) y las empresas **contratan a otras personas** para que accedan y operen sus sedes. Toda acción "de una empresa" es en realidad una persona actuando en su nombre bajo un contrato vigente. Las empresas deben poder indicar libremente sus **términos y condiciones** particulares aplicables a sus reservas.
    - **`plan_suscripcion` y `suscripcion_empresa`**: Un `plan_suscripcion` agrupa los beneficios del sistema y tiene una vigencia general (vigente/disponible o no). La `suscripcion_empresa` gestiona por cuánto tiempo está suscrita una empresa a dicho plan (fechas de inicio y fin), controlando así el acceso y operatividad del complejo en la plataforma.
 
-4. **Sedes, contratos y personal de sede**:
+4. **Sedes, contratos y personal**:
    - Una `empresa` gestiona de 1 a N **`sedes`** (complejos deportivos locales con dirección, coordenadas GPS para geolocalización, teléfono de contacto y estado).
-   - **`contrato`**: Define la vigencia y relación laboral de un trabajador (`persona`) en una `sede` específica. Asigna el rol/permisos operativos dentro del complejo (ej. `ADMIN_SEDE`, `RECEPCIONISTA`, `OPERADOR_MANTENIMIENTO`), con fechas de inicio, fin y estado activo/inactivo.
+   - **`contrato`**: Único puente de acceso de una persona (`persona`) al ámbito de una `empresa`. Define la vigencia y relación de colaboración, a nivel **empresa** (ej. `ADMIN_EMPRESA`, otorgado automáticamente a la persona que registró la empresa) o a nivel **sede** (ej. `ADMIN_SEDE`, `RECEPCIONISTA`, `OPERADOR_MANTENIMIENTO`), con fechas de inicio, fin y estado activo/inactivo. Mediante contratos, una empresa puede habilitar a tantas personas como necesite sin que ninguna tenga credenciales corporativas.
 
 5. **Canchas, servicios y detalles particulares de sede**:
    - **`cancha`**: Pertenece a una `sede`. Define el tipo de deporte (`FUTBOL5`, `FUTBOL7`, `PADEL`, `TENIS`, `BASQUET`), tipo de superficie (`SINTETICO`, `CESPED`, `LOZA`, `PARQUET`), si es techada y si cuenta con iluminación nocturna.
@@ -164,7 +163,7 @@ Al evaluar el dominio de negocio, se han identificado las siguientes reglas y en
 6. **Validación de cupos mínimos y posiciones por deporte en juntas**:
    - Restringir la junta al cupo exacto del deporte (ej. fútbol 5 = máx 10 personas, pádel = máx 4 personas). Opcionalmente permitir especificar roles buscados (ej: "Se busca 1 arquero").
 7. **Niveles de permiso en contratos de personal**:
-   - Especificar en la entidad `contrato` los privilegios del trabajador (ej. `ADMIN_SEDE` puede editar precios y cancelar; `RECEPCIONISTA` solo puede confirmar pagos y ver calendario).
+   - Especificar en la entidad `contrato` los privilegios del trabajador y su alcance (ej. `ADMIN_EMPRESA` —otorgado a la persona que registró la empresa— puede crear sedes, editar precios globales y contratar personal; `ADMIN_SEDE` puede editar precios y cancelar; `RECEPCIONISTA` solo puede confirmar pagos y ver calendario).
 8. **Regla de acumulabilidad de cupones**:
    - Determinar si un cupón interno de Separa Altoke (`int_descuentos`) se puede aplicar en reservas que ya cuentan con una promoción activa de la empresa.
 9. **Tiempo Real y WebSockets**:
@@ -180,4 +179,4 @@ Al evaluar el dominio de negocio, se han identificado las siguientes reglas y en
 14. **Políticas de Retención y Purga (Data Archiving)**:
    - Los chats masivos temporales (juntas) y las imágenes de comprobantes consumirán mucho almacenamiento rápidamente. Se debe diseñar una estrategia para archivar (mover a storage más barato) o purgar datos transaccionales históricos "fríos" mayores a N meses, evitando encarecer y degradar la base de datos principal.
 15. **Seguridad Multi-inquilino (Multi-tenant Security)**:
-    - Al ser una plataforma B2B2C, a nivel de backend (API) deben existir middlewares estrictos de autorización (RBAC) para garantizar que un token JWT de un trabajador de la "Empresa A" no pueda leer chats, confirmar reservas, ni consultar los balances financieros de la "Empresa B" manipulando los IDs de la URL.
+    - Al ser una plataforma B2B2C, a nivel de backend (API) deben existir middlewares estrictos de autorización (RBAC) para garantizar que un token JWT de una persona (jugador o trabajadora con contrato en la "Empresa A") no pueda leer chats, confirmar reservas, ni consultar los balances financieros de la "Empresa B" manipulando los IDs de la URL. El token siempre identifica a una `persona`; el acceso B2B se valida contra sus `contrato` vigentes.
