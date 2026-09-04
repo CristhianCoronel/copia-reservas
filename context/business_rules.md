@@ -38,15 +38,17 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
 | Problema / reto | Momento de arreglo | Cómo se resuelve (lógica de software) |
 | :--- | :--- | :--- |
 | **Enfoque móvil exclusivo (mobile-first)**: la web de escritorio suele ser ajena a la dinámica del partido en la cancha y poco usada por los administradores en el campo de juego. | **Pronto** | El desarrollo completo se concentra en la aplicación móvil nativa o híbrida. Tanto la gestión comercial de las empresas como las reservas, búsquedas y emparejamiento de los jugadores se ejecutan únicamente vía app móvil. No existe portal web de cara al usuario. |
-| **Masa crítica de usuarios (el huevo y la gallina)**: necesidad de crecer rápidamente la base de jugadores con bajo presupuesto. | **Pronto** | Sistema viral **"jugador invita jugador"** (referido B2C). Enlace dinámico (`/invite/<referral_code>`) autogenerado en el perfil. Si un nuevo usuario se registra con el código y completa su primer partido (individual o grupal), se le otorga saldo virtual a ambos usuarios. |
+| **Masa crítica de usuarios (el huevo y la gallina)**: necesidad de crecer rápidamente la base de jugadores con bajo presupuesto. | **Pronto** | Sistema viral **"jugador invita jugador"** (referido B2C). Enlace dinámico (`/invite/<referral_code>`) autogenerado en el perfil. Si un nuevo usuario se registra con el código y completa su primer partido (individual o grupal), se les otorgan cupones de descuento u otros beneficios a ambos. |
 | **Puenteo de la plataforma**: usuarios que usan la app para descubrir canchas pero luego reservan directo para evitar comisiones. | **Nunca** | La plataforma no restringe el contacto directo de los locales. En su lugar, fomenta el uso de la app ofreciendo el sistema de control de cupos, división del costo del partido, historial de partidos jugados y reputación de asistencia. |
-| **Baja participación en calificaciones**: los usuarios olvidan calificar el comportamiento, puntualidad o estado de la cancha tras jugar. | **A futuro** | Gamificación e incentivos directos en la app. Otorgar puntos de experiencia (XP) o tokens virtuales por calificar honestamente un partido, utilizables para redimir recompensas o personalizar su perfil de jugador. |
+| **Baja participación en calificaciones**: los usuarios olvidan calificar el comportamiento, puntualidad o estado de la cancha tras jugar. | **A futuro** | Gamificación e incentivos directos en la app. Otorgar puntos de experiencia (XP) u otros incentivos de gamificación no monetarios por calificar honestamente un partido, utilizables para redimir recompensas o personalizar su perfil de jugador. |
 
 ---
 
 ## 2. Modelo lógico, entidades y reglas de negocio
 
 ### A. Entidades principales y relaciones del sistema
+
+> **Regla de Arquitectura (Nomenclatura de Catálogos):** Todas las tablas de datos (catálogos maestros) que son gestionadas **exclusivamente por la administración del sistema** (Separa Altoke) y no pueden ser alteradas por las empresas ni usuarios, deben llevar el prefijo `_` en su nombre (ej. `_deporte`, `_servicio`). 
 
 1. **Configuración de sistema (`int_sistema_configuracion`)**:
    - Almacena parámetros globales de la plataforma "Separa Altoke" (estado operativo del sistema, versiones de la app, comisiones globales si aplican, banderas de mantenimiento).
@@ -65,15 +67,21 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
    - Una `empresa` gestiona de 1 a N **`sedes`** (complejos deportivos locales con dirección, coordenadas GPS para geolocalización, teléfono de contacto y estado).
    - **`contrato`**: Único puente de acceso de una persona (`persona`) al ámbito de una `empresa`. Define la vigencia y relación de colaboración, a nivel **empresa** (ej. `ADMIN_EMPRESA`, otorgado automáticamente a la persona que registró la empresa) o a nivel **sede** (ej. `ADMIN_SEDE`, `RECEPCIONISTA`, `OPERADOR_MANTENIMIENTO`), con fechas de inicio, fin y estado activo/inactivo. Mediante contratos, una empresa puede habilitar a tantas personas como necesite sin que ninguna tenga credenciales corporativas.
 
-5. **Canchas, servicios y detalles particulares de sede**:
-   - **`cancha`**: Pertenece a una `sede`. Define el tipo de deporte (`FUTBOL5`, `FUTBOL7`, `PADEL`, `TENIS`, `BASQUET`), tipo de superficie (`SINTETICO`, `CESPED`, `LOZA`, `PARQUET`), si es techada y si cuenta con iluminación nocturna.
-   - **`servicio_sede`**: Catálogo de servicios adicionales del complejo.
+5. **Canchas, deportes, modalidades y servicios**:
+   - **Catálogo de Deportes**: Los deportes disponibles (Fútbol, Pádel, Tenis, etc.) son definidos exclusivamente por la administración del sistema a través de un catálogo maestro.
+   - **`cancha`**: Pertenece a una `sede` y se asocia a **un único deporte** del catálogo. 
+     - *Regla de Multideporte:* Si una misma cancha física se usa para más de un deporte (ej. loza deportiva para Básquet y Fútbol), la sede debe registrarla varias veces (una por cada deporte) y configurarla para que se solape a sí misma, bloqueando las demás opciones cuando se reserve.
+     - *Modalidades:* Valores como "Fútbol 5", "Fútbol 7" o "Fútbol 11" **no son deportes**, sino etiquetas de modalidades. La sede asigna libremente las modalidades a la cancha a través de un arreglo.
+     - *Características físicas:* Se mantienen como un texto u objeto libre para darle mayor libertad descriptiva a la empresa.
+   - **`servicio_sede`**: Vincula a la sede con un **catálogo de servicios maestro**. Este catálogo de comodidades está gestionado exclusivamente por la administración de la plataforma "Separa Altoke" para mantener la estandarización. Las sedes solo eligen de la lista.
      - *Ejemplos*: estacionamiento privado, duchas/vestuarios con agua caliente, quiosco/bar/snack, WiFi gratis, iluminación LED, alquiler de balones y petos, zona de parrilla/barbacoa, cajas de seguridad, vigilancia 24/7.
    - **`detalle_particular_sede`**: Reglas, políticas y cualidades en texto definidas libremente por la empresa para su local.
      - *Ejemplos*: "Se prohíbe el uso de choperas o toperoles de metal", "Es obligatorio presentar DNI físico o digital en recepción antes de ingresar a la cancha", "Prohibido el ingreso de bebidas alcohólicas externas", "Tolerancia de espera máxima: 10 minutos post inicio de hora", "Se permiten mascotas únicamente en áreas abiertas circundantes".
 
 6. **Horarios, tarifas dinámicas y políticas de reserva de la empresa**:
-   - **`cancha_horario`**: Configuración de franjas horarias operativas por día de la semana (`day_of_week`: 0=lunes a 6=domingo).
+   - **Horario de Sede vs Horario de Cancha**:
+     - La sede configura su horario de atención general (días y horas operativas) y excepciones positivas/negativas (ej. feriados, aperturas especiales los domingos). Este horario es el límite absoluto de disponibilidad.
+     - `cancha_horario` define las horas particulares de operación y precios dinámicos *dentro* del marco de atención de la sede. Si una cancha está en mantenimiento diario por unas horas, esas horas simplemente no existen en su tabla de tarifas, invalidando las reservas en ese tramo.
    - **Esquemas de precios**:
      - *Precio fijo*: tarifa uniforme por hora para la cancha sin variación de horario.
      - *Precio por horario (tarifas dinámicas)*: tarifa variante según el día y franja horaria. Permite definir costo estándar (ej. 08:00 - 17:00) y tarifa pico nocturna con recargo por iluminación (ej. 18:00 - 23:00).
@@ -118,11 +126,11 @@ Las tablas con prefijo `int_` representan módulos y mecanismos internos adminis
 1. **`int_descuentos`**:
    - Catálogo global de cupones y reglas de descuento expedidos por Separa Altoke (tipo monto fijo o porcentaje, monto máximo de descuento, tope de usos globales y por usuario, fecha inicio/fin de campaña).
 2. **`int_programas_referidos`**:
-   - Configuración de las campañas de referidos (ej. "Invita a un amigo y ambos reciben $5 / S/. 15 de crédito virtual al completar su 1er partido"). Define los incentivos para el referente y el referido.
+   - Configuración de las campañas de referidos (ej. "Invita a un amigo y ambos reciben un cupón de descuento al completar su 1er partido"). Define los incentivos para el referente y el referido.
 3. **`int_codigos_referidos`**:
    - Registra los códigos únicos autogenerados para cada usuario `persona` (ej: `JUAN123`) o códigos promocionales de marketing, permitiendo rastrear conversiones, registros exitosos y recompensas entregadas.
-4. **`int_monedero_virtual` / `int_transacciones_saldo`**:
-   - Billetera virtual de créditos/puntos internos acumulados por los usuarios a través de referidos, incentivos de gamificación o promociones de la plataforma. Permite aplicar saldo como medio de pago o descuento en futuras reservas.
+4. **No gestión de dinero (Política Core)**:
+   - "Separa Altoke" no es un intermediario financiero. Se elimina cualquier concepto de "Monedero Virtual" o "Saldo a favor" en la plataforma. Todas las transacciones monetarias (pagos, anticipos, reembolsos) ocurren de forma externa y directa entre los clientes y las empresas, utilizando a la plataforma únicamente como un canal de mensajería interactiva para validar dichos movimientos y reflejarlos en el estado de la reserva.
 5. **`int_campanas_marketing`**:
    - Módulo interno de campañas push, SMS o correo para activar horarios con baja ocupación en sedes aliadas o reenganchar jugadores inactivos.
 
@@ -130,9 +138,11 @@ Las tablas con prefijo `int_` representan módulos y mecanismos internos adminis
 
 ### C. Reglas algorítmicas y validaciones principales
 
-1. **Validación anticolisión de horarios**:
-   Antes de registrar una reserva en estado `PENDING` o `CONFIRMED`, el backend debe asegurar que no existan colisiones horarias en la misma cancha y fecha:
-   $$\text{reserva\_existente.inicio} < \text{nueva.fin} \quad \text{y} \quad \text{reserva\_existente.fin} > \text{nueva.inicio}$$
+1. **Validación anticolisión de horarios y solapamiento cruzado**:
+   Antes de registrar una reserva en estado `PENDING` o `CONFIRMED`, el backend debe verificar:
+   - Que no existan colisiones horarias en la misma cancha y fecha:
+     $$\text{reserva\_existente.inicio} < \text{nueva.fin} \quad \text{y} \quad \text{reserva\_existente.fin} > \text{nueva.inicio}$$
+   - Que la cancha solicitada **no bloquee el espacio** de otra cancha ya reservada, ni esté bloqueada por una reserva en una cancha contenedora (canchas que comparten el mismo espacio físico). Las canchas afectadas desaparecen de la disponibilidad mientras dure el turno de la cancha que originó el bloqueo.
 
 2. **Cálculo de cuota proporcional en juntas**:
    Para reservas de tipo junta (partido abierto), el sistema calcula el valor sugerido por integrante:
@@ -140,6 +150,7 @@ Las tablas con prefijo `int_` representan módulos y mecanismos internos adminis
 
 3. **Flujo de estados de la reserva**:
    - `PENDING`: Creada en la app a la espera de confirmación de pago externo. Cuenta con un tiempo de expiración configurable (ej. liberación automática tras 15 o 30 minutos sin comprobante).
+     - *Requisito de UI (Clientes Frecuentes):* Al visualizar una reserva en este estado, el trabajador de la sede **debe poder ver en la interfaz el historial del usuario** (cuántas reservas previas ha completado en su local). De este modo, bajo su propio criterio, puede confirmarla manualmente sin exigir adelanto.
    - `CONFIRMED`: El administrador/recepcionista del complejo valida la recepción del dinero y marca la reserva como confirmada.
    - `CANCELLED`: Cancelada por la empresa o usuario según políticas de cancelación. Libera inmediatamente la cancha.
    - `COMPLETED`: Horario del partido culminado. Desbloquea el módulo de calificaciones para jugadores y canchas.
@@ -152,12 +163,14 @@ Al evaluar el dominio de negocio, se han identificado las siguientes reglas y en
 
 1. **Bloqueo por mantenimiento u operación interna (`cancha_bloqueo`)**:
    - Las empresas necesitan reservar franjas horarias por mantenimiento, reparación, mal clima o eventos propios de la sede sin simular una reserva de cliente.
-2. **Temporizador de reserva y estado `PENDIENTE_PAGO` (bloqueo temporal)**:
-   - Implementar un bloqueo temporal corto (ej. 15 minutos) durante el flujo de creación para evitar que dos usuarios seleccionen el mismo turno simultáneamente antes de subir su comprobante.
+2. **Temporizador de reserva y configuración dinámica de cobros (`PENDIENTE_PAGO`)**:
+   - Implementar un bloqueo temporal durante el flujo de creación. El tiempo límite de expiración para confirmar el pago, así como el porcentaje o monto fijo exigido por adelantado, **no es global, sino que es configurado por cada sede** (`reserva_minutos_espera`, `tipo_adelanto_requerido`, `valor_adelanto_requerido`). Esto permite que un local exija 50% con 15 minutos de plazo, y otro local exija 0% y pase la reserva directo a `CONFIRMED`.
 3. **Políticas de cancelación, devolución y tolerancia**:
-   - Definir parámetros por sede: tiempo límite para cancelar sin penalidad (ej. hasta 24h antes) y el destino del pago abonado (devolución externa o saldo a favor en la sede).
-4. **Índice de confiabilidad y control de ausentismo ("plantones")**:
-   - Registrar asistencias no cumplidas en las `juntas` o reservas. Un usuario con alto índice de ausentismo sin aviso debe ser restringido de unirse a nuevas juntas públicas.
+   - Definir parámetros por sede: tiempo límite para cancelar sin penalidad (ej. hasta 24h antes) y el destino del pago abonado (devolución externa coordinada directamente por la empresa).
+4. **No Gamificación (Ausencia de Sistema de Reputación)**:
+   - **Regla Core:** El sistema no dará soporte a sistemas de calificaciones cruzadas (peer-to-peer), evaluación pública de sedes, ni métricas de asistencia individual o "plantones". Esto se debe a la alta susceptibilidad de ser manipulado por amiguismos, falsos reportes o venganzas.
+   - **`equipo`**: Agrupaciones visuales y de chat interno. Permiten reservar a nombre de equipo, pero no poseen un Elo, ranking o historial de victorias/derrotas.
+   - **`junta`**: Partidos abiertos efímeros que funcionan como tablón de anuncios para completar el grupo y prorratear gastos. Se usa el chat para coordinar; al completarse el partido la junta cumple su ciclo sin calificar a los asistentes.
 5. **Fotocopia de precios en reservas (`historico_precio`)**:
    - La reserva debe guardar el costo por hora pactado en la transacción original. Cambios futuros en las tarifas dinámicas de la cancha no deben alterar el monto de reservas pasadas o pendientes.
 6. **Validación de cupos mínimos y posiciones por deporte en juntas**:
@@ -180,3 +193,7 @@ Al evaluar el dominio de negocio, se han identificado las siguientes reglas y en
    - Los chats masivos temporales (juntas) y las imágenes de comprobantes consumirán mucho almacenamiento rápidamente. Se debe diseñar una estrategia para archivar (mover a storage más barato) o purgar datos transaccionales históricos "fríos" mayores a N meses, evitando encarecer y degradar la base de datos principal.
 15. **Seguridad Multi-inquilino (Multi-tenant Security)**:
     - Al ser una plataforma B2B2C, a nivel de backend (API) deben existir middlewares estrictos de autorización (RBAC) para garantizar que un token JWT de una persona (jugador o trabajadora con contrato en la "Empresa A") no pueda leer chats, confirmar reservas, ni consultar los balances financieros de la "Empresa B" manipulando los IDs de la URL. El token siempre identifica a una `persona`; el acceso B2B se valida contra sus `contrato` vigentes.
+16. **Gestión de Casuísticas Reales de Sede (Encuestas)**:
+    - **Lista Negra por Sede:** Adicional al puntaje global, las sedes tienen el poder de bloquear a clientes problemáticos (`sede_lista_negra`). Un usuario en la lista negra de una sede dejará de ver a dicha sede en el buscador y el sistema rechazará sus intentos de reserva.
+    - **Libreta de Saldos a Favor:** Ante cancelaciones sin devolución de dinero, la sede puede anotar un monto a favor (`sede_saldo_cliente`). *Requisito de UI:* Debe existir un apartado visible en la app tanto para el cliente (lectura) como para la empresa (edición) que muestre este saldo.
+    - **Extensión Horaria Efectiva:** Promociones tipo "acumula 6 horas y la séptima es gratis" son reglas textuales de la sede. Para ejecutarlas, el admin puede modificar la **hora de fin efectiva** de una reserva sin alterar la **hora solicitada**, extendiendo el bloqueo de la cancha sin requerir crear reservas fantasmas.

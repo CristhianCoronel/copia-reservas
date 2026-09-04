@@ -38,7 +38,7 @@ export function CompanyCourtsView() {
   }, []);
 
   if (loading) {
-    return <Center p="xl"><Loader color="tocaTeal" /></Center>;
+    return <Center p="xl"><Loader color="dark" /></Center>;
   }
 
   return (
@@ -48,7 +48,7 @@ export function CompanyCourtsView() {
         Administra tarifas, horarios y bloqueos por mantenimiento.
       </Text>
 
-      <Button fullWidth leftSection={<IconPlus size={20} />} color="tocaTeal" size="md" mb="xl">
+      <Button fullWidth leftSection={<IconPlus size={20} />} color="dark" size="md" mb="xl">
         NUEVA CANCHA
       </Button>
 
@@ -60,16 +60,16 @@ export function CompanyCourtsView() {
                 <Text fw={800} size="lg">{court.name}</Text>
                 <Text size="sm" c="dimmed">{court.sport}</Text>
               </div>
-              <Text fw={800} size="xl" c="tocaOrange">S/. {court.basePrice} <Text span size="sm" c="dimmed">/ hr</Text></Text>
+              <Text fw={800} size="xl" c="dark">S/. {court.basePrice} <Text span size="sm" c="dimmed">/ hr</Text></Text>
             </Group>
 
             <Divider my="sm" />
 
             <Group grow gap="xs">
-              <Button variant="light" color="tocaTeal" leftSection={<IconTag size={16} />}>
+              <Button variant="light" color="dark" leftSection={<IconTag size={16} />}>
                 TARIFA
               </Button>
-              <Button variant="light" color="tocaTeal" leftSection={<IconCalendarTime size={16} />}>
+              <Button variant="light" color="dark" leftSection={<IconCalendarTime size={16} />}>
                 HORARIO
               </Button>
               <Button variant="filled" color="red" leftSection={<IconLock size={16} />}>

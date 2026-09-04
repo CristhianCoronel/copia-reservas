@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Tabs, Card, Text, Group, Badge, Button, Progress, TextInput, ActionIcon, Divider, Avatar, Center, Loader } from '@mantine/core';
-import { IconUsers, IconShieldCheck, IconUserCircle, IconCheck, IconX, IconSend, IconPlus } from '@tabler/icons-react';
+import { IconUsers, IconShieldCheck, IconUserCircle, IconCheck, IconX, IconSend, IconPlus, IconLock, IconStarFilled, IconMapPin, IconCalendar, IconClock, IconBallFootball, IconBallTennis } from '@tabler/icons-react';
 import { apiCall } from '../api';
 
 interface OpenGroup {
@@ -54,12 +54,12 @@ function JuntasTab() {
   };
 
   if (loading) {
-    return <Center p="xl"><Loader color="tocaOrange" /></Center>;
+    return <Center p="xl"><Loader color="dark" /></Center>;
   }
 
   return (
     <div style={{ paddingTop: 16 }}>
-      <Text fw={800} size="xl">Juntas & Partidos Abiertos ⚽🎾</Text>
+      <Group gap="xs" mb="xs"><IconBallFootball size={24}/><IconBallTennis size={24}/><Text fw={800} size="xl">Juntas & Partidos Abiertos</Text></Group>
       <Text c="dimmed" size="sm" mb="lg">
         Únete a partidos organizados por otros jugadores cerca de ti y divide los gastos automáticamente.
       </Text>
@@ -75,27 +75,27 @@ function JuntasTab() {
               <Group justify="space-between" mb="xs">
                 <Badge color="gray" variant="light">{group.sport}</Badge>
                 <Badge color={isFull ? 'red' : 'green'} variant="light">
-                  {isFull ? '🔒 COMPLETO' : '🟢 BUSCANDO JUGADORES'}
+                  {isFull ? <Group gap={4}><IconLock size={14}/> <span>COMPLETO</span></Group> : <Group gap={4}><IconCheck size={14}/> <span>BUSCANDO JUGADORES</span></Group>}
                 </Badge>
               </Group>
               
               <Text fw={800} size="lg" mb="sm">{group.title}</Text>
 
               <Group gap="xs" mb="sm">
-                <Avatar size="sm" color="tocaTeal" radius="xl"><IconUserCircle size={16} /></Avatar>
-                <Text size="sm" c="dimmed">Org: {group.organizer} (⭐ {group.organizerRating})</Text>
+                <Avatar size="sm" color="dark" radius="xl"><IconUserCircle size={16} /></Avatar>
+                <Group gap={4}><Text size="sm" c="dimmed">Org: {group.organizer} (</Text><IconStarFilled size={12} color="#F59E0B" /><Text size="sm" c="dimmed">{group.organizerRating})</Text></Group>
               </Group>
 
-              <Text size="sm" c="dimmed">📍 {group.courtName}</Text>
-              <Text size="sm" c="dimmed" mb="md">📅 {group.date} • ⏰ {group.time}</Text>
+              <Group gap={6} mb={4}><IconMapPin size={16} color="gray" /><Text size="sm" c="dimmed">{group.courtName}</Text></Group>
+              <Group gap={6} mb="md"><IconCalendar size={16} color="gray" /><Text size="sm" c="dimmed">{group.date} •</Text><IconClock size={16} color="gray" /><Text size="sm" c="dimmed">{group.time}</Text></Group>
 
               <Group justify="space-between" mb={4}>
                 <Text size="xs" fw={700}>Cupo de Asistentes:</Text>
-                <Text size="xs" fw={700} c="tocaTeal">{group.currentPlayers} / {group.maxPlayers} Jugadores</Text>
+                <Text size="xs" fw={700} c="dark">{group.currentPlayers} / {group.maxPlayers} Jugadores</Text>
               </Group>
               <Progress 
                 value={progressPercent} 
-                color={isFull ? 'red' : 'tocaTeal'} 
+                color={isFull ? 'red' : 'dark'} 
                 size="md" 
                 radius="xl" 
                 mb="md" 
@@ -106,14 +106,14 @@ function JuntasTab() {
               <Group justify="space-between" align="center">
                 <div>
                   <Text size="xs" c="dimmed">Cuota por jugador:</Text>
-                  <Text fw={800} size="lg" c="tocaOrange">S/. {splitPrice}</Text>
+                  <Text fw={800} size="lg" c="dark">S/. {splitPrice}</Text>
                 </div>
                 <Button 
                   disabled={isFull} 
                   onClick={() => handleJoinGroup(group.id)}
-                  color="tocaOrange"
+                  color="dark"
                 >
-                  {isFull ? 'Cupo Lleno' : '¡Unirme al Partido! 🤝'}
+                  {isFull ? 'Cupo Lleno' : '¡Unirme al Partido!'}
                 </Button>
               </Group>
             </Card>
@@ -127,12 +127,12 @@ function JuntasTab() {
 function EquiposTab() {
   return (
     <div style={{ paddingTop: 16 }}>
-      <Text fw={800} size="xl">Tus Equipos 🛡️</Text>
+      <Group gap="xs" mb="xs"><IconShieldCheck size={24}/><Text fw={800} size="xl">Tus Equipos</Text></Group>
       <Text c="dimmed" size="sm" mb="lg">
         Gestiona tus equipos, invita amigos y revisa invitaciones pendientes.
       </Text>
 
-      <Button fullWidth leftSection={<IconPlus size={16} />} color="tocaTeal" variant="light" mb="xl">
+      <Button fullWidth leftSection={<IconPlus size={16} />} color="dark" variant="light" mb="xl">
         CREAR NUEVO EQUIPO
       </Button>
 
@@ -157,7 +157,7 @@ function EquiposTab() {
             <Text fw={800} size="lg">Deportivo Los Pinos</Text>
             <Text size="sm" c="dimmed">Fútbol 7 • 12 Miembros</Text>
           </div>
-          <Badge color="tocaOrange" variant="filled">ADMIN</Badge>
+          <Badge color="dark" variant="filled">ADMIN</Badge>
         </Group>
         
         <Divider mb="md" />
@@ -168,7 +168,7 @@ function EquiposTab() {
             placeholder="correo@ejemplo.com" 
             flex={1}
           />
-          <ActionIcon size={36} color="tocaOrange" variant="filled"><IconSend size={18} /></ActionIcon>
+          <ActionIcon size={36} color="dark" variant="filled"><IconSend size={18} /></ActionIcon>
         </Group>
       </Card>
     </div>
@@ -178,7 +178,7 @@ function EquiposTab() {
 export function SocialView() {
   return (
     <div style={{ padding: 16 }}>
-      <Tabs defaultValue="juntas" color="tocaOrange" variant="pills" radius="md">
+      <Tabs defaultValue="juntas" color="dark" variant="pills" radius="md">
         <Tabs.List grow>
           <Tabs.Tab value="juntas" leftSection={<IconUsers size={16} />}>Juntas</Tabs.Tab>
           <Tabs.Tab value="equipos" leftSection={<IconShieldCheck size={16} />}>Equipos</Tabs.Tab>

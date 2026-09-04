@@ -34,7 +34,7 @@ export function PlayerReservationsView() {
   }, []);
 
   if (loading) {
-    return <Center p="xl"><Loader color="tocaOrange" /></Center>;
+    return <Center p="xl"><Loader color="dark" /></Center>;
   }
 
   return (
@@ -58,7 +58,7 @@ export function PlayerReservationsView() {
                 color={booking.status === 'CONFIRMED' ? 'green' : 'orange'} 
                 variant="light"
               >
-                {booking.status === 'CONFIRMED' ? '🟢 CONFIRMADO' : '🟠 PENDIENTE'}
+                {booking.status === 'CONFIRMED' ? 'CONFIRMADO' : 'PENDIENTE'}
               </Badge>
             </Group>
 
@@ -78,11 +78,11 @@ export function PlayerReservationsView() {
             <Group justify="space-between" align="center">
               <div>
                 <Text size="xs" c="dimmed">Total a pagar:</Text>
-                <Text fw={800} size="lg" c="tocaOrange">S/. {booking.amount.toFixed(2)}</Text>
+                <Text fw={800} size="lg" c="dark">S/. {booking.amount.toFixed(2)}</Text>
               </div>
               
               {booking.status === 'PENDING' && (
-                <Button color="tocaOrange" variant="outline">
+                <Button color="dark" variant="outline">
                   SUBIR VOUCHER
                 </Button>
               )}

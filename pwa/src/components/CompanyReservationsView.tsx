@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, Text, Group, Badge, Button, Divider, ActionIcon, Center, Loader } from '@mantine/core';
-import { IconCheck, IconX, IconShieldCheck } from '@tabler/icons-react';
+import { IconCheck, IconX, IconShieldCheck, IconPhone, IconMapPin, IconClock, IconCreditCard } from '@tabler/icons-react';
 import { apiCall } from '../api';
 
 interface PendingBooking {
@@ -51,7 +51,7 @@ export function CompanyReservationsView() {
   };
 
   if (loading) {
-    return <Center p="xl"><Loader color="tocaTeal" /></Center>;
+    return <Center p="xl"><Loader color="dark" /></Center>;
   }
 
   return (
@@ -60,10 +60,10 @@ export function CompanyReservationsView() {
       <Card padding="md" radius="md" withBorder mb="lg">
         <Group justify="space-between" align="center">
           <div>
-            <Text size="xs" fw={800} c="tocaTeal" style={{ letterSpacing: 1 }}>GESTIÓN ERP DE SEDE</Text>
+            <Text size="xs" fw={800} c="dark" style={{ letterSpacing: 1 }}>GESTIÓN ERP DE SEDE</Text>
             <Text size="lg" fw={800}>Complejo Deportivo Triple Doble</Text>
           </div>
-          <Badge color="green" variant="light" size="lg">🟢 ABIERTO</Badge>
+          <Badge color="green" variant="light" size="lg">ABIERTO</Badge>
         </Group>
       </Card>
 
@@ -74,7 +74,7 @@ export function CompanyReservationsView() {
           <Text size="xs" c="dimmed">Ocupación Hoy</Text>
         </Card>
         <Card padding="sm" radius="md" withBorder style={{ textAlign: 'center' }}>
-          <Text fw={800} size="xl" c="tocaOrange">{confirmedCount}</Text>
+          <Text fw={800} size="xl" c="dark">{confirmedCount}</Text>
           <Text size="xs" c="dimmed">Confirmadas</Text>
         </Card>
         <Card padding="sm" radius="md" withBorder style={{ textAlign: 'center' }}>
@@ -99,19 +99,19 @@ export function CompanyReservationsView() {
               <Card key={item.id} padding="md" radius="md" withBorder>
                 <Group justify="space-between" mb="xs">
                   <Text fw={800} size="lg">{item.userName}</Text>
-                  <Text fw={800} size="xl" c="tocaOrange">S/. {item.amount}.00</Text>
+                  <Text fw={800} size="xl" c="dark">S/. {item.amount}.00</Text>
                 </Group>
                 
-                <Text size="sm" c="dimmed">📱 WhatsApp: {item.phone}</Text>
-                <Text size="sm" c="dimmed">🏟️ {item.courtName}</Text>
-                <Text size="sm" c="dimmed">⏰ Horario: {item.time}</Text>
-                <Text size="sm" c="yellow" fw={600} mt={4} mb="md">💳 Método: {item.paymentMethod}</Text>
+                <Group gap={6} mb={4}><IconPhone size={16} color="gray" /><Text size="sm" c="dimmed">WhatsApp: {item.phone}</Text></Group>
+                <Group gap={6} mb={4}><IconMapPin size={16} color="gray" /><Text size="sm" c="dimmed">{item.courtName}</Text></Group>
+                <Group gap={6} mb={4}><IconClock size={16} color="gray" /><Text size="sm" c="dimmed">Horario: {item.time}</Text></Group>
+                <Group gap={6} mt={4} mb="md"><IconCreditCard size={16} color="orange" /><Text size="sm" c="yellow" fw={600}>Método: {item.paymentMethod}</Text></Group>
 
                 <Group gap="sm">
                   <Button flex={1} variant="light" color="red" onClick={() => handleRejectBooking(item.id)}>
                     Rechazar
                   </Button>
-                  <Button flex={2} color="tocaOrange" onClick={() => handleApproveBooking(item.id)}>
+                  <Button flex={2} color="dark" onClick={() => handleApproveBooking(item.id)}>
                     Confirmar Pago ✓
                   </Button>
                 </Group>
@@ -131,7 +131,7 @@ export function CompanyReservationsView() {
               <Text fw={700}>Marcos Benítez</Text>
               <Text size="xs" c="dimmed">Rol: RECEPCIONISTA (Contrato Activo)</Text>
             </div>
-            <Text size="xs" fw={800} c="tocaTeal">08:00 - 22:00</Text>
+            <Text size="xs" fw={800} c="dark">08:00 - 22:00</Text>
           </Group>
         </Card>
       </div>

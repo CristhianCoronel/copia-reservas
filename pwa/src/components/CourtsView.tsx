@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, Text, Group, Badge, Button, ScrollArea, Modal, Select, TextInput, Divider, Loader, Center } from '@mantine/core';
-import { IconPlayFootball, IconBallTennis, IconBallBasketball, IconSun, IconMoon, IconCheck, IconAlertTriangle } from '@tabler/icons-react';
+import { IconPlayFootball, IconBallTennis, IconBallBasketball, IconSun, IconMoon, IconCheck, IconAlertTriangle, IconPlant } from '@tabler/icons-react';
 import { apiCall } from '../api';
 
 interface Court {
@@ -46,7 +46,7 @@ export function CourtsView() {
     : courts.filter(c => c.sport === selectedSport);
 
   if (loading) {
-    return <Center p="xl"><Loader color="tocaOrange" /></Center>;
+    return <Center p="xl"><Loader color="dark" /></Center>;
   }
 
   const isPeakHour = selectedTimeSlot?.includes('Nocturna') || false;
@@ -78,7 +78,7 @@ export function CourtsView() {
             <Button 
               key={sport} 
               variant={selectedSport === sport ? 'filled' : 'outline'}
-              color={selectedSport === sport ? 'tocaOrange' : 'gray'}
+              color={selectedSport === sport ? 'dark' : 'gray'}
               radius="xl"
               size="xs"
               onClick={() => setSelectedSport(sport)}
@@ -110,16 +110,16 @@ export function CourtsView() {
               <Text fw={800} size="lg" mt="xs">{court.name}</Text>
             </Card.Section>
 
-            <Text size="sm" c="dimmed" mt="md" mb="md">🌱 Superficie: {court.surface}</Text>
+            <Group gap={6} mt="md" mb="md"><IconPlant size={16} color="gray" /><Text size="sm" c="dimmed">Superficie: {court.surface}</Text></Group>
 
             <Group grow gap="xs" mb="md">
               <Card padding="sm" radius="md" withBorder style={{ textAlign: 'center' }}>
                 <Text size="xs" c="dimmed"><IconSun size={12} /> Día</Text>
-                <Text fw={800} c="tocaOrange">S/. {court.regularPrice}/h</Text>
+                <Text fw={800} c="dark">S/. {court.regularPrice}/h</Text>
               </Card>
               <Card padding="sm" radius="md" withBorder style={{ textAlign: 'center' }}>
                 <Text size="xs" c="dimmed"><IconMoon size={12} /> Noche</Text>
-                <Text fw={800} c="tocaTeal">S/. {court.peakPrice}/h</Text>
+                <Text fw={800} c="dark">S/. {court.peakPrice}/h</Text>
               </Card>
             </Group>
 
@@ -136,7 +136,7 @@ export function CourtsView() {
             </Group>
 
             <Button fullWidth onClick={() => setSelectedCourt(court)}>
-              Reservar Cancha ⚡
+              Reservar Cancha
             </Button>
           </Card>
         ))}
@@ -151,7 +151,7 @@ export function CourtsView() {
       >
         {!bookingConfirmed ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Text fw={700} c="tocaTeal">{selectedCourt?.name}</Text>
+            <Text fw={700} c="dark">{selectedCourt?.name}</Text>
             
             <TextInput 
               label="Fecha de Juego:" 
@@ -173,7 +173,7 @@ export function CourtsView() {
             <Card padding="md" radius="md" withBorder mt="sm">
               <Group justify="space-between">
                 <Text size="sm" c="dimmed">Total a Pagar:</Text>
-                <Text size="xl" fw={800} c="tocaOrange">S/. {currentPrice.toFixed(2)}</Text>
+                <Text size="xl" fw={800} c="dark">S/. {currentPrice.toFixed(2)}</Text>
               </Group>
             </Card>
 
@@ -184,7 +184,7 @@ export function CourtsView() {
         ) : (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
             <IconCheck size={48} color="#ee5e00" style={{ margin: '0 auto' }} />
-            <Text fw={800} size="xl" c="tocaOrange" mt="md">¡Reserva Solicitada!</Text>
+            <Text fw={800} size="xl" c="dark" mt="md">¡Reserva Solicitada!</Text>
             <Text c="dimmed" mt="xs">Espera la confirmación de la sede en la pestaña Reservas.</Text>
           </div>
         )}

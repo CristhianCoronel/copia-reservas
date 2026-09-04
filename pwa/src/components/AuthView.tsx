@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { TextInput, PasswordInput, Button, Text, Group, Divider, Anchor } from '@mantine/core';
-import { IconMail, IconLock, IconUser } from '@tabler/icons-react';
+import { IconMail, IconLock, IconUser, IconBrandGoogle } from '@tabler/icons-react';
 import { apiCall } from '../api';
 
 interface AuthViewProps {
@@ -42,7 +42,7 @@ export function AuthView({ onLogin }: AuthViewProps) {
       <div style={{ textAlign: 'center', marginBottom: 40 }}>
         <img src="/logo.png" alt="Separa Altoke Logo" style={{ width: 120, height: 120, marginBottom: 16 }} />
         <Text fw={800} size="h1" mb="xs">
-          Separa <Text span c="tocaOrange">Altoke</Text>
+          Separa <Text span c="dimmed">Altoke</Text>
         </Text>
         <Text c="dimmed" size="sm" px="xl">
           {isRegister ? 'Crea una cuenta para unirte a los partidos' : 'Inicia sesión para gestionar tus reservas o tu cancha'}
@@ -53,7 +53,7 @@ export function AuthView({ onLogin }: AuthViewProps) {
         {isRegister ? (
           <div style={{ textAlign: 'center' }}>
             <Text mb="xl" c="dimmed">El registro desde la aplicación está deshabilitado por ahora. Consulta en recepción.</Text>
-            <Button fullWidth variant="outline" color="tocaTeal" onClick={() => setIsRegister(false)}>
+            <Button fullWidth variant="outline" color="dark" onClick={() => setIsRegister(false)}>
               Volver al Login
             </Button>
           </div>
@@ -81,7 +81,7 @@ export function AuthView({ onLogin }: AuthViewProps) {
               </Anchor>
             </Group>
 
-            <Button fullWidth size="md" color="tocaOrange" mt="sm" onClick={handleAuth} loading={loading}>
+            <Button fullWidth size="md" color="dark" mt="sm" onClick={handleAuth} loading={loading}>
               INGRESAR
             </Button>
 
@@ -89,8 +89,18 @@ export function AuthView({ onLogin }: AuthViewProps) {
 
             <Button
               fullWidth
+              variant="default"
+              size="md"
+              leftSection={<IconBrandGoogle size={18} />}
+              mb="sm"
+            >
+              Iniciar con Google
+            </Button>
+
+            <Button
+              fullWidth
               variant="outline"
-              color="tocaTeal"
+              color="dark"
               size="md"
               onClick={() => setIsRegister(true)}
             >

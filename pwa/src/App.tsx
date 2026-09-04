@@ -1,6 +1,6 @@
 import { Group, Text, UnstyledButton, Center, ScrollArea, Modal, Avatar, Card, Badge } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPlayFootball, IconUsers, IconCalendarEvent, IconUser, IconBusinessplan, IconMapPin } from '@tabler/icons-react';
+import { IconPlayFootball, IconUsers, IconCalendarEvent, IconUser, IconBusinessplan, IconMapPin, IconBuilding } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 import classes from './App.module.css';
 
@@ -71,7 +71,7 @@ export default function App() {
             {/* Avatar interactivo en lugar del botón */}
             <UnstyledButton onClick={openModal}>
               {appMode === 'jugador' ? (
-                <Avatar color="tocaOrange" radius="xl" size="sm">JP</Avatar>
+                <Avatar color="dark" radius="xl" size="sm">JP</Avatar>
               ) : (
                 <Avatar src="https://images.unsplash.com/photo-1577223625816-7546f13df25d?auto=format&fit=crop&w=100&q=80" radius="md" size="sm" />
               )}
@@ -105,35 +105,35 @@ export default function App() {
             {appMode === 'jugador' ? (
               <>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('canchas')}>
-                  <IconPlayFootball size={24} color={activeTab === 'canchas' ? '#ee5e00' : '#94A3B8'} />
-                  <Text fz={11} fw={activeTab === 'canchas' ? 800 : 600} c={activeTab === 'canchas' ? '#ee5e00' : '#94A3B8'} mt={4}>Canchas</Text>
+                  <IconPlayFootball size={24} color={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
+                  <Text fz={11} fw={activeTab === 'canchas' ? 800 : 600} c={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Explorar</Text>
                 </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('social')}>
-                  <IconUsers size={24} color={activeTab === 'social' ? '#ee5e00' : '#94A3B8'} />
-                  <Text fz={11} fw={activeTab === 'social' ? 800 : 600} c={activeTab === 'social' ? '#ee5e00' : '#94A3B8'} mt={4}>Social</Text>
+                  <IconUsers size={24} color={activeTab === 'social' ? 'var(--mantine-color-text)' : '#94A3B8'} />
+                  <Text fz={11} fw={activeTab === 'social' ? 800 : 600} c={activeTab === 'social' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Social</Text>
                 </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('reservas')}>
-                  <IconCalendarEvent size={24} color={activeTab === 'reservas' ? '#ee5e00' : '#94A3B8'} />
-                  <Text fz={11} fw={activeTab === 'reservas' ? 800 : 600} c={activeTab === 'reservas' ? '#ee5e00' : '#94A3B8'} mt={4}>Reservas</Text>
+                  <IconCalendarEvent size={24} color={activeTab === 'reservas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
+                  <Text fz={11} fw={activeTab === 'reservas' ? 800 : 600} c={activeTab === 'reservas' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Reservas</Text>
                 </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('perfil')}>
-                  <IconUser size={24} color={activeTab === 'perfil' ? '#ee5e00' : '#94A3B8'} />
-                  <Text fz={11} fw={activeTab === 'perfil' ? 800 : 600} c={activeTab === 'perfil' ? '#ee5e00' : '#94A3B8'} mt={4}>Perfil</Text>
+                  <IconUser size={24} color={activeTab === 'perfil' ? 'var(--mantine-color-text)' : '#94A3B8'} />
+                  <Text fz={11} fw={activeTab === 'perfil' ? 800 : 600} c={activeTab === 'perfil' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Perfil</Text>
                 </UnstyledButton>
               </>
             ) : (
               <>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('reservas')}>
-                  <IconCalendarEvent size={24} color={activeTab === 'reservas' ? '#ee5e00' : '#94A3B8'} />
-                  <Text fz={11} fw={activeTab === 'reservas' ? 800 : 600} c={activeTab === 'reservas' ? '#ee5e00' : '#94A3B8'} mt={4}>Reservas</Text>
+                  <IconCalendarEvent size={24} color={activeTab === 'reservas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
+                  <Text fz={11} fw={activeTab === 'reservas' ? 800 : 600} c={activeTab === 'reservas' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Reservas</Text>
                 </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('canchas')}>
-                  <IconPlayFootball size={24} color={activeTab === 'canchas' ? '#ee5e00' : '#94A3B8'} />
-                  <Text fz={11} fw={activeTab === 'canchas' ? 800 : 600} c={activeTab === 'canchas' ? '#ee5e00' : '#94A3B8'} mt={4}>Canchas</Text>
+                  <IconPlayFootball size={24} color={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
+                  <Text fz={11} fw={activeTab === 'canchas' ? 800 : 600} c={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Explorar</Text>
                 </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('empresa')}>
-                  <IconBusinessplan size={24} color={activeTab === 'empresa' ? '#ee5e00' : '#94A3B8'} />
-                  <Text fz={11} fw={activeTab === 'empresa' ? 800 : 600} c={activeTab === 'empresa' ? '#ee5e00' : '#94A3B8'} mt={4}>Empresa</Text>
+                  <IconBusinessplan size={24} color={activeTab === 'empresa' ? 'var(--mantine-color-text)' : '#94A3B8'} />
+                  <Text fz={11} fw={activeTab === 'empresa' ? 800 : 600} c={activeTab === 'empresa' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Empresa</Text>
                 </UnstyledButton>
               </>
             )}
@@ -156,27 +156,27 @@ export default function App() {
           radius="md" 
           withBorder 
           mb="xl" 
-          style={{ cursor: 'pointer', borderColor: appMode === 'jugador' ? 'var(--mantine-color-tocaOrange-filled)' : undefined }}
+          style={{ cursor: 'pointer', borderColor: appMode === 'jugador' ? 'var(--mantine-color-text)' : undefined }}
           onClick={switchToJugador}
         >
           <Group wrap="nowrap">
-            <Avatar color="tocaOrange" radius="xl" size="md">JP</Avatar>
+            <Avatar color="dark" radius="xl" size="md">JP</Avatar>
             <div style={{ flex: 1 }}>
               <Text fw={800}>Juan Pérez</Text>
               <Text size="xs" c="dimmed">Jugador</Text>
             </div>
-            {appMode === 'jugador' && <Badge color="tocaOrange" variant="filled">ACTIVO</Badge>}
+            {appMode === 'jugador' && <Badge color="dark" variant="filled">ACTIVO</Badge>}
           </Group>
         </Card>
 
         <Text fw={700} size="sm" c="dimmed" mb="xs">EMPRESAS Y SEDES</Text>
-        <Text size="xs" fw={800} mb="xs">🏢 Separa Altoke Norte</Text>
+        <Group gap={6} mb="xs"><IconBuilding size={16}/><Text size="xs" fw={800}>Separa Altoke Norte</Text></Group>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <Card 
             padding="sm" 
             radius="md" 
             withBorder 
-            style={{ cursor: 'pointer', borderColor: appMode === 'empresa' ? 'var(--mantine-color-tocaTeal-filled)' : undefined }}
+            style={{ cursor: 'pointer', borderColor: appMode === 'empresa' ? 'var(--mantine-color-text)' : undefined }}
             onClick={switchToEmpresa}
           >
             <Group wrap="nowrap">
@@ -185,7 +185,7 @@ export default function App() {
                 <Text fw={800} size="sm">Complejo Triple Doble</Text>
                 <Text size="xs" c="dimmed"><IconMapPin size={10} /> Av. Principal 123</Text>
               </div>
-              {appMode === 'empresa' && <Badge color="tocaTeal" variant="filled">ACTIVO</Badge>}
+              {appMode === 'empresa' && <Badge color="dark" variant="filled">ACTIVO</Badge>}
             </Group>
           </Card>
           

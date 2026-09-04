@@ -11,15 +11,15 @@ export function CompanyEditView() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 32 }}>
         <TextInput 
-          label={<Text size="xs" fw={700} c="tocaTeal" style={{ letterSpacing: 1 }}>NOMBRE DEL LOCAL</Text>}
+          label={<Text size="xs" fw={700} c="dark" style={{ letterSpacing: 1 }}>NOMBRE DEL LOCAL</Text>}
           defaultValue="Canchas Separa Altoke Norte"
         />
         <TextInput 
-          label={<Text size="xs" fw={700} c="tocaTeal" style={{ letterSpacing: 1 }}>DIRECCIÓN</Text>}
+          label={<Text size="xs" fw={700} c="dark" style={{ letterSpacing: 1 }}>DIRECCIÓN</Text>}
           defaultValue="Av. Principal 1234, Ciudad"
         />
         <TextInput 
-          label={<Text size="xs" fw={700} c="tocaTeal" style={{ letterSpacing: 1 }}>TELÉFONO DE CONTACTO</Text>}
+          label={<Text size="xs" fw={700} c="dark" style={{ letterSpacing: 1 }}>TELÉFONO DE CONTACTO</Text>}
           defaultValue="+1 234 567 8900"
         />
       </div>
@@ -27,7 +27,7 @@ export function CompanyEditView() {
       <div style={{ marginBottom: 32 }}>
         <Group justify="space-between" align="center" mb="md">
           <Text fw={800} size="lg">Promociones Activas</Text>
-          <Button size="xs" color="tocaTeal" variant="light" leftSection={<IconPlus size={14} />}>
+          <Button size="xs" color="dark" variant="light" leftSection={<IconPlus size={14} />}>
             NUEVA
           </Button>
         </Group>
@@ -45,7 +45,7 @@ export function CompanyEditView() {
         </Card>
       </div>
 
-      <Button fullWidth size="lg" color="tocaOrange">
+      <Button fullWidth size="lg" color="dark">
         GUARDAR CAMBIOS
       </Button>
     </div>

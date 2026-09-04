@@ -29,7 +29,7 @@ export function ProfileView({ onLogout }: ProfileProps) {
   }, []);
 
   if (loading || !profile) {
-    return <Center p="xl"><Loader color="tocaOrange" /></Center>;
+    return <Center p="xl"><Loader color="dark" /></Center>;
   }
 
   const referralCode = profile.referral?.code || '---';
@@ -38,7 +38,7 @@ export function ProfileView({ onLogout }: ProfileProps) {
     <div style={{ padding: 16 }}>
       {/* Header Perfil */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
-        <Avatar size="xl" color="tocaOrange" radius="100%" mb="sm">
+        <Avatar size="xl" color="dark" radius="100%" mb="sm">
           {profile.fullName.substring(0, 2).toUpperCase()}
         </Avatar>
         <Text fw={800} size="xl">{profile.fullName}</Text>
@@ -58,7 +58,7 @@ export function ProfileView({ onLogout }: ProfileProps) {
         </Group>
         
         <Card padding="md" radius="md" withBorder style={{ textAlign: 'center' }}>
-          <Text fw={800} size="xl" c="tocaOrange">S/. {profile.walletBalance?.toFixed(2)}</Text>
+          <Text fw={800} size="xl" c="dark">S/. {profile.walletBalance?.toFixed(2)}</Text>
           <Text size="xs" c="dimmed">Crédito disponible para reservas</Text>
         </Card>
       </Card>
@@ -75,10 +75,10 @@ export function ProfileView({ onLogout }: ProfileProps) {
         </Text>
 
         <Group justify="space-between" mb="lg">
-          <Text fw={800} size="lg" c="tocaTeal" style={{ letterSpacing: 2 }}>{referralCode}</Text>
+          <Text fw={800} size="lg" c="dark" style={{ letterSpacing: 2 }}>{referralCode}</Text>
           <CopyButton value={referralCode} timeout={2000}>
             {({ copied, copy }) => (
-              <Button color={copied ? 'teal' : 'tocaOrange'} onClick={copy} size="xs">
+              <Button color={copied ? 'teal' : 'dark'} onClick={copy} size="xs">
                 {copied ? '¡Copiado! ✓' : 'Copiar Código'}
               </Button>
             )}
@@ -135,7 +135,7 @@ export function ProfileView({ onLogout }: ProfileProps) {
               { label: 'Adaptativo', value: 'auto' },
               { label: 'Oscuro', value: 'dark' },
             ]}
-            color="tocaOrange"
+            color="dark"
           />
         </Card>
 
