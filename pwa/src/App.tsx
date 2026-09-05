@@ -1,6 +1,6 @@
 import { Group, Text, UnstyledButton, Center, ScrollArea, Modal, Avatar, Card, Badge } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPlayFootball, IconUsers, IconCalendarEvent, IconUser, IconBusinessplan, IconMapPin, IconBuilding } from '@tabler/icons-react';
+import { IconPlayFootball, IconCompass, IconUsers, IconCalendarEvent, IconUser, IconBusinessplan, IconMapPin, IconBuilding } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 import classes from './App.module.css';
 
@@ -13,10 +13,12 @@ import { CompanyReservationsView } from './components/CompanyReservationsView';
 import { CompanyCourtsView } from './components/CompanyCourtsView';
 import { CompanyEditView } from './components/CompanyEditView';
 import { AuthView } from './components/AuthView';
+import { SuperAdminView } from './components/SuperAdminView';
+import { CompanyRegistrationView } from './components/CompanyRegistrationView';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('canchas');
-  const [appMode, setAppMode] = useState<'jugador' | 'empresa'>('jugador');
+  const [appMode, setAppMode] = useState<'jugador' | 'empresa' | 'superadmin'>('jugador');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
 
@@ -42,6 +44,12 @@ export default function App() {
   const switchToEmpresa = () => {
     setAppMode('empresa');
     setActiveTab('reservas');
+    closeModal();
+  };
+
+  const switchToSuperAdmin = () => {
+    setAppMode('superadmin');
+    setActiveTab('admin');
     closeModal();
   };
 
@@ -72,8 +80,10 @@ export default function App() {
             <UnstyledButton onClick={openModal}>
               {appMode === 'jugador' ? (
                 <Avatar color="dark" radius="xl" size="sm">JP</Avatar>
-              ) : (
+              ) : appMode === 'empresa' ? (
                 <Avatar src="https://images.unsplash.com/photo-1577223625816-7546f13df25d?auto=format&fit=crop&w=100&q=80" radius="md" size="sm" />
+              ) : (
+                <Avatar color="red" radius="md" size="sm">SA</Avatar>
               )}
             </UnstyledButton>
           </Group>
@@ -86,11 +96,14 @@ export default function App() {
             {appMode === 'jugador' && activeTab === 'social' && <SocialView />}
             {appMode === 'jugador' && activeTab === 'reservas' && <PlayerReservationsView />}
             {appMode === 'jugador' && activeTab === 'perfil' && <ProfileView onLogout={handleLogout} />}
+            {appMode === 'jugador' && activeTab === 'registro_empresa' && <CompanyRegistrationView />}
 
             {appMode === 'empresa' && activeTab === 'reservas' && <CompanyReservationsView />}
             {appMode === 'empresa' && activeTab === 'canchas' && <CompanyCourtsView />}
             {appMode === 'empresa' && activeTab === 'empresa' && <CompanyEditView />}
             
+            {appMode === 'superadmin' && activeTab === 'admin' && <SuperAdminView />}
+
             {appMode === 'empresa' && !['reservas', 'canchas', 'empresa'].includes(activeTab) && (
               <div style={{ padding: 16 }}>
                 <Text c="dimmed">Selecciona una pestaña válida en el menú inferior.</Text>
@@ -105,7 +118,7 @@ export default function App() {
             {appMode === 'jugador' ? (
               <>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('canchas')}>
-                  <IconPlayFootball size={24} color={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
+                  <IconCompass  size={24} color={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
                   <Text fz={11} fw={activeTab === 'canchas' ? 800 : 600} c={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Explorar</Text>
                 </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('social')}>
@@ -121,19 +134,26 @@ export default function App() {
                   <Text fz={11} fw={activeTab === 'perfil' ? 800 : 600} c={activeTab === 'perfil' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Perfil</Text>
                 </UnstyledButton>
               </>
-            ) : (
+            ) : appMode === 'empresa' ? (
               <>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('reservas')}>
                   <IconCalendarEvent size={24} color={activeTab === 'reservas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
                   <Text fz={11} fw={activeTab === 'reservas' ? 800 : 600} c={activeTab === 'reservas' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Reservas</Text>
                 </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('canchas')}>
-                  <IconPlayFootball size={24} color={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
+                  <IconCompass size={24} color={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
                   <Text fz={11} fw={activeTab === 'canchas' ? 800 : 600} c={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Explorar</Text>
                 </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('empresa')}>
                   <IconBusinessplan size={24} color={activeTab === 'empresa' ? 'var(--mantine-color-text)' : '#94A3B8'} />
                   <Text fz={11} fw={activeTab === 'empresa' ? 800 : 600} c={activeTab === 'empresa' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Empresa</Text>
+                </UnstyledButton>
+              </>
+            ) : (
+              <>
+                <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('admin')}>
+                  <IconUser size={24} color={activeTab === 'admin' ? 'var(--mantine-color-text)' : '#94A3B8'} />
+                  <Text fz={11} fw={activeTab === 'admin' ? 800 : 600} c={activeTab === 'admin' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Admin</Text>
                 </UnstyledButton>
               </>
             )}
@@ -165,11 +185,12 @@ export default function App() {
               <Text fw={800}>Juan Pérez</Text>
               <Text size="xs" c="dimmed">Jugador</Text>
             </div>
-            {appMode === 'jugador' && <Badge color="dark" variant="filled">ACTIVO</Badge>}
           </Group>
         </Card>
 
         <Text fw={700} size="sm" c="dimmed" mb="xs">EMPRESAS Y SEDES</Text>
+        
+        {/* Empresa 1 */}
         <Group gap={6} mb="xs"><IconBuilding size={16}/><Text size="xs" fw={800}>Separa Altoke Norte</Text></Group>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <Card 
@@ -185,7 +206,6 @@ export default function App() {
                 <Text fw={800} size="sm">Complejo Triple Doble</Text>
                 <Text size="xs" c="dimmed"><IconMapPin size={10} /> Av. Principal 123</Text>
               </div>
-              {appMode === 'empresa' && <Badge color="dark" variant="filled">ACTIVO</Badge>}
             </Group>
           </Card>
           
@@ -205,6 +225,44 @@ export default function App() {
             </Group>
           </Card>
         </div>
+
+        {/* Empresa 2 */}
+        <Group gap={6} mt="md" mb="xs"><IconBuilding size={16}/><Text size="xs" fw={800}>Canchas El Barrio SAC</Text></Group>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <Card 
+            padding="sm" 
+            radius="md" 
+            withBorder 
+            style={{ cursor: 'pointer' }}
+            onClick={switchToEmpresa}
+          >
+            <Group wrap="nowrap">
+              <Avatar src="https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=100&q=80" radius="md" size="md" />
+              <div style={{ flex: 1 }}>
+                <Text fw={800} size="sm">Sede Central El Barrio</Text>
+                <Text size="xs" c="dimmed"><IconMapPin size={10} /> San Juan de Lurigancho 901</Text>
+              </div>
+            </Group>
+          </Card>
+        </div>
+
+        <Text fw={700} size="sm" c="dimmed" mt="lg" mb="xs">ADMINISTRACIÓN SISTEMA</Text>
+        <Card 
+          padding="sm" 
+          radius="md" 
+          withBorder 
+          style={{ cursor: 'pointer', borderColor: appMode === 'superadmin' ? 'var(--mantine-color-text)' : undefined }}
+          onClick={switchToSuperAdmin}
+        >
+          <Group wrap="nowrap">
+            <Avatar color="red" radius="md" size="md">SA</Avatar>
+            <div style={{ flex: 1 }}>
+              <Text fw={800} size="sm">Super Admin</Text>
+              <Text size="xs" c="dimmed">Separa Altoke (Plataforma)</Text>
+            </div>
+          </Group>
+        </Card>
+
       </Modal>
 
     </Center>

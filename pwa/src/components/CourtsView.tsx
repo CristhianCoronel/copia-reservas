@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Card, Text, Group, Badge, Button, ScrollArea, Modal, Select, TextInput, Divider, Loader, Center } from '@mantine/core';
-import { IconPlayFootball, IconBallTennis, IconBallBasketball, IconSun, IconMoon, IconCheck, IconAlertTriangle, IconPlant } from '@tabler/icons-react';
+import { Card, Text, Group, Badge, Button, ScrollArea, Modal, Loader, Center, UnstyledButton, Drawer, Checkbox, RangeSlider, ActionIcon, Image, Tabs } from '@mantine/core';
+import { IconSun, IconMoon, IconCheck, IconAlertTriangle, IconFilter, IconMapPin, IconBrandWhatsapp, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { apiCall } from '../api';
 
 interface Court {
@@ -15,6 +15,18 @@ interface Court {
   services: string[];
   rules: string;
   imageColor: string;
+  images?: string[];
+  address?: string;
+  companyName?: string;
+  distanceKm?: number;
+  whatsapp?: string;
+}
+
+interface AvailabilitySlot {
+  time: string;
+  isPeak: boolean;
+  price: number;
+  available: boolean;
 }
 
 export function CourtsView() {
@@ -23,7 +35,75 @@ export function CourtsView() {
   const [selectedSport, setSelectedSport] = useState<string>('TODOS');
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>('19:00 - 20:00 (Tarifa Nocturna / Luz)');
+  const [selectedDate, setSelectedDate] = useState('2026-08-30');
+  const [availability, setAvailability] = useState<AvailabilitySlot[]>([]);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
+  const [selectedTimeSlots, setSelectedTimeSlots] = useState<AvailabilitySlot[]>([]);
+
+  const [filtersDrawerOpen, setFiltersDrawerOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+
+  const [datesList] = useState(() => {
+    const dates = [];
+    const baseDate = new Date('2026-08-30T12:00:00');
+    for (let i = 0; i < 15; i++) {
+      const d = new Date(baseDate);
+      d.setDate(baseDate.getDate() + i);
+      dates.push(d);
+    }
+    return dates;
+  });
+  const [fetchingCourts, setFetchingCourts] = useState(false);
+
+  const getDayName = (date: Date, index: number) => {
+    if (index === 0) return 'Hoy';
+    if (index === 1) return 'Mañ';
+    const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    return days[date.getDay()];
+  };
+
+  const getFormattedDate = (dateStr: string) => {
+    const d = new Date(dateStr + 'T12:00:00');
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const months = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+    return `${days[d.getDay()]} ${d.getDate()} de ${months[d.getMonth()]}`;
+  };
+
+  const handleDateSelect = (dateStr: string) => {
+    if (dateStr === selectedDate) return;
+    setSelectedDate(dateStr);
+    setFetchingCourts(true);
+    setTimeout(() => setFetchingCourts(false), 800);
+  };
+
+  // Cada vez que cambia la cancha o fecha, cargamos disponibilidad
+  useEffect(() => {
+    if (selectedCourt) {
+      setLoadingAvailability(true);
+      setSelectedTimeSlots([]);
+      apiCall(`/business/courts/${selectedCourt.id}/availability?date=${selectedDate}`)
+        .then(res => {
+          if (res.status && res.data && res.data.length > 0) {
+            setAvailability(res.data);
+          } else {
+            setAvailability([
+              {time: "18:00 - 19:00", isPeak: true, price: selectedCourt.peakPrice, available: true},
+              {time: "19:00 - 20:00", isPeak: true, price: selectedCourt.peakPrice, available: false},
+              {time: "20:00 - 21:00", isPeak: true, price: selectedCourt.peakPrice, available: true}
+            ]);
+          }
+        })
+        .catch(() => {
+          setAvailability([
+            {time: "18:00 - 19:00", isPeak: true, price: selectedCourt.peakPrice, available: true},
+            {time: "19:00 - 20:00", isPeak: true, price: selectedCourt.peakPrice, available: false},
+            {time: "20:00 - 21:00", isPeak: true, price: selectedCourt.peakPrice, available: true}
+          ]);
+        })
+        .finally(() => setLoadingAvailability(false));
+    }
+  }, [selectedCourt, selectedDate]);
 
   useEffect(() => {
     async function loadCourts() {
@@ -45,19 +125,14 @@ export function CourtsView() {
     ? courts 
     : courts.filter(c => c.sport === selectedSport);
 
-  if (loading) {
-    return <Center p="xl"><Loader color="dark" /></Center>;
-  }
-
-  const isPeakHour = selectedTimeSlot?.includes('Nocturna') || false;
-  const currentPrice = selectedCourt ? (isPeakHour ? selectedCourt.peakPrice : selectedCourt.regularPrice) : 0;
+  const currentPrice = selectedTimeSlots.reduce((acc, slot) => acc + slot.price, 0);
 
   const handleConfirmBooking = async () => {
     try {
       await apiCall('/player/reservations', 'POST', {
         courtId: selectedCourt?.id,
-        date: '2026-08-30',
-        time: selectedTimeSlot
+        date: selectedDate,
+        time: selectedTimeSlots.map(s => s.time).join(', ')
       });
       setBookingConfirmed(true);
       setTimeout(() => {
@@ -71,7 +146,44 @@ export function CourtsView() {
 
   return (
     <div style={{ padding: 16 }}>
-      <Text fw={700} mb="xs">Filtrar por deporte</Text>
+      <Text fw={700} mb="xs">Fecha a jugar</Text>
+      <ScrollArea type="never" mb="lg">
+        <Group wrap="nowrap" gap="xs">
+          {datesList.map((d, index) => {
+            const dateStr = d.toISOString().split('T')[0];
+            const isSelected = selectedDate === dateStr;
+            return (
+              <UnstyledButton 
+                key={dateStr}
+                onClick={() => handleDateSelect(dateStr)}
+                style={{ 
+                  height: 'auto', 
+                  padding: '8px 16px', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: isSelected ? 'var(--mantine-color-dark-filled)' : 'transparent',
+                  color: isSelected ? 'var(--mantine-color-white)' : 'var(--mantine-color-text)',
+                  border: `1px solid ${isSelected ? 'var(--mantine-color-dark-filled)' : 'var(--mantine-color-default-border)'}`,
+                  borderRadius: 'var(--mantine-radius-md)'
+                }}
+              >
+                <Text size="xs" fw={isSelected ? 800 : 500}>{getDayName(d, index)}</Text>
+                <Text size="md" fw={800}>{d.getDate()}</Text>
+              </UnstyledButton>
+            );
+          })}
+        </Group>
+      </ScrollArea>
+      
+      <Group justify="space-between" mb="xs">
+        <Text fw={700}>Filtrar por deporte</Text>
+        <Button variant="light" size="xs" radius="xl" color="dark" leftSection={<IconFilter size={14}/>} onClick={() => setFiltersDrawerOpen(true)}>
+          Más Filtros
+        </Button>
+      </Group>
+      
       <ScrollArea type="never" mb="md">
         <Group wrap="nowrap" gap="xs">
           {['TODOS', 'FUTBOL5', 'PADEL', 'BASQUET'].map((sport) => (
@@ -89,15 +201,20 @@ export function CourtsView() {
         </Group>
       </ScrollArea>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 40 }}>
-        {filteredCourts.map(court => (
-          <Card key={court.id} shadow="sm" padding="lg" radius="md" withBorder>
-            <Card.Section 
+      {(loading || fetchingCourts) ? (
+        <Center p="xl" mt="xl"><Loader color="dark" /></Center>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 40 }}>
+          {filteredCourts.map(court => (
+            <Card key={court.id} shadow="sm" padding="lg" radius="md" withBorder>
+              <Card.Section 
               style={{ 
                 backgroundColor: court.imageColor, 
-                height: 80, 
+                backgroundImage: court.images && court.images.length > 0 ? `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.8)), url(${court.images[0]})` : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                height: 140, 
                 padding: 16, 
-                opacity: 0.8,
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'flex-end'
@@ -107,88 +224,162 @@ export function CourtsView() {
                 <Badge color="dark" size="sm" variant="filled">{court.sport}</Badge>
                 {court.isCovered && <Badge color="gray" size="sm" variant="light">Techada</Badge>}
               </Group>
-              <Text fw={800} size="lg" mt="xs">{court.name}</Text>
+              <Text fw={800} size="lg" mt="xs" c={court.images ? 'white' : 'dark'}>{court.name}</Text>
             </Card.Section>
-
-            <Group gap={6} mt="md" mb="md"><IconPlant size={16} color="gray" /><Text size="sm" c="dimmed">Superficie: {court.surface}</Text></Group>
-
-            <Group grow gap="xs" mb="md">
-              <Card padding="sm" radius="md" withBorder style={{ textAlign: 'center' }}>
-                <Text size="xs" c="dimmed"><IconSun size={12} /> Día</Text>
-                <Text fw={800} c="dark">S/. {court.regularPrice}/h</Text>
-              </Card>
-              <Card padding="sm" radius="md" withBorder style={{ textAlign: 'center' }}>
-                <Text size="xs" c="dimmed"><IconMoon size={12} /> Noche</Text>
-                <Text fw={800} c="dark">S/. {court.peakPrice}/h</Text>
-              </Card>
+            
+            <Group gap={4} mt="sm">
+              <IconMapPin size={14} color="gray" />
+              <Text size="xs" fw={700} c="dimmed">{court.distanceKm ? `${court.distanceKm} km` : '2.0 km'} - {court.address || court.companyName}</Text>
             </Group>
 
-            <Text size="xs" fw={700} c="dimmed" mb={4}>Servicios de la Sede:</Text>
-            <Group gap={4} mb="md">
+            <Group gap={4} mt="xs" mb="md">
               {court.services.map(s => (
-                <Badge key={s} color="gray" variant="light" size="xs" radius="sm">✓ {s}</Badge>
+                <Badge key={s} color="gray" variant="light" size="xs" radius="sm">{s}</Badge>
               ))}
             </Group>
 
-            <Group gap={4} mb="lg">
-              <IconAlertTriangle size={14} color="#F59E0B" />
-              <Text size="xs" c="#F59E0B" fs="italic">{court.rules}</Text>
+            <Group gap={4} mb="lg" align="center">
+              <Text size="sm" c="dimmed">Desde</Text>
+              <Text fw={800} size="lg" c="dark">S/. {Math.min(court.regularPrice, court.peakPrice)}</Text>
             </Group>
-
-            <Button fullWidth onClick={() => setSelectedCourt(court)}>
-              Reservar Cancha
-            </Button>
-          </Card>
-        ))}
-      </div>
-
-      <Modal 
-        opened={selectedCourt !== null} 
-        onClose={() => setSelectedCourt(null)} 
-        title={<Text fw={800} size="lg">Confirmar Reserva</Text>}
-        centered
-        overlayProps={{ backgroundOpacity: 0.8, blur: 3 }}
-      >
-        {!bookingConfirmed ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Text fw={700} c="dark">{selectedCourt?.name}</Text>
-            
-            <TextInput 
-              label="Fecha de Juego:" 
-              defaultValue="2026-08-30"
-            />
-            
-            <Select 
-              label="Horario / Franja:"
-              data={[
-                '17:00 - 18:00 (Tarifa Día)',
-                '18:00 - 19:00 (Tarifa Día)',
-                '19:00 - 20:00 (Tarifa Nocturna / Luz)',
-                '20:00 - 21:00 (Tarifa Nocturna / Luz)',
-              ]}
-              value={selectedTimeSlot}
-              onChange={setSelectedTimeSlot}
-            />
-
-            <Card padding="md" radius="md" withBorder mt="sm">
-              <Group justify="space-between">
-                <Text size="sm" c="dimmed">Total a Pagar:</Text>
-                <Text size="xl" fw={800} c="dark">S/. {currentPrice.toFixed(2)}</Text>
-              </Group>
+  
+              <Button fullWidth onClick={() => { setSelectedCourt(court); setCurrentImageIndex(0); }}>
+                Ver más
+              </Button>
             </Card>
+          ))}
+        </div>
+      )}
 
-            <Button fullWidth size="md" mt="sm" onClick={handleConfirmBooking}>
-              Solicitar Reserva Ahora
-            </Button>
+      <Drawer 
+        opened={selectedCourt !== null} 
+        onClose={() => { setSelectedCourt(null); setBookingConfirmed(false); setSelectedTimeSlots([]); }} 
+        title={<Text fw={800} size="lg">Detalles de la Cancha</Text>}
+        position="bottom"
+        size="95%"
+        styles={{ content: { maxWidth: 480, margin: '0 auto' } }}
+      >
+        {selectedCourt && !bookingConfirmed ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 80 }}>
+            {selectedCourt.images && selectedCourt.images.length > 0 && (
+              <div style={{ position: 'relative', width: 'calc(100% + 32px)', margin: '-16px -16px 16px -16px', height: 220, overflow: 'hidden' }}>
+                 <Image src={selectedCourt.images[currentImageIndex]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                 {selectedCourt.images.length > 1 && (
+                    <>
+                      <ActionIcon variant="white" color="dark" radius="xl" style={{ position: 'absolute', top: '50%', left: 8, transform: 'translateY(-50%)' }} onClick={() => setCurrentImageIndex(i => i > 0 ? i - 1 : selectedCourt.images!.length - 1)}><IconChevronLeft size={16}/></ActionIcon>
+                      <ActionIcon variant="white" color="dark" radius="xl" style={{ position: 'absolute', top: '50%', right: 8, transform: 'translateY(-50%)' }} onClick={() => setCurrentImageIndex(i => i < selectedCourt.images!.length - 1 ? i + 1 : 0)}><IconChevronRight size={16}/></ActionIcon>
+                    </>
+                 )}
+              </div>
+            )}
+            
+            <div>
+              <Text fw={800} size="xl">{selectedCourt.name}</Text>
+              <Text c="dimmed" size="sm">{selectedCourt.companyName} • {selectedCourt.address}</Text>
+            </div>
+
+            <Tabs defaultValue="disponibilidad" color="dark">
+              <Tabs.List>
+                <Tabs.Tab value="disponibilidad" fw={600}>Disponibilidad</Tabs.Tab>
+                <Tabs.Tab value="politicas" fw={600}>Políticas</Tabs.Tab>
+                <Tabs.Tab value="reglas" fw={600}>Reglas</Tabs.Tab>
+              </Tabs.List>
+
+              <Tabs.Panel value="disponibilidad" pt="md">
+                <Text fw={700} size="sm" mb="sm">Horarios y Precios ({getFormattedDate(selectedDate)})</Text>
+                {loadingAvailability ? (
+                  <Center p="sm"><Loader size="sm" color="dark" /></Center>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {availability.map(slot => (
+                      <Button 
+                        key={slot.time}
+                        variant={selectedTimeSlots.some(s => s.time === slot.time) ? 'filled' : 'outline'}
+                        color={!slot.available ? 'gray' : selectedTimeSlots.some(s => s.time === slot.time) ? 'dark' : 'gray'}
+                        disabled={!slot.available}
+                        onClick={() => {
+                          if (selectedTimeSlots.some(s => s.time === slot.time)) {
+                            setSelectedTimeSlots(selectedTimeSlots.filter(s => s.time !== slot.time));
+                          } else {
+                            setSelectedTimeSlots([...selectedTimeSlots, slot]);
+                          }
+                        }}
+                        size="md"
+                        fullWidth
+                        styles={{ label: { width: '100%' } }}
+                        style={{ padding: '0 16px' }}
+                      >
+                        <Group justify="space-between" style={{ width: '100%' }}>
+                          <Text size="sm">{slot.time}</Text>
+                          <Text size="sm" fw={700}>S/. {slot.price}</Text>
+                        </Group>
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </Tabs.Panel>
+
+              <Tabs.Panel value="politicas" pt="md">
+                <Text size="sm">Las políticas de reserva incluyen llegar 15 minutos antes. En caso de inasistencia no hay devolución. El pago asegura el bloque horario.</Text>
+              </Tabs.Panel>
+
+              <Tabs.Panel value="reglas" pt="md">
+                <Group gap={4} wrap="nowrap" align="flex-start">
+                  <IconAlertTriangle size={16} color="#F59E0B" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <Text size="sm">{selectedCourt.rules}</Text>
+                </Group>
+              </Tabs.Panel>
+            </Tabs>
+            
+            <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, background: 'var(--mantine-color-body)', padding: '16px', borderTop: '1px solid var(--mantine-color-default-border)', zIndex: 1000, boxShadow: '0 -4px 12px rgba(0,0,0,0.05)' }}>
+              <Group wrap="nowrap">
+                {selectedCourt.whatsapp && (
+                  <Button component="a" href={`https://wa.me/${selectedCourt.whatsapp.replace('+', '')}`} target="_blank" color="teal" variant="light" size="md" style={{ flexGrow: 0, padding: '0 12px' }}>
+                    <IconBrandWhatsapp size={24} />
+                  </Button>
+                )}
+                <Button size="md" color="dark" onClick={handleConfirmBooking} disabled={selectedTimeSlots.length === 0} style={{ flex: 1 }}>
+                  {selectedTimeSlots.length > 0 ? `Reservar (S/. ${currentPrice.toFixed(2)})` : 'Seleccionar hora'}
+                </Button>
+              </Group>
+            </div>
           </div>
-        ) : (
+        ) : selectedCourt && bookingConfirmed ? (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
             <IconCheck size={48} color="#ee5e00" style={{ margin: '0 auto' }} />
             <Text fw={800} size="xl" c="dark" mt="md">¡Reserva Solicitada!</Text>
             <Text c="dimmed" mt="xs">Espera la confirmación de la sede en la pestaña Reservas.</Text>
           </div>
-        )}
-      </Modal>
+        ) : null}
+      </Drawer>
+
+      <Drawer 
+        opened={filtersDrawerOpen} 
+        onClose={() => setFiltersDrawerOpen(false)} 
+        position="bottom" 
+        title={<Text fw={800}>Filtros Avanzados</Text>}
+        padding="md"
+      >
+        <Text fw={600} size="sm" mb="xs">Rango de Horas (Libres)</Text>
+        <RangeSlider 
+          defaultValue={[18, 22]} 
+          min={6} max={24} 
+          step={1} 
+          marks={[{ value: 6, label: '6h' }, { value: 12, label: '12h' }, { value: 18, label: '18h' }, { value: 24, label: '24h' }]} 
+          mb="xl"
+          color="dark"
+        />
+
+        <Text fw={600} size="sm" mt="xl" mb="xs">Servicios Ofrecidos</Text>
+        <Group gap="sm" mb="xl">
+          <Checkbox label="Estacionamiento" color="dark" defaultChecked />
+          <Checkbox label="Duchas" color="dark" />
+          <Checkbox label="WiFi" color="dark" />
+          <Checkbox label="Bar / Snack" color="dark" />
+        </Group>
+
+        <Button fullWidth color="dark" onClick={() => setFiltersDrawerOpen(false)}>Aplicar Filtros</Button>
+      </Drawer>
     </div>
   );
 }

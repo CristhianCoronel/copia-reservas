@@ -44,10 +44,7 @@ export function ProfileView({ onLogout }: ProfileProps) {
         <Text fw={800} size="xl">{profile.fullName}</Text>
         <Text size="xs" c="dimmed">{profile.role} Activo • DNI {profile.document}</Text>
 
-        <Group gap="xs" mt="md" style={{ padding: '6px 16px', borderRadius: 20, border: '1px solid var(--mantine-color-default-border)' }}>
-          <IconStar size={16} color="#FFD700" style={{ fill: '#FFD700' }} />
-          <Text size="xs" fw={700} c="#FFD700">Reputación: {profile.reputation?.score}/5.0 ({profile.reputation?.completedMatches} Partidos)</Text>
-        </Group>
+
       </div>
 
       {/* Monedero Virtual */}
@@ -97,6 +94,47 @@ export function ProfileView({ onLogout }: ProfileProps) {
         </Group>
       </Card>
 
+      {/* Banner Aliado B2B */}
+      <Card padding="lg" radius="md" withBorder mb="xl" style={{ backgroundColor: 'var(--mantine-color-dark-8)', color: 'white' }}>
+        <Group justify="space-between" wrap="nowrap">
+          <div>
+            <Text fw={800} size="lg" c="white">¿Eres dueño de una cancha?</Text>
+            <Text size="xs" c="gray.4" mt={4}>Únete como aliado y gestiona tus reservas.</Text>
+          </div>
+          <Button color="white" c="dark" radius="md" size="xs" onClick={() => {
+            window.dispatchEvent(new CustomEvent('NAVIGATE_TO', { detail: 'registro_empresa' }));
+          }}>
+            Registrar
+          </Button>
+        </Group>
+      </Card>
+
+      {/* Verificar Cuenta */}
+      <Card padding="lg" radius="md" withBorder mb="xl">
+        <Group gap="xs" mb="sm">
+          <IconCheck size={20} color="#10B981" />
+          <Text fw={800}>Verificar Cuenta</Text>
+        </Group>
+        <Text size="xs" c="dimmed" mb="md">
+          Vincula tu número de celular para poder realizar reservas y unirte a partidos abiertos.
+        </Text>
+        <Group gap="sm" wrap="nowrap">
+          <div style={{ width: 100 }}>
+            <Text size="sm" fw={500} mb={4}>País</Text>
+            <Button variant="default" fullWidth>+51</Button>
+          </div>
+          <div style={{ flexGrow: 1 }}>
+            <Text size="sm" fw={500} mb={4}>Celular</Text>
+            <input 
+              type="tel" 
+              placeholder="999 999 999" 
+              style={{ width: '100%', padding: '6px 12px', borderRadius: 4, border: '1px solid #ced4da', height: 36 }}
+            />
+          </div>
+        </Group>
+        <Button fullWidth mt="md" color="dark">Enviar SMS de Verificación</Button>
+      </Card>
+
       {/* Menú Adicional */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <Card padding="md" radius="md" withBorder style={{ cursor: 'pointer' }}>
@@ -109,15 +147,7 @@ export function ProfileView({ onLogout }: ProfileProps) {
           </Group>
         </Card>
 
-        <Card padding="md" radius="md" withBorder style={{ cursor: 'pointer' }}>
-          <Group justify="space-between" wrap="nowrap">
-            <Group gap="md">
-              <IconStar size={20} color="#94A3B8" />
-              <Text size="sm" fw={600}>Mis Calificaciones y Reseñas</Text>
-            </Group>
-            <IconChevronRight size={16} color="#475569" />
-          </Group>
-        </Card>
+
 
         <Card padding="md" radius="md" withBorder>
           <Group justify="space-between" wrap="nowrap" mb="sm">

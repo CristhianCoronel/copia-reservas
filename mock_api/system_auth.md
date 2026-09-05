@@ -3,7 +3,7 @@
 Maneja el inicio de sesión y la generación de tokens JWT.
 
 ### Endpoint: Iniciar sesión
-**Lógica:** Endpoint simulado que acepta cualquier email y contraseña y devuelve un token JWT válido.
+**Lógica:** Endpoint simulado que acepta credenciales. Valida formato de celular o email y devuelve un token JWT válido y los roles del usuario.
 **Método:** `POST`
 **Ruta de ejemplo:** `/api/auth/login`
 
@@ -16,7 +16,7 @@ Maneja el inicio de sesión y la generación de tokens JWT.
     "user": {
       "id": "u1",
       "fullName": "Juan Pérez",
-      "role": "jugador"
+      "roles": ["JUGADOR", "ADMIN_EMPRESA", "SUPERADMIN"]
     }
   }
 }

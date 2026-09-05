@@ -27,7 +27,7 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
 | **Fricción al dividir y cobrar el costo del turno**: el organizador debe cobrar manualmente a cada participante y consolidar el dinero. | **A futuro** | División de costo informativa. El backend calcula dinámicamente el `split_price_per_player` dividiendo la tarifa total entre `max_players`. En la app se permite al organizador marcar visualmente a cada participante como "pagado" (`PAID` en `GroupParticipant.payment_status`) para su control personal, aunque la transferencia sea externa. |
 | **Desequilibrio de nivel competitivo**: jugar partidos aburridos contra rivales de nivel muy diferente (muy superior o inferior). | **Nunca** | Es responsabilidad del usuario |
 | **Información de canchas desactualizada**: llegar al local y encontrar mala superficie, falta de estacionamiento o sin iluminación. | **Después** | Campos específicos en la tabla correspondiente para indicar cualidades (tipo de superficie, si es techada) y almacenar infromación adicional (servicios como quiosco, estacionamiento, duchas). Galería de fotos validada y sistema de comentarios calificados de usuarios comprobados. |
-| **Falta de seriedad / tardanzas de compañeros**: jugadores que se comprometen pero no van o llegan tarde. | **Después** | Índice de confiabilidad y puntualidad del jugador basado en la calificación mutua post-partido. La reputación de un usuario es visible. |
+| **Falta de seriedad / tardanzas de compañeros**: jugadores que se comprometen pero no van o llegan tarde. | **Nunca** | No se implementará sistema de calificaciones o penalizaciones por inasistencia. |
 | **Integración de pagos en línea en partidos grupales**: automatizar el recaudo individual de la cuota de cada jugador mediante la app. | **A futuro** | Se resolverá más adelante con billeteras digitales integradas en la app. Inicialmente, los jugadores coordinan de forma externa quién y cómo transfiere el dinero al organizador (comunicación interna). |
 | **Desafíos y retos entre equipos**: equipos formados que buscan desafiar formalmente a otros equipos a jugar. | **A futuro lejano / Nunca** | Es una necesidad real de los jugadores, pero no se implementará un flujo nativo (objeto tipo Reto) por ahora debido a la alta complejidad técnica de coordinar agendas de dos grupos distintos, elegir una cancha neutral y unificar el pago de ambos equipos. Se deja para que lo coordinen de forma externa. |
 
@@ -39,8 +39,9 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
 | :--- | :--- | :--- |
 | **Enfoque móvil exclusivo (mobile-first)**: la web de escritorio suele ser ajena a la dinámica del partido en la cancha y poco usada por los administradores en el campo de juego. | **Pronto** | El desarrollo completo se concentra en la aplicación móvil nativa o híbrida. Tanto la gestión comercial de las empresas como las reservas, búsquedas y emparejamiento de los jugadores se ejecutan únicamente vía app móvil. No existe portal web de cara al usuario. |
 | **Masa crítica de usuarios (el huevo y la gallina)**: necesidad de crecer rápidamente la base de jugadores con bajo presupuesto. | **Pronto** | Sistema viral **"jugador invita jugador"** (referido B2C). Enlace dinámico (`/invite/<referral_code>`) autogenerado en el perfil. Si un nuevo usuario se registra con el código y completa su primer partido (individual o grupal), se les otorgan cupones de descuento u otros beneficios a ambos. |
-| **Puenteo de la plataforma**: usuarios que usan la app para descubrir canchas pero luego reservan directo para evitar comisiones. | **Nunca** | La plataforma no restringe el contacto directo de los locales. En su lugar, fomenta el uso de la app ofreciendo el sistema de control de cupos, división del costo del partido, historial de partidos jugados y reputación de asistencia. |
+| **Puenteo de la plataforma**: usuarios que usan la app para descubrir canchas pero luego reservan directo para evitar comisiones. | **Nunca** | La plataforma no restringe el contacto directo de los locales. En su lugar, fomenta el uso de la app ofreciendo el sistema de control de cupos, división del costo del partido y el historial de partidos jugados. |
 | **Baja participación en calificaciones**: los usuarios olvidan calificar el comportamiento, puntualidad o estado de la cancha tras jugar. | **A futuro** | Gamificación e incentivos directos en la app. Otorgar puntos de experiencia (XP) u otros incentivos de gamificación no monetarios por calificar honestamente un partido, utilizables para redimir recompensas o personalizar su perfil de jugador. |
+| **Métricas de contacto de WhatsApp**: necesidad de saber cuántos usuarios intentan contactar a las empresas para demostrar el valor de la plataforma. | **Pronto** | Los botones para contactar por WhatsApp incluirán rastreo (tracking) de clics a nivel de frontend/backend, permitiendo saber qué números son más pulsados y medir la conversión (empresas contactadas a través de la app). |
 
 ---
 
@@ -55,11 +56,11 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
 
 2. **Geografía y Localización**:
    - **`geografia_peru`**: Tablas maestras de Ubigeo que contienen Departamento, Provincia y Distrito para la ubicación exacta de sedes y segmentación de jugadores.
-   - **`pais` y `prefijo_telefonico`**: Tablas maestras para gestionar el código de país (ej. +51 para Perú) necesario en el registro de cuentas (validación SMS/WhatsApp) y estandarización de números de contacto.
+   - **`pais`**: Tabla maestra para gestionar los países disponibles, que incluye directamente el código de país (ej. +51 para Perú) y la longitud esperada del celular. Esto es necesario en el registro de cuentas (validación SMS/WhatsApp) y estandarización de números de contacto.
 
 3. **Usuarios, personas, empresas y suscripciones**:
    - **`usuario`**: Entidad principal de autenticación (credenciales como email/teléfono, hash de contraseña opcional, rol base `ADMIN | PLAYER`, fecha de registro). El login se implementa con **Google (OAuth 2.0 / OIDC)**: la app móvil obtiene el token de identidad de Google y el backend crea o reconoce al usuario. Todo `usuario` es, sin excepción, una **persona física**; no existen cuentas de acceso corporativas.
-   - **`persona`**: Perfil físico del usuario (nombres, apellidos, tipo/número de documento, teléfono de contacto, foto de perfil, reputación de juego). Aplica para jugadores, organizadores, trabajadores de sedes y también quienes administran empresas.
+   - **`persona`**: Perfil físico del usuario (nombres, apellidos, tipo/número de documento, teléfono de contacto, foto de perfil). Aplica para jugadores, organizadores, trabajadores de sedes y también quienes administran empresas.
    - **`empresa`**: Entidad corporativa / comercial (RUC/tax ID, razón social, nombre comercial, contacto legal, logotipo). Es la propietaria de los complejos deportivos, pero **no tiene usuario ni login propio**: las **personas registran sus empresas** en la plataforma (quien la registra queda como administradora) y las empresas **contratan a otras personas** para que accedan y operen sus sedes. Toda acción "de una empresa" es en realidad una persona actuando en su nombre bajo un contrato vigente. Las empresas deben poder indicar libremente sus **términos y condiciones** particulares aplicables a sus reservas.
    - **`plan_suscripcion` y `suscripcion_empresa`**: Un `plan_suscripcion` agrupa los beneficios del sistema y tiene una vigencia general (vigente/disponible o no). La `suscripcion_empresa` gestiona por cuánto tiempo está suscrita una empresa a dicho plan (fechas de inicio y fin), controlando así el acceso y operatividad del complejo en la plataforma.
 
@@ -89,9 +90,7 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
      - *Máximo de horas*: La `empresa` configura el límite máximo de horas continuas que una persona/equipo puede reservar por transacción (ej. máximo 2 horas consecutivas).
      - *Promociones propias de la empresa*: La empresa registra promociones textuales y su vigencia (ej: "20% de descuento de lunes a miércoles de 14:00 a 17:00", con rango de `fecha_inicio` y `fecha_fin`).
 
-7. **Calificaciones y reputación mutua**:
-   - **`calificacion_empresa` / `calificacion_sede`** y **`calificacion_cancha`**: Puntuación de 1 a 5 estrellas + comentarios otorgados por los jugadores (`persona`) que asistieron y completaron una reserva.
-   - Se requiere un vínculo a una reserva completada (`COMPLETED`) para evitar valoraciones falsas o malintencionadas.
+
 
 8. **Reservas, formas de reserva, pagos y asistentes**:
    - **Tipos de origen de reserva**:

@@ -3,7 +3,7 @@
 Información personal, monedero virtual y referidos.
 
 ### Endpoint: Obtener datos del perfil
-**Lógica:** Trae los datos personales, reputación, saldo en monedero virtual y estadísticas.
+**Lógica:** Trae los datos personales, saldo en monedero virtual y estadísticas.
 **Método:** `GET`
 **Ruta de ejemplo:** `/api/player/profile/me`
 **Ruta Regex:** `^\/api\/player\/profile\/me$`
@@ -17,10 +17,6 @@ Información personal, monedero virtual y referidos.
     "fullName": "Juan Pérez",
     "document": "***456",
     "role": "Jugador",
-    "reputation": {
-      "score": 4.9,
-      "completedMatches": 18
-    },
     "walletBalance": 30.00,
     "referral": {
       "code": "ALTOKE-JUAN77",

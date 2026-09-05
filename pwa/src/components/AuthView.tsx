@@ -16,8 +16,14 @@ export function AuthView({ onLogin }: AuthViewProps) {
   const handleAuth = async () => {
     setLoading(true);
 
-    if (email !== 'juan' || password !== 'dadada1234') {
-      alert("Credenciales incorrectas");
+    if (!email) {
+      alert("Ingresa un usuario o correo electrónico.");
+      setLoading(false);
+      return;
+    }
+
+    if (email !== 'juan' && email !== 'admin' && email !== '999999999') {
+      alert("Credenciales incorrectas (prueba con 'juan', 'admin' o '999999999')");
       setLoading(false);
       return;
     }
