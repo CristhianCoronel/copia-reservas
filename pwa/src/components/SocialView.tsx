@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Tabs, Card, Text, Group, Badge, Button, Progress, TextInput, ActionIcon, Divider, Avatar, Center, Loader } from '@mantine/core';
-import { IconUsers, IconShieldCheck, IconUserCircle, IconCheck, IconX, IconSend, IconPlus, IconLock, IconStarFilled, IconMapPin, IconCalendar, IconClock, IconBallFootball, IconBallTennis, IconMessageCircle } from '@tabler/icons-react';
+import { Tabs, Card, Text, Group, Badge, Button, Progress, TextInput, ActionIcon, Divider, Avatar, Center, Loader, Modal, Select } from '@mantine/core';
+import { IconUsers, IconShieldCheck, IconUserCircle, IconCheck, IconX, IconSend, IconPlus, IconLock, IconStarFilled, IconMapPin, IconCalendar, IconClock, IconBallFootball, IconBallTennis, IconMessageCircle, IconChevronRight } from '@tabler/icons-react';
 import { apiCall } from '../api';
 import { ChatView } from './ChatView';
 
@@ -21,16 +21,44 @@ interface OpenGroup {
 function PartidasAbiertasTab() {
   const [groups, setGroups] = useState<OpenGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [createMatchOpened, setCreateMatchOpened] = useState(false);
 
   useEffect(() => {
     async function loadGroups() {
       try {
         const res = await apiCall('/player/social/groups');
-        if (res.status) {
+        if (res.status && res.data) {
           setGroups(res.data);
-        }
+        } else { throw new Error(); }
       } catch (error) {
-        console.error(error);
+        setGroups([
+          {
+            id: '1',
+            title: 'Falta 1 para Padel',
+            organizer: 'Juan Perez',
+            organizerRating: 4.8,
+            courtName: 'Padel Club Sur',
+            date: 'Hoy',
+            time: '20:00',
+            maxPlayers: 4,
+            currentPlayers: 3,
+            totalCourtPrice: 120,
+            sport: 'PADEL'
+          },
+          {
+            id: '2',
+            title: 'Fulbito de Jueves',
+            organizer: 'Carlos M.',
+            organizerRating: 5.0,
+            courtName: 'Canchas El Barrio',
+            date: 'Jue 4',
+            time: '19:00',
+            maxPlayers: 10,
+            currentPlayers: 10,
+            totalCourtPrice: 150,
+            sport: 'FUTBOL5'
+          }
+        ]);
       } finally {
         setLoading(false);
       }
@@ -39,19 +67,13 @@ function PartidasAbiertasTab() {
   }, []);
 
   const handleJoinGroup = async (groupId: string) => {
-    try {
-      const res = await apiCall(`/player/social/groups/${groupId}/join`, 'POST');
-      if (res.status) {
-        setGroups(prev => prev.map(g => {
-          if (g.id === groupId && g.currentPlayers < g.maxPlayers) {
-            return { ...g, currentPlayers: res.data.currentPlayers };
-          }
-          return g;
-        }));
+    // Simulamos que la petición a la API es exitosa para actualizar la interfaz
+    setGroups(prev => prev.map(g => {
+      if (g.id === groupId && g.currentPlayers < g.maxPlayers) {
+        return { ...g, currentPlayers: g.currentPlayers + 1 };
       }
-    } catch (error) {
-      console.error(error);
-    }
+      return g;
+    }));
   };
 
   if (loading) {
@@ -64,6 +86,10 @@ function PartidasAbiertasTab() {
       <Text c="dimmed" size="sm" mb="lg">
         Únete a partidos organizados por otros jugadores cerca de ti y divide los gastos automáticamente.
       </Text>
+
+      <Button fullWidth leftSection={<IconPlus size={16} />} color="dark" variant="filled" mb="xl" onClick={() => setCreateMatchOpened(true)}>
+        ORGANIZAR PARTIDO
+      </Button>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {groups.map((group) => {
@@ -121,11 +147,60 @@ function PartidasAbiertasTab() {
           );
         })}
       </div>
+
+      <Modal opened={createMatchOpened} onClose={() => setCreateMatchOpened(false)} title={<Text fw={800} size="lg">Organizar Partido</Text>} centered>
+        <TextInput label="Título de la partida" placeholder="Ej. Falta 1 para Padel" mb="md" data-autofocus />
+        <Select label="Deporte" placeholder="Selecciona un deporte" data={['Fútbol 5', 'Fútbol 7', 'Fútbol 11', 'Pádel', 'Básquet']} mb="md" />
+        <TextInput label="Sede o Cancha" placeholder="Ej. Padel Club Sur" mb="md" />
+        <Group grow mb="md">
+          <TextInput label="Fecha" placeholder="DD/MM" />
+          <TextInput label="Hora" placeholder="HH:MM" />
+        </Group>
+        <Group grow mb="xl">
+          <TextInput label="Jugadores Totales" placeholder="Ej. 4" type="number" />
+          <TextInput label="Costo Total (S/.)" placeholder="Ej. 120" type="number" />
+        </Group>
+        <Button fullWidth color="dark" onClick={() => {
+          setGroups([{
+            id: Date.now().toString(),
+            title: 'Falta 1 para Padel (Nuevo)',
+            organizer: 'Juan Perez (Tú)',
+            organizerRating: 5.0,
+            courtName: 'Padel Club Sur',
+            date: 'Hoy',
+            time: '20:00',
+            maxPlayers: 4,
+            currentPlayers: 1,
+            totalCourtPrice: 120,
+            sport: 'PADEL'
+          }, ...groups]);
+          setCreateMatchOpened(false);
+        }}>Publicar Partido</Button>
+      </Modal>
     </div>
   );
 }
 
 function EquiposTab() {
+  const [invitations, setInvitations] = useState([
+    { id: 'inv1', teamName: 'Los Galácticos FC', inviter: 'Mario Vargas' }
+  ]);
+  const [myTeams, setMyTeams] = useState([
+    { id: 'team1', name: 'Deportivo Los Pinos', sport: 'Fútbol 7', members: 12, role: 'ADMIN' },
+    { id: 'team2', name: 'Viernes de Fulbito', sport: 'Fútbol 5', members: 8, role: 'MIEMBRO' }
+  ]);
+  const [selectedTeam, setSelectedTeam] = useState<any>(null);
+  const [createTeamOpened, setCreateTeamOpened] = useState(false);
+
+  const handleAcceptInvite = (id: string, teamName: string) => {
+    setInvitations(invitations.filter(inv => inv.id !== id));
+    setMyTeams([{ id: `new_${id}`, name: teamName, sport: 'Fútbol', members: 1, role: 'MIEMBRO' }, ...myTeams]);
+  };
+
+  const handleRejectInvite = (id: string) => {
+    setInvitations(invitations.filter(inv => inv.id !== id));
+  };
+
   return (
     <div style={{ paddingTop: 16 }}>
       <Group gap="xs" mb="xs"><IconShieldCheck size={24}/><Text fw={800} size="xl">Tus Equipos</Text></Group>
@@ -133,50 +208,110 @@ function EquiposTab() {
         Gestiona tus equipos, invita amigos y revisa invitaciones pendientes.
       </Text>
 
-      <Button fullWidth leftSection={<IconPlus size={16} />} color="dark" variant="light" mb="xl">
+      <Button fullWidth leftSection={<IconPlus size={16} />} color="dark" variant="filled" mb="xl" onClick={() => setCreateTeamOpened(true)}>
         CREAR NUEVO EQUIPO
       </Button>
 
-      <Text fw={700} mb="sm">Invitaciones Pendientes (1)</Text>
-      <Card padding="md" radius="md" withBorder mb="xl">
-        <Group justify="space-between">
-          <div>
-            <Text fw={800}>Los Galácticos FC</Text>
-            <Text size="xs" c="dimmed">Invitado por: Mario Vargas</Text>
-          </div>
-          <Group gap="xs">
-            <ActionIcon color="green" variant="light" radius="xl" size="lg"><IconCheck size={18} /></ActionIcon>
-            <ActionIcon color="red" variant="light" radius="xl" size="lg"><IconX size={18} /></ActionIcon>
-          </Group>
-        </Group>
-      </Card>
+      {invitations.length > 0 && (
+        <>
+          <Text fw={700} mb="sm">Invitaciones Pendientes ({invitations.length})</Text>
+          {invitations.map(inv => (
+            <Card key={inv.id} padding="md" radius="md" withBorder mb="xl">
+              <Group justify="space-between">
+                <div>
+                  <Text fw={800}>{inv.teamName}</Text>
+                  <Text size="xs" c="dimmed">Invitado por: {inv.inviter}</Text>
+                </div>
+                <Group gap="xs">
+                  <ActionIcon onClick={() => handleAcceptInvite(inv.id, inv.teamName)} color="green" variant="light" radius="xl" size="lg"><IconCheck size={18} /></ActionIcon>
+                  <ActionIcon onClick={() => handleRejectInvite(inv.id)} color="red" variant="light" radius="xl" size="lg"><IconX size={18} /></ActionIcon>
+                </Group>
+              </Group>
+            </Card>
+          ))}
+        </>
+      )}
 
       <Text fw={700} mb="sm">Mis Equipos</Text>
       <Card padding="md" radius="md" withBorder>
-        <Group justify="space-between" mb="md">
-          <div>
-            <Text fw={800} size="lg">Deportivo Los Pinos</Text>
-            <Text size="sm" c="dimmed">Fútbol 7 • 12 Miembros</Text>
+        {myTeams.map((team, index) => (
+          <div key={team.id}>
+            <Group justify="space-between" mb="md">
+              <div>
+                <Text fw={800} size="lg">{team.name}</Text>
+                <Text size="sm" c="dimmed">{team.sport} • {team.members} Miembros</Text>
+              </div>
+              <Group gap="xs">
+                <Badge color={team.role === 'ADMIN' ? 'dark' : 'gray'} variant={team.role === 'ADMIN' ? 'filled' : 'light'}>
+                  {team.role}
+                </Badge>
+                <ActionIcon variant="default" onClick={() => setSelectedTeam(team)}>
+                  <IconChevronRight size={18} />
+                </ActionIcon>
+              </Group>
+            </Group>
+            {index < myTeams.length - 1 && <Divider mb="md" />}
           </div>
-          <Badge color="dark" variant="filled">ADMIN</Badge>
-        </Group>
-        
-        <Divider mb="md" />
-        
-        <Text size="xs" fw={700} c="dimmed" mb="xs">Invitar jugador por correo:</Text>
-        <Group wrap="nowrap">
-          <TextInput 
-            placeholder="correo@ejemplo.com" 
-            flex={1}
-          />
-          <ActionIcon size={36} color="dark" variant="filled"><IconSend size={18} /></ActionIcon>
-        </Group>
+        ))}
       </Card>
+
+      <Modal 
+        opened={!!selectedTeam} 
+        onClose={() => setSelectedTeam(null)} 
+        title={<Text fw={800} size="lg">{selectedTeam?.name}</Text>}
+        centered
+      >
+        <Text size="sm" c="dimmed" mb="md">Gestiona los miembros del equipo y la participación.</Text>
+
+        {selectedTeam?.role === 'ADMIN' && (
+          <Card padding="sm" radius="md" withBorder mb="lg">
+            <Text size="xs" fw={700} mb="xs">Invitar nuevo jugador:</Text>
+            <Group wrap="nowrap">
+              <TextInput placeholder="correo@ejemplo.com" flex={1} />
+              <ActionIcon size={36} color="dark" variant="filled"><IconSend size={18} /></ActionIcon>
+            </Group>
+          </Card>
+        )}
+
+        <Text fw={700} mb="sm">Integrantes ({selectedTeam?.members})</Text>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Group wrap="nowrap">
+            <Avatar color="blue" radius="xl">JP</Avatar>
+            <div style={{ flex: 1 }}>
+              <Text size="sm" fw={700}>Juan Pérez (Tú)</Text>
+              <Text size="xs" c="dimmed">{selectedTeam?.role}</Text>
+            </div>
+          </Group>
+          <Group wrap="nowrap">
+            <Avatar color="gray" radius="xl">MV</Avatar>
+            <div style={{ flex: 1 }}>
+              <Text size="sm" fw={700}>Mario Vargas</Text>
+              <Text size="xs" c="dimmed">MIEMBRO</Text>
+            </div>
+          </Group>
+        </div>
+      </Modal>
+
+      <Modal opened={createTeamOpened} onClose={() => setCreateTeamOpened(false)} title={<Text fw={800} size="lg">Crear Nuevo Equipo</Text>} centered>
+        <TextInput label="Nombre del Equipo" placeholder="Ej. Los Galácticos" mb="md" data-autofocus />
+        <Select label="Deporte principal" placeholder="Selecciona un deporte" data={['Fútbol 5', 'Fútbol 7', 'Fútbol 11', 'Pádel', 'Básquet']} mb="xl" />
+        <Button fullWidth color="dark" onClick={() => setCreateTeamOpened(false)}>Crear Equipo</Button>
+      </Modal>
     </div>
   );
 }
 
 export function SocialView() {
+  const [activeChat, setActiveChat] = useState<string | null>(null);
+
+  if (activeChat) {
+    return (
+      <div style={{ padding: 0 }}>
+        <ChatView activeChat={activeChat} setActiveChat={setActiveChat} />
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: 16 }}>
       <Tabs defaultValue="chat" color="dark" variant="pills" radius="md">
@@ -187,7 +322,7 @@ export function SocialView() {
         </Tabs.List>
 
         <Tabs.Panel value="chat" pt="xs">
-          <ChatView />
+          <ChatView activeChat={activeChat} setActiveChat={setActiveChat} />
         </Tabs.Panel>
 
         <Tabs.Panel value="equipos">

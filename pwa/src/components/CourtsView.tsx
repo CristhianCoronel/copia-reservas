@@ -80,6 +80,16 @@ export function CourtsView() {
   // Cada vez que cambia la cancha o fecha, cargamos disponibilidad
   useEffect(() => {
     if (selectedCourt) {
+      const mockAvail = [
+        {time: "16:00 - 17:00", isPeak: false, price: selectedCourt.regularPrice, available: true},
+        {time: "17:00 - 18:00", isPeak: false, price: selectedCourt.regularPrice, available: true},
+        {time: "18:00 - 19:00", isPeak: true, price: selectedCourt.peakPrice, available: true},
+        {time: "19:00 - 20:00", isPeak: true, price: selectedCourt.peakPrice, available: false},
+        {time: "20:00 - 21:00", isPeak: true, price: selectedCourt.peakPrice, available: true},
+        {time: "21:00 - 22:00", isPeak: true, price: selectedCourt.peakPrice, available: true},
+        {time: "22:00 - 23:00", isPeak: true, price: selectedCourt.peakPrice, available: true}
+      ];
+
       setLoadingAvailability(true);
       setSelectedTimeSlots([]);
       apiCall(`/business/courts/${selectedCourt.id}/availability?date=${selectedDate}`)
@@ -87,19 +97,11 @@ export function CourtsView() {
           if (res.status && res.data && res.data.length > 0) {
             setAvailability(res.data);
           } else {
-            setAvailability([
-              {time: "18:00 - 19:00", isPeak: true, price: selectedCourt.peakPrice, available: true},
-              {time: "19:00 - 20:00", isPeak: true, price: selectedCourt.peakPrice, available: false},
-              {time: "20:00 - 21:00", isPeak: true, price: selectedCourt.peakPrice, available: true}
-            ]);
+            setAvailability(mockAvail);
           }
         })
         .catch(() => {
-          setAvailability([
-            {time: "18:00 - 19:00", isPeak: true, price: selectedCourt.peakPrice, available: true},
-            {time: "19:00 - 20:00", isPeak: true, price: selectedCourt.peakPrice, available: false},
-            {time: "20:00 - 21:00", isPeak: true, price: selectedCourt.peakPrice, available: true}
-          ]);
+          setAvailability(mockAvail);
         })
         .finally(() => setLoadingAvailability(false));
     }
@@ -144,6 +146,37 @@ export function CourtsView() {
     }
   };
 
+  const handleSlotToggle = (slot: AvailabilitySlot) => {
+    const isSelected = selectedTimeSlots.some(s => s.time === slot.time);
+    if (isSelected) {
+      if (selectedTimeSlots.length === 1) {
+        setSelectedTimeSlots([]);
+        return;
+      }
+      const hours = selectedTimeSlots.map(s => parseInt(s.time.split(':')[0])).sort((a, b) => a - b);
+      const slotHour = parseInt(slot.time.split(':')[0]);
+      
+      if (slotHour === hours[0] || slotHour === hours[hours.length - 1]) {
+        setSelectedTimeSlots(selectedTimeSlots.filter(s => s.time !== slot.time));
+      } else {
+        alert('Debes mantener horas continuas. Deselecciona los extremos primero.');
+      }
+    } else {
+      if (selectedTimeSlots.length === 0) {
+        setSelectedTimeSlots([slot]);
+      } else {
+        const hours = selectedTimeSlots.map(s => parseInt(s.time.split(':')[0])).sort((a, b) => a - b);
+        const slotHour = parseInt(slot.time.split(':')[0]);
+        if (slotHour === hours[0] - 1 || slotHour === hours[hours.length - 1] + 1) {
+          setSelectedTimeSlots([...selectedTimeSlots, slot]);
+        } else {
+          // Restart selection block
+          setSelectedTimeSlots([slot]);
+        }
+      }
+    }
+  };
+
   return (
     <div style={{ padding: 16 }}>
       <Text fw={700} mb="xs">Fecha a jugar</Text>
@@ -179,7 +212,7 @@ export function CourtsView() {
       
       <Group justify="space-between" mb="xs">
         <Text fw={700}>Filtrar por deporte</Text>
-        <Button variant="light" size="xs" radius="xl" color="dark" leftSection={<IconFilter size={14}/>} onClick={() => setFiltersDrawerOpen(true)}>
+        <Button variant="default" size="xs" radius="xl" leftSection={<IconFilter size={14}/>} onClick={() => setFiltersDrawerOpen(true)}>
           Más Filtros
         </Button>
       </Group>
@@ -297,13 +330,7 @@ export function CourtsView() {
                         variant={selectedTimeSlots.some(s => s.time === slot.time) ? 'filled' : 'outline'}
                         color={!slot.available ? 'gray' : selectedTimeSlots.some(s => s.time === slot.time) ? 'dark' : 'gray'}
                         disabled={!slot.available}
-                        onClick={() => {
-                          if (selectedTimeSlots.some(s => s.time === slot.time)) {
-                            setSelectedTimeSlots(selectedTimeSlots.filter(s => s.time !== slot.time));
-                          } else {
-                            setSelectedTimeSlots([...selectedTimeSlots, slot]);
-                          }
-                        }}
+                        onClick={() => handleSlotToggle(slot)}
                         size="md"
                         fullWidth
                         styles={{ label: { width: '100%' } }}
