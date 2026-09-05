@@ -1,12 +1,18 @@
+import { useState } from 'react';
 import { Box, Title, Text, Group, Avatar, Badge, ActionIcon, ScrollArea, TextInput, Card, Button, Center, Divider } from '@mantine/core';
-import { IconChevronLeft, IconSend, IconPaperclip, IconCheck, IconX, IconReceipt, IconCalendarEvent } from '@tabler/icons-react';
+import { IconChevronLeft, IconSend, IconPaperclip, IconCheck, IconX, IconReceipt, IconCalendarEvent, IconMessageCircle } from '@tabler/icons-react';
 
 interface ChatViewProps {
-  activeChat: string | null;
-  setActiveChat: (chat: string | null) => void;
+  activeChat?: string | null;
+  setActiveChat?: (chat: string | null) => void;
 }
 
-export function ChatView({ activeChat, setActiveChat }: ChatViewProps) {
+export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetActiveChat }: ChatViewProps) {
+  const [localActiveChat, setLocalActiveChat] = useState<string | null>(null);
+
+  const activeChat = propsActiveChat !== undefined ? propsActiveChat : localActiveChat;
+  const setActiveChat = propsSetActiveChat !== undefined ? propsSetActiveChat : setLocalActiveChat;
+
   if (activeChat) {
     return (
       <Box style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)' }}>
@@ -123,8 +129,16 @@ export function ChatView({ activeChat, setActiveChat }: ChatViewProps) {
     );
   }
 
+  // Lista de Chats
   return (
-    <Box pt="sm">
+    <Box p={propsActiveChat !== undefined ? 0 : 16}>
+      {propsActiveChat === undefined && (
+        <Group gap="xs" mb="xl">
+          <IconMessageCircle size={24} />
+          <Text fw={800} size="xl">Bandeja de Mensajes</Text>
+        </Group>
+      )}
+
       <Group wrap="nowrap" mb="lg" style={{ cursor: 'pointer' }} onClick={() => setActiveChat('Sede Triple Doble')}>
         <Avatar color="blue" radius="xl">S</Avatar>
         <div style={{ flex: 1 }}>
