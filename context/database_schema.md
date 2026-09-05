@@ -856,27 +856,11 @@ Bitácora inmutable de eventos críticos para cumplimiento y resolución de disp
 
 ## 4. Restricciones e Índices Críticos en PostgreSQL
 
-### A. Restricción Física Anticolisión Horaria (Exclusión GiST)
-Para blindar matemáticamente la regla de negocio que prohíbe empalmes de turnos en una misma cancha:
-$$\text{reserva\_existente.inicio} < \text{nueva.fin} \quad \text{y} \quad \text{reserva\_existente.fin} > \text{nueva.inicio}$$
+### A. Validación de Anticolisión Horaria (Pasiva)
+En congruencia con las reglas de negocio, la base de datos opera en modo pasivo respecto a los solapamientos de turnos (doble reserva). **No se utilizan restricciones matemáticas a nivel de motor** (como `EXCLUDE USING gist`) para bloquear empalmes horarios. 
 
-Se habilita la extensión `btree_gist` y se añade un `EXCLUDE CONSTRAINT` sobre el rango temporal y la cancha:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS btree_gist;
-
--- Impedir doble reserva en estados activos
-ALTER TABLE reserva
-ADD CONSTRAINT no_solapamiento_turnos_cancha
-EXCLUDE USING gist (
-    cancha_id WITH =,
-    tsrange(
-        (fecha_reserva + hora_inicio)::timestamp,
-        (fecha_reserva + hora_fin)::timestamp
-    ) WITH &&
-)
-WHERE (estado IN ('PENDIENTE_PAGO', 'CONFIRMADA'));
-```
+La responsabilidad de leer el calendario, intersectar los rangos (`fecha_reserva + hora_inicio`) y rechazar o bloquear una reserva si la `cancha_id` ya está ocupada, recae **100% en la lógica de código del Backend**. 
+Esto permite a la aplicación manejar solapamientos forzados (ej. un administrador reubicando un partido por mantenimiento o por lluvia) sin que la base de datos lance excepciones físicas rígidas ineludibles.
 
 ### B. Índices de Rendimiento Obligatorios
 
