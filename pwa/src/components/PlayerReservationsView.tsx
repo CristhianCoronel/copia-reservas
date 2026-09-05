@@ -123,7 +123,7 @@ export function PlayerReservationsView() {
         <Group justify="space-between" align="center">
           <div>
             <Text size="xs" c="dimmed">Total:</Text>
-            <Text fw={800} size="lg" c="dark">S/. {booking.totalPrice.toFixed(2)}</Text>
+            <Text fw={800} size="lg">S/. {booking.totalPrice.toFixed(2)}</Text>
           </div>
 
           {(booking.status === 'CONFIRMED' || booking.status === 'PENDING') && (
@@ -138,12 +138,12 @@ export function PlayerReservationsView() {
         </Group>
 
         {booking.pendingAmount > 0 && (
-          <Group justify="space-between" mt="md" p="sm" style={{ backgroundColor: 'var(--mantine-color-red-light)', borderRadius: 'var(--mantine-radius-md)' }}>
+          <Group justify="space-between" mt="md" p="sm" bg="var(--mantine-color-red-light)" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
             <div>
-              <Text size="xs" fw={700} c="red.9">Falta Pagar</Text>
-              <Text fw={800} size="md" c="red.9">S/. {booking.pendingAmount.toFixed(2)}</Text>
+              <Text size="xs" fw={700} c="light-dark(red.9, red.1)">Falta Pagar</Text>
+              <Text fw={800} size="md" c="light-dark(red.9, red.1)">S/. {booking.pendingAmount.toFixed(2)}</Text>
             </div>
-            <Button color="red.9" size="xs" onClick={() => setVoucherModalBooking(booking)}>
+            <Button color="red" size="xs" onClick={() => setVoucherModalBooking(booking)}>
               SUBIR VOUCHER
             </Button>
           </Group>

@@ -43,21 +43,32 @@ export function ProfileView({ onLogout }: ProfileProps) {
         </Avatar>
         <Text fw={800} size="xl">{profile.fullName}</Text>
         <Text size="xs" c="dimmed">{profile.role} Activo • DNI {profile.document}</Text>
-
-
       </div>
 
-      {/* Monedero Virtual */}
-      <Card padding="lg" radius="md" withBorder mb="lg">
+      {/* Verificar Cuenta */}
+      <Card padding="lg" radius="md" withBorder mb="xl">
         <Group gap="xs" mb="sm">
-          <IconWallet size={20} color="#ee5e00" />
-          <Text fw={800}>Monedero Virtual</Text>
+          <IconCheck size={20} color="#10B981" />
+          <Text fw={800}>Verificar Cuenta</Text>
         </Group>
-        
-        <Card padding="md" radius="md" withBorder style={{ textAlign: 'center' }}>
-          <Text fw={800} size="xl" c="dark">S/. {profile.walletBalance?.toFixed(2)}</Text>
-          <Text size="xs" c="dimmed">Crédito disponible para reservas</Text>
-        </Card>
+        <Text size="xs" c="dimmed" mb="md">
+          Vincula tu número de celular para poder realizar reservas y unirte a partidos abiertos.
+        </Text>
+        <Group gap="sm" wrap="nowrap">
+          <div style={{ width: 100 }}>
+            <Text size="sm" fw={500} mb={4}>País</Text>
+            <Button variant="default" fullWidth>+51</Button>
+          </div>
+          <div style={{ flexGrow: 1 }}>
+            <Text size="sm" fw={500} mb={4}>Celular</Text>
+            <input 
+              type="tel" 
+              placeholder="999 999 999" 
+              style={{ width: '100%', padding: '6px 12px', borderRadius: 4, border: '1px solid #ced4da', height: 36 }}
+            />
+          </div>
+        </Group>
+        <Button fullWidth mt="md" color="dark">Enviar SMS de Verificación</Button>
       </Card>
 
       {/* Programa Jugador Invita Jugador */}
@@ -109,46 +120,8 @@ export function ProfileView({ onLogout }: ProfileProps) {
         </Group>
       </Card>
 
-      {/* Verificar Cuenta */}
-      <Card padding="lg" radius="md" withBorder mb="xl">
-        <Group gap="xs" mb="sm">
-          <IconCheck size={20} color="#10B981" />
-          <Text fw={800}>Verificar Cuenta</Text>
-        </Group>
-        <Text size="xs" c="dimmed" mb="md">
-          Vincula tu número de celular para poder realizar reservas y unirte a partidos abiertos.
-        </Text>
-        <Group gap="sm" wrap="nowrap">
-          <div style={{ width: 100 }}>
-            <Text size="sm" fw={500} mb={4}>País</Text>
-            <Button variant="default" fullWidth>+51</Button>
-          </div>
-          <div style={{ flexGrow: 1 }}>
-            <Text size="sm" fw={500} mb={4}>Celular</Text>
-            <input 
-              type="tel" 
-              placeholder="999 999 999" 
-              style={{ width: '100%', padding: '6px 12px', borderRadius: 4, border: '1px solid #ced4da', height: 36 }}
-            />
-          </div>
-        </Group>
-        <Button fullWidth mt="md" color="dark">Enviar SMS de Verificación</Button>
-      </Card>
-
       {/* Menú Adicional */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <Card padding="md" radius="md" withBorder style={{ cursor: 'pointer' }}>
-          <Group justify="space-between" wrap="nowrap">
-            <Group gap="md">
-              <IconCalendarEvent size={20} color="#94A3B8" />
-              <Text size="sm" fw={600}>Historial de Partidos y Comprobantes</Text>
-            </Group>
-            <IconChevronRight size={16} color="#475569" />
-          </Group>
-        </Card>
-
-
-
         <Card padding="md" radius="md" withBorder>
           <Group justify="space-between" wrap="nowrap" mb="sm">
             <Group gap="md">
