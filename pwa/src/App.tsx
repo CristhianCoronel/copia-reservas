@@ -1,6 +1,6 @@
-import { Group, Text, UnstyledButton, Center, ScrollArea, Modal, Avatar, Card, Badge } from '@mantine/core';
+import { Group, Text, UnstyledButton, Center, ScrollArea, Modal, Avatar, Card, Badge, useMantineColorScheme } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPlayFootball, IconCompass, IconUsers, IconCalendarEvent, IconUser, IconBusinessplan, IconMapPin, IconBuilding } from '@tabler/icons-react';
+import { IconPlayFootball, IconCompass, IconUsers, IconCalendarEvent, IconUser, IconBusinessplan, IconMapPin, IconBuilding, IconMessageCircle, IconWallet } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 import classes from './App.module.css';
 
@@ -8,6 +8,8 @@ import { CourtsView } from './components/CourtsView';
 import { SocialView } from './components/SocialView';
 import { PlayerReservationsView } from './components/PlayerReservationsView';
 import { ProfileView } from './components/ProfileView';
+import { ChatView } from './components/ChatView';
+import { WalletView } from './components/WalletView';
 
 import { CompanyReservationsView } from './components/CompanyReservationsView';
 import { CompanyCourtsView } from './components/CompanyCourtsView';
@@ -21,6 +23,7 @@ export default function App() {
   const [appMode, setAppMode] = useState<'jugador' | 'empresa' | 'superadmin'>('jugador');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  const { colorScheme } = useMantineColorScheme();
 
   // Verificar si hay token al montar la aplicación
   useEffect(() => {
@@ -72,9 +75,11 @@ export default function App() {
         {/* Header */}
         <header style={{ height: 60, borderBottom: '1px solid var(--mantine-color-default-border)', flexShrink: 0 }}>
           <Group h="100%" px="md" justify="space-between">
-            <Group>
-              <img src="/logo.png" alt="Separa Altoke" height={24} />
-            </Group>
+              <img 
+                src={colorScheme === 'dark' ? '/separaaltoke_extendidodark.svg' : '/separaaltoke_extendidolight.svg'} 
+                alt="Separa Altoke" 
+                height={28} 
+              />
             
             {/* Avatar interactivo en lugar del botón */}
             <UnstyledButton onClick={openModal}>
@@ -94,17 +99,19 @@ export default function App() {
           <ScrollArea type="hover" style={{ height: '100%' }}>
             {appMode === 'jugador' && activeTab === 'canchas' && <CourtsView />}
             {appMode === 'jugador' && activeTab === 'social' && <SocialView />}
+            {appMode === 'jugador' && activeTab === 'billetera' && <WalletView />}
             {appMode === 'jugador' && activeTab === 'reservas' && <PlayerReservationsView />}
             {appMode === 'jugador' && activeTab === 'perfil' && <ProfileView onLogout={handleLogout} />}
             {appMode === 'jugador' && activeTab === 'registro_empresa' && <CompanyRegistrationView />}
 
             {appMode === 'empresa' && activeTab === 'reservas' && <CompanyReservationsView />}
             {appMode === 'empresa' && activeTab === 'canchas' && <CompanyCourtsView />}
+            {appMode === 'empresa' && activeTab === 'chat' && <ChatView />}
             {appMode === 'empresa' && activeTab === 'empresa' && <CompanyEditView />}
             
             {appMode === 'superadmin' && activeTab === 'admin' && <SuperAdminView />}
 
-            {appMode === 'empresa' && !['reservas', 'canchas', 'empresa'].includes(activeTab) && (
+            {appMode === 'empresa' && !['reservas', 'canchas', 'chat', 'empresa'].includes(activeTab) && (
               <div style={{ padding: 16 }}>
                 <Text c="dimmed">Selecciona una pestaña válida en el menú inferior.</Text>
               </div>
@@ -129,6 +136,10 @@ export default function App() {
                   <IconCalendarEvent size={24} color={activeTab === 'reservas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
                   <Text fz={11} fw={activeTab === 'reservas' ? 800 : 600} c={activeTab === 'reservas' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Reservas</Text>
                 </UnstyledButton>
+                <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('billetera')}>
+                  <IconWallet size={24} color={activeTab === 'billetera' ? 'var(--mantine-color-text)' : '#94A3B8'} />
+                  <Text fz={11} fw={activeTab === 'billetera' ? 800 : 600} c={activeTab === 'billetera' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Billetera</Text>
+                </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('perfil')}>
                   <IconUser size={24} color={activeTab === 'perfil' ? 'var(--mantine-color-text)' : '#94A3B8'} />
                   <Text fz={11} fw={activeTab === 'perfil' ? 800 : 600} c={activeTab === 'perfil' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Perfil</Text>
@@ -143,6 +154,10 @@ export default function App() {
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('canchas')}>
                   <IconCompass size={24} color={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
                   <Text fz={11} fw={activeTab === 'canchas' ? 800 : 600} c={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Explorar</Text>
+                </UnstyledButton>
+                <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('chat')}>
+                  <IconMessageCircle size={24} color={activeTab === 'chat' ? 'var(--mantine-color-text)' : '#94A3B8'} />
+                  <Text fz={11} fw={activeTab === 'chat' ? 800 : 600} c={activeTab === 'chat' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Chat</Text>
                 </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('empresa')}>
                   <IconBusinessplan size={24} color={activeTab === 'empresa' ? 'var(--mantine-color-text)' : '#94A3B8'} />

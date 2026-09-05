@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Tabs, Card, Text, Group, Badge, Button, Progress, TextInput, ActionIcon, Divider, Avatar, Center, Loader } from '@mantine/core';
-import { IconUsers, IconShieldCheck, IconUserCircle, IconCheck, IconX, IconSend, IconPlus, IconLock, IconStarFilled, IconMapPin, IconCalendar, IconClock, IconBallFootball, IconBallTennis } from '@tabler/icons-react';
+import { IconUsers, IconShieldCheck, IconUserCircle, IconCheck, IconX, IconSend, IconPlus, IconLock, IconStarFilled, IconMapPin, IconCalendar, IconClock, IconBallFootball, IconBallTennis, IconMessageCircle } from '@tabler/icons-react';
 import { apiCall } from '../api';
+import { ChatView } from './ChatView';
 
 interface OpenGroup {
   id: string;
@@ -17,7 +18,7 @@ interface OpenGroup {
   sport: string;
 }
 
-function JuntasTab() {
+function PartidasAbiertasTab() {
   const [groups, setGroups] = useState<OpenGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,7 +60,7 @@ function JuntasTab() {
 
   return (
     <div style={{ paddingTop: 16 }}>
-      <Group gap="xs" mb="xs"><IconBallFootball size={24}/><IconBallTennis size={24}/><Text fw={800} size="xl">Juntas & Partidos Abiertos</Text></Group>
+      <Group gap="xs" mb="xs"><IconBallFootball size={24}/><IconBallTennis size={24}/><Text fw={800} size="xl">Partidas Abiertas</Text></Group>
       <Text c="dimmed" size="sm" mb="lg">
         Únete a partidos organizados por otros jugadores cerca de ti y divide los gastos automáticamente.
       </Text>
@@ -178,18 +179,23 @@ function EquiposTab() {
 export function SocialView() {
   return (
     <div style={{ padding: 16 }}>
-      <Tabs defaultValue="juntas" color="dark" variant="pills" radius="md">
+      <Tabs defaultValue="chat" color="dark" variant="pills" radius="md">
         <Tabs.List grow>
-          <Tabs.Tab value="juntas" leftSection={<IconUsers size={16} />}>Juntas</Tabs.Tab>
+          <Tabs.Tab value="chat" leftSection={<IconMessageCircle size={16} />}>Chat</Tabs.Tab>
           <Tabs.Tab value="equipos" leftSection={<IconShieldCheck size={16} />}>Equipos</Tabs.Tab>
+          <Tabs.Tab value="partidas" leftSection={<IconUsers size={16} />}>Partidas</Tabs.Tab>
         </Tabs.List>
 
-        <Tabs.Panel value="juntas">
-          <JuntasTab />
+        <Tabs.Panel value="chat" pt="xs">
+          <ChatView />
         </Tabs.Panel>
 
         <Tabs.Panel value="equipos">
           <EquiposTab />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="partidas">
+          <PartidasAbiertasTab />
         </Tabs.Panel>
       </Tabs>
     </div>

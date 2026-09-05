@@ -46,7 +46,7 @@ export function AuthView({ onLogin }: AuthViewProps) {
   return (
     <div style={{ padding: 24, display: 'flex', flexDirection: 'column', minHeight: '100vh', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', marginBottom: 40 }}>
-        <img src="/logo.png" alt="Separa Altoke Logo" style={{ width: 120, height: 120, marginBottom: 16 }} />
+        <img src="/separaaltoke_icono.svg" alt="Separa Altoke Logo" style={{ width: 120, height: 120, marginBottom: 16 }} />
         <Text fw={800} size="h1" mb="xs">
           Separa <Text span c="dimmed">Altoke</Text>
         </Text>

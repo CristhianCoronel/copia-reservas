@@ -359,12 +359,14 @@ export function CourtsView() {
         position="bottom" 
         title={<Text fw={800}>Filtros Avanzados</Text>}
         padding="md"
+        styles={{ content: { maxWidth: 480, margin: '0 auto' } }}
       >
         <Text fw={600} size="sm" mb="xs">Rango de Horas (Libres)</Text>
         <RangeSlider 
           defaultValue={[18, 22]} 
           min={6} max={24} 
-          step={1} 
+          step={1}
+          minRange={2}
           marks={[{ value: 6, label: '6h' }, { value: 12, label: '12h' }, { value: 18, label: '18h' }, { value: 24, label: '24h' }]} 
           mb="xl"
           color="dark"
