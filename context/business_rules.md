@@ -23,8 +23,8 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
 
 | Problema / dolor | Momento de arreglo | Cómo se resuelve (lógica de software) |
 | :--- | :--- | :--- |
-| **Equipos incompletos o falta de rival**: dificultad para coordinar con amigos y frustración por cancelar partidos por falta de quórum. | **Pronto** | Lógica de **reserva grupal (partido abierto)**. El organizador crea la reserva y el backend genera una `junta` expuesta en la PWA para que otros jugadores locales se unan hasta llenar el cupo máximo (`cupo_maximo_jugadores`). |
-| **Fricción al dividir y cobrar el costo del turno**: el organizador debe cobrar manualmente a cada participante y consolidar el dinero. | **Desde el lanzamiento** | El backend calcula el importe sugerido por jugador. Cada participante puede aportar desde su monedero virtual; también puede pagar externamente y enviar un comprobante. La junta muestra el estado de cada aporte, pero la sede solo valida los comprobantes externos que le correspondan. |
+| **Equipos incompletos o falta de rival**: dificultad para coordinar con amigos y frustración por cancelar partidos por falta de quórum. | **Pronto** | Lógica de **reserva grupal (partido abierto)**. El organizador crea la reserva y el backend genera una `partida_abierta` expuesta en la PWA para que otros jugadores locales se unan hasta llenar el cupo máximo (`cupo_maximo_jugadores`). |
+| **Fricción al dividir y cobrar el costo del turno**: el organizador debe cobrar manualmente a cada participante y consolidar el dinero. | **Desde el lanzamiento** | El backend calcula el importe sugerido por jugador. Cada participante puede aportar desde su monedero virtual; también puede pagar externamente y enviar un comprobante. La partida abierta muestra el estado de cada aporte, pero la sede solo valida los comprobantes externos que le correspondan. |
 | **Desequilibrio de nivel competitivo**: jugar partidos aburridos contra rivales de nivel muy diferente (muy superior o inferior). | **Nunca** | Es responsabilidad del usuario |
 | **Información de canchas desactualizada**: llegar al local y encontrar mala superficie, falta de estacionamiento o sin iluminación. | **Después** | Campos específicos para indicar cualidades físicas y servicios de la sede. No se implementan calificaciones, comentarios ni reputación: la plataforma no aborda ese problema porque dependería por completo de la honestidad de las personas. |
 | **Falta de seriedad o tardanzas de compañeros**: jugadores que se comprometen pero no van o llegan tarde. | **Nunca** | No se implementará un sistema de calificación, reputación, medición de asistencia ni penalización de jugadores. |
@@ -37,7 +37,7 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
 
 | Problema / reto | Momento de arreglo | Cómo se resuelve (lógica de software) |
 | :--- | :--- | :--- |
-| **Enfoque móvil (mobile-first)**: la web de escritorio suele ser ajena a la dinámica del partido en la cancha y poco usada por los administradores. | **Pronto** | El producto se desarrolla como una **PWA diseñada para celulares**. La gestión empresarial, reservas, búsquedas y juntas se ejecutan en la PWA, que puede instalarse desde el navegador. Por ello los enlaces públicos son válidos: permiten consultar una reserva, junta o equipo y continuar el flujo en el navegador o en la PWA, sin depender de una aplicación nativa. |
+| **Enfoque móvil (mobile-first)**: la web de escritorio suele ser ajena a la dinámica del partido en la cancha y poco usada por los administradores. | **Pronto** | El producto se desarrolla como una **PWA diseñada para celulares**. La gestión empresarial, reservas, búsquedas y partidas abiertas se ejecutan en la PWA, que puede instalarse desde el navegador. Por ello los enlaces públicos son válidos: permiten consultar una reserva, partida abierta o equipo y continuar el flujo en el navegador o en la PWA, sin depender de una aplicación nativa. |
 | **Masa crítica de usuarios (el huevo y la gallina)**: necesidad de crecer rápidamente la base de jugadores con bajo presupuesto. | **Pronto** | Sistema viral **"jugador invita jugador"** (referido B2C). Enlace dinámico (`/invite/<referral_code>`) autogenerado en el perfil. Si un nuevo usuario se registra con el código y completa su primer partido (individual o grupal), se les otorgan cupones de descuento u otros beneficios a ambos. |
 | **Puenteo de la plataforma**: usuarios que usan la app para descubrir canchas pero luego reservan directo para evitar comisiones. | **Nunca** | La plataforma no restringe el contacto directo de los locales. En su lugar, fomenta el uso de la app ofreciendo el sistema de control de cupos, división del costo del partido y el historial de partidos jugados. |
 | **Información subjetiva sobre jugadores y sedes**: los reportes dependen de la honestidad de las personas y pueden generar conflictos. | **Nunca** | No se implementa ningún sistema de calificaciones, comentarios, reputación, XP o ranking. La plataforma solo registra hechos operativos necesarios para reservas y pagos. |
@@ -60,7 +60,7 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
 
 3. **Usuarios, personas, empresas y suscripciones**:
     - **`usuario`**: Entidad principal de autenticación. El inicio de sesión y el registro se permiten mediante Google (OAuth 2.0 / OIDC) o mediante correo electrónico y contraseña. Todo `usuario` es una persona física; no existen cuentas de acceso corporativas.
-       - Después de crear la cuenta, el usuario puede navegar, pero no puede crear reservas, equipos, juntas ni registrar u operar empresas hasta registrar y verificar un número celular mediante SMS.
+       - Después de crear la cuenta, el usuario puede navegar, pero no puede crear reservas, equipos, partidas abiertas ni registrar u operar empresas hasta registrar y verificar un número celular mediante SMS.
    - **`persona`**: Perfil físico del usuario (nombres, apellidos, tipo/número de documento, teléfono de contacto, foto de perfil). Aplica para jugadores, organizadores, trabajadores de sedes y también quienes administran empresas.
    - **`empresa`**: Entidad corporativa / comercial (RUC/tax ID, razón social, nombre comercial, contacto legal, logotipo). Es la propietaria de los complejos deportivos, pero **no tiene usuario ni login propio**: las **personas registran sus empresas** en la plataforma (quien la registra queda como administradora) y las empresas **contratan a otras personas** para que accedan y operen sus sedes. Toda acción "de una empresa" es en realidad una persona actuando en su nombre bajo un contrato vigente. Las empresas deben poder indicar libremente sus **términos y condiciones** particulares aplicables a sus reservas.
    - **`_plan_suscripcion` y `suscripcion_empresa`**: Un `_plan_suscripcion` agrupa los beneficios del sistema y tiene una vigencia general (vigente/disponible o no). La `suscripcion_empresa` gestiona por cuánto tiempo está suscrita una empresa a dicho plan (fechas de inicio y fin), controlando así el acceso y operatividad del complejo en la plataforma.
@@ -97,7 +97,7 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
    - **Tipos de origen de reserva**:
      - **Reserva por persona**: Una `persona` individual efectúa la reserva para uso privado.
      - **Reserva por equipo**: Un `equipo` (grupo constituido de personas con nombre/escudo) hace la reserva. El vínculo a la persona física responsable de la transacción se almacena en el campo `organizador` (`persona_organizadora_id`).
-     - **Reserva por junta (partido abierto / pichanga pública)**: Una `junta` es una invitación pública creada para completar participantes. Cualquier jugador libre puede unirse. La reserva pertenece a la `junta` y el usuario creador (`persona`) se vincula como organizador inicial.
+     - **Reserva por partida abierta (pichanga pública)**: Una `partida_abierta` es una invitación pública creada para completar participantes. Cualquier jugador libre puede unirse. La reserva pertenece a la `partida_abierta` y el usuario creador (`persona`) se vincula como organizador inicial.
    - **Partidos y asistentes**:
      - Toda reserva implica lógicamente la realización de un **`partido`**.
      - El `partido` se compone de N **`asistentes`** (`partido_asistente`), donde cada asistente es una `persona`. Se registra su estado de asistencia (`CONFIRMADO`, `ASISTIO`, `NO_ASISTIO`).
@@ -113,8 +113,8 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
      - **Jugador ↔ Empresa**: Consultas directas, coordinación y envíos de comprobantes.
    - **Mensajes tipo "Objeto"** (Mensajes estructurados en el chat):
      - **Texto / Imagen / Audio**: Elementos de comunicación regular.
-     - **Comprobante de Pago**: Un mensaje interactivo (con o sin imagen adjunta) que el sistema reconoce estructuralmente como el envío de un pago total o parcial. Permite a la empresa u organizador de la junta gestionar el cobro nativamente dentro del chat, con un estado de aprobación (Aprobado/Rechazado).
-     - **Invitación**: Un bloque interactivo (con botones Aceptar/Rechazar) para unirse a un equipo, una junta o invitar a un amigo al sistema.
+     - **Comprobante de Pago**: Un mensaje interactivo (con o sin imagen adjunta) que el sistema reconoce estructuralmente como el envío de un pago total o parcial. Permite a la empresa u organizador de la partida abierta gestionar el cobro nativamente dentro del chat, con un estado de aprobación (Aprobado/Rechazado).
+     - **Invitación**: Un bloque interactivo (con botones Aceptar/Rechazar) para unirse a un equipo, una partida abierta o invitar a un amigo al sistema.
      - **Notificación / Resumen de Reserva**: Tarjeta informativa con los detalles de la reserva (cancha, fecha, costo) enviada al chat del usuario o grupo a modo de confirmación, facilitando su revisión y compartición.
 
 ---
@@ -130,7 +130,7 @@ Las tablas con prefijo `_` representan módulos y mecanismos internos administra
 3. **`_codigos_referidos`**:
    - Registra los códigos únicos autogenerados para cada usuario `persona` (ej: `JUAN123`) o códigos promocionales de marketing, permitiendo rastrear conversiones, registros exitosos y recompensas entregadas.
 4. **Gestión del dinero virtual y pagos externos (Política Core)**:
-   - Desde el lanzamiento, "Separa Altoke" soporta un monedero virtual para los jugadores. El saldo virtual puede utilizarse para pagar reservas, aportar a juntas, completar pagos y recibir reembolsos internos.
+   - Desde el lanzamiento, "Separa Altoke" soporta un monedero virtual para los jugadores. El saldo virtual puede utilizarse para pagar reservas, aportar a partidas abiertas, completar pagos y recibir reembolsos internos.
    - La plataforma no considera como crédito del monedero los pagos externos realizados directamente a una empresa. En esos casos, el cliente envía un comprobante y la sede valida cada transacción individualmente.
    - Un pago externo validado y un pago con monedero son formas distintas de pago, pero ambos pueden contribuir al umbral requerido para confirmar una reserva. La plataforma registra el origen, importe, estado y fecha de cada pago.
    - La sede no valida los créditos internos del monedero; solo valida comprobantes de pagos externos.
@@ -147,8 +147,8 @@ Las tablas con prefijo `_` representan módulos y mecanismos internos administra
      $$\text{reserva\_existente.inicio} < \text{nueva.fin} \quad \text{y} \quad \text{reserva\_existente.fin} > \text{nueva.inicio}$$
    - Que la cancha solicitada **no bloquee el espacio** de otra cancha ya reservada, ni esté bloqueada por una reserva en una cancha contenedora (canchas que comparten el mismo espacio físico). Las canchas afectadas desaparecen de la disponibilidad mientras dure el turno de la cancha que originó el bloqueo.
 
-2. **Cálculo de cuota proporcional en juntas**:
-   Para reservas de tipo junta (partido abierto), el sistema calcula el valor sugerido por integrante:
+2. **Cálculo de cuota proporcional en partidas abiertas**:
+   Para reservas de tipo partida abierta, el sistema calcula el valor sugerido por integrante:
    $$\text{Precio por jugador} = \frac{\text{Precio total de la cancha}}{\text{Cupo máximo de jugadores}}$$
 
 3. **Flujo de estados de la reserva**:
@@ -178,8 +178,8 @@ Al evaluar el dominio de negocio, se han identificado las siguientes reglas y en
    - **RSVP:** Los miembros pueden confirmar su asistencia, marcar ausencia o abstenerse.
    - **Transparencia de Pagos:** Para incentivar la confianza y los abonos directos, el chat cruzará los datos de los miembros con la tabla `pago_reserva`. Así, la tarjeta compartida mostrará en tiempo real quiénes van y cuánto dinero exacto ha aportado cada uno a la sede, facilitando la auditoría interna del grupo.
 6. **Juntas (partidos abiertos) y monedero virtual**:
-   - **Monedero desde el lanzamiento:** La plataforma cuenta con un monedero virtual interno. Los jugadores pueden recibir saldo, utilizarlo para reservas y juntas, y recibir reembolsos internos cuando corresponda. Las operaciones de recarga y retiro deben quedar registradas, aunque cualquier retiro hacia una cuenta bancaria pueda quedar fuera de la interfaz inicial.
-   - **Lógica de juntas:** Los usuarios pueden crear juntas para dividir el costo de una cancha. El sistema descuenta o retiene el aporte virtual de cada jugador. Si se alcanza el importe requerido, confirma la reserva. Si el plazo expira sin alcanzar la meta, reembolsa automáticamente los aportes virtuales.
+   - **Monedero desde el lanzamiento:** La plataforma cuenta con un monedero virtual interno. Los jugadores pueden recibir saldo, utilizarlo para reservas y partidas abiertas, y recibir reembolsos internos cuando corresponda. Las operaciones de recarga y retiro deben quedar registradas, aunque cualquier retiro hacia una cuenta bancaria pueda quedar fuera de la interfaz inicial.
+   - **Lógica de partidas abiertas:** Los usuarios pueden crear partidas abiertas para dividir el costo de una cancha. El sistema descuenta o retiene el aporte virtual de cada jugador. Si se alcanza el importe requerido, confirma la reserva. Si el plazo expira sin alcanzar la meta, reembolsa automáticamente los aportes virtuales.
    - Los pagos externos no ingresan al monedero. Se registran como pagos de la reserva solo después de que la sede valide su comprobante.
 7. **Fotocopia de precios en reservas (`historico_precio`)**:
    - La reserva debe guardar el costo por hora pactado en el momento de crearla. El precio queda congelado desde ese instante; cambios futuros en las tarifas dinámicas de la cancha no alteran reservas pasadas, pendientes o confirmadas.
@@ -190,7 +190,7 @@ Al evaluar el dominio de negocio, se han identificado las siguientes reglas y en
 9. **Regla de acumulabilidad de cupones**:
    - Determinar si un cupón interno de Separa Altoke (`_descuentos`) se puede aplicar en reservas que ya cuentan con una promoción activa de la empresa.
 10. **Tiempo Real y WebSockets**:
-    - Para soportar el sistema de chat nativo, notificaciones instantáneas de pago y actualizaciones en vivo de cupos en las juntas, se requerirá infraestructura de conexión bidireccional (ej. WebSockets, Server-Sent Events, o servicios como Firebase/Pusher).
+    - Para soportar el sistema de chat nativo, notificaciones instantáneas de pago y actualizaciones en vivo de cupos en las partidas abiertas, se requerirá infraestructura de conexión bidireccional (ej. WebSockets, Server-Sent Events, o servicios como Firebase/Pusher).
 11. **Almacenamiento Interno de Archivos**:
     - Dado que los datos se manejarán internamente (sin AWS/GCP), los comprobantes, audios y fotos de sedes deberán persistirse en el sistema de archivos (File System) del servidor. Es recomendable usar un servidor web optimizado para despachar archivos estáticos (ej. Nginx) y, para no perder las ventajas de escalabilidad, se sugiere implementar un Object Storage de código abierto autoalojado (como **MinIO**). Es obligatorio configurar políticas estrictas de copias de seguridad (backups) físicas para este volumen de disco.
 12. **Manejo de Tareas Asíncronas y Colas (Workers/Cron)**:
@@ -230,7 +230,7 @@ Al evaluar el dominio de negocio, se han identificado las siguientes reglas y en
     - *Validación:* La comprobación de si el descuento ya fue usado se gestiona exclusivamente a nivel de lógica de backend (cruzando el historial de reservas de ese usuario con esa empresa). No requiere flags en base de datos.
 21. **Nombres de Usuario (Username) Públicos**:
     - Todo usuario registrado debe elegir un `username` único.
-    - **Objetivo de privacidad:** Al invitar a alguien a un equipo o junta, la búsqueda se hará a través del `username` en lugar de exponer o tener que adivinar correos electrónicos o números telefónicos, agilizando la conexión social en la plataforma sin revelar datos sensibles.
+    - **Objetivo de privacidad:** Al invitar a alguien a un equipo o partida abierta, la búsqueda se hará a través del `username` en lugar de exponer o tener que adivinar correos electrónicos o números telefónicos, agilizando la conexión social en la plataforma sin revelar datos sensibles.
 22. **Viralidad Estructural (Referidos y Enlaces Públicos)**:
     - **Sistema de Referidos (B2C):** Todo usuario al registrarse recibe automáticamente un `codigo_referido` (6 caracteres hexadecimales). Los nuevos usuarios pueden ingresar este código al crear su cuenta.
       - *Recompensa Condicionada:* Si el usuario invitado completa exitosamente una reserva (`estado = CONFIRMADA`) dentro de su primer mes de registro, el usuario original que lo invitó recibirá automáticamente un cupón de descuento para sus próximos partidos. Esta mecánica asegura retornos reales de inversión y evita el fraude por creación masiva de cuentas vacías.

@@ -4,7 +4,7 @@ bien
 
 Este documento detalla la arquitectura y el esquema relacional de base de datos (PostgreSQL 15+) para la plataforma **"Separa Altoke"**. Ha sido estructurado rigurosamente para dar soporte a todos los requerimientos y reglas operativas descritas en [`context/business_rules.md`](file:///home/juan/h/pdu/reservas-deportivas/context/business_rules.md).
 
-Soporta multi-tenancy B2B2C, identidad única de personas con autenticación vía Google (OAuth 2.0 / OIDC) — las empresas no tienen login propio: son registradas por personas y accedidas por otras personas mediante contratos —, gestión de complejos y canchas con tarifas dinámicas, reservas individuales, por equipo y partidos abiertos (*juntas*), fraccionamiento de pagos con comprobantes externos, chat nativo con objetos interactivos, motor de referidos/monedero virtual interno (`_`) y auditoría inmutable.
+Soporta multi-tenancy B2B2C, identidad única de personas con autenticación vía Google (OAuth 2.0 / OIDC) — las empresas no tienen login propio: son registradas por personas y accedidas por otras personas mediante contratos —, gestión de complejos y canchas con tarifas dinámicas, reservas individuales, por equipo y partidas abiertas (*partidas abiertas*), fraccionamiento de pagos con comprobantes externos, chat nativo con objetos interactivos, motor de referidos/monedero virtual interno (`_`) y auditoría inmutable.
 
 ---
 
@@ -565,27 +565,27 @@ Soporta liquidaciones completas o pagos parciales / divididos por persona para u
 
 ---
 
-### Dominio 6: Juntas (Partidos Abiertos) y Fintech (Monedero)
+### Dominio 6: Partidas Abiertas y Fintech (Monedero)
 
 ```mermaid
 erDiagram
     PERSONA ||--o| MONEDERO : posee
     MONEDERO ||--o{ TRANSACCION_MONEDERO : registra
-    RESERVA ||--o| JUNTA : bloquea_cancha
-    PERSONA ||--o{ JUNTA : organiza
-    JUNTA ||--o{ JUNTA_PARTICIPANTE : integra
-    PERSONA ||--o{ JUNTA_PARTICIPANTE : aporta
+    RESERVA ||--o| PARTIDA_ABIERTA : bloquea_cancha
+    PERSONA ||--o{ PARTIDA_ABIERTA : organiza
+    PARTIDA_ABIERTA ||--o{ PARTIDA_ABIERTA_PARTICIPANTE : integra
+    PERSONA ||--o{ PARTIDA_ABIERTA_PARTICIPANTE : aporta
 ```
 
 #### `monedero`
-Billetera virtual interna del usuario en la plataforma. Maneja el saldo disponible para organizar o unirse a juntas.
+Billetera virtual interna del usuario en la plataforma. Maneja el saldo disponible para organizar o unirse a partidas abiertas.
 
 | Columna | Tipo de Dato | Nulo | Descripción / Regla |
 | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | NO (PK) | Identificador de la billetera. |
 | `persona_id` | `UUID` | NO (FK, UQ) | Dueño de la billetera (`persona.id`). Relación 1 a 1. |
 | `saldo_disponible` | `NUMERIC(10,2)` | NO | Dinero líquido disponible para gastar (Default `0.00`). |
-| `saldo_retenido` | `NUMERIC(10,2)` | NO | Dinero bloqueado (en escrow) por participación en juntas en curso (Default `0.00`). |
+| `saldo_retenido` | `NUMERIC(10,2)` | NO | Dinero bloqueado (en escrow) por participación en partidas abiertas en curso (Default `0.00`). |
 | `created_at` | `TIMESTAMPTZ` | NO | Fecha de creación. |
 | `updated_at` | `TIMESTAMPTZ` | NO | Fecha de última actualización. |
 
@@ -596,21 +596,21 @@ Historial inmutable de movimientos financieros en la billetera.
 | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | NO (PK) | Identificador de la transacción. |
 | `monedero_id` | `UUID` | NO (FK) | Billetera afectada (`monedero.id`). |
-| `tipo_transaccion` | `VARCHAR(30)` | NO | `RECARGA` (ingreso manual), `APORTE_JUNTA` (retención), `REEMBOLSO_JUNTA` (liberación), `PAGO_RESERVA` (egreso final), `RETIRO` (egreso a banco). |
+| `tipo_transaccion` | `VARCHAR(30)` | NO | `RECARGA` (ingreso manual), `APORTE_PARTIDA_ABIERTA` (retención), `REEMBOLSO_PARTIDA_ABIERTA` (liberación), `PAGO_RESERVA` (egreso final), `RETIRO` (egreso a banco). |
 | `monto` | `NUMERIC(10,2)` | NO | Valor de la transacción (positivo). |
-| `referencia_id` | `UUID` | SÍ | ID del documento asociado (ej. `junta.id` o `pago_reserva.id`). |
+| `referencia_id` | `UUID` | SÍ | ID del documento asociado (ej. `partida_abierta.id` o `pago_reserva.id`). |
 | `estado` | `VARCHAR(20)` | NO | `PENDIENTE`, `APROBADA`, `RECHAZADA`. |
 | `created_at` | `TIMESTAMPTZ` | NO | Fecha de registro. |
 
-#### `junta`
+#### `partida_abierta`
 Partido abierto gestionado por la plataforma. Agrupa a múltiples jugadores desconocidos para financiar colectivamente una reserva de cancha.
 
 | Columna | Tipo de Dato | Nulo | Descripción / Regla |
 | :--- | :--- | :--- | :--- |
-| `id` | `UUID` | NO (PK) | Identificador de la junta. |
-| `share_token` | `VARCHAR(100)` | NO (UQ) | Token aleatorio para compartir el enlace público de invitación a la junta. |
+| `id` | `UUID` | NO (PK) | Identificador de la partida abierta. |
+| `share_token` | `VARCHAR(100)` | NO (UQ) | Token aleatorio para compartir el enlace público de invitación a la partida abierta. |
 | `reserva_id` | `UUID` | NO (FK, UQ)| Reserva bloqueada en estado `PENDIENTE_PAGO` (`reserva.id`). |
-| `organizador_id` | `UUID` | NO (FK) | Jugador que creó la junta (`persona.id`). |
+| `organizador_id` | `UUID` | NO (FK) | Jugador que creó la partida abierta (`persona.id`). |
 | `presupuesto_meta` | `NUMERIC(10,2)` | NO | Monto total a recaudar (costo de la cancha). |
 | `cupos_totales` | `INT` | NO | Cantidad máxima de jugadores permitidos. |
 | `cupos_disponibles`| `INT` | NO | Cupos libres actualmente. |
@@ -618,15 +618,15 @@ Partido abierto gestionado por la plataforma. Agrupa a múltiples jugadores desc
 | `created_at` | `TIMESTAMPTZ` | NO | Fecha de creación. |
 | `updated_at` | `TIMESTAMPTZ` | NO | Fecha de actualización. |
 
-#### `junta_participante`
-Jugadores unidos a una junta y su aporte retenido.
+#### `partida_abierta_participante`
+Jugadores unidos a una partida abierta y su aporte retenido.
 
 | Columna | Tipo de Dato | Nulo | Descripción / Regla |
 | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | NO (PK) | Identificador de participación. |
-| `junta_id` | `UUID` | NO (FK) | Referencia a la `junta.id`. |
+| `partida_abierta_id` | `UUID` | NO (FK) | Referencia a la `partida_abierta.id`. |
 | `persona_id` | `UUID` | NO (FK) | Jugador unido (`persona.id`). |
-| `aporte_monedero`| `NUMERIC(10,2)` | NO | Dinero retenido en el monedero del jugador para esta junta. |
+| `aporte_monedero`| `NUMERIC(10,2)` | NO | Dinero retenido en el monedero del jugador para esta partida abierta. |
 | `fecha_ingreso` | `TIMESTAMPTZ` | NO | Fecha en la que se unió. |
 | `created_at` | `TIMESTAMPTZ` | NO | Fecha de creación. |
 | `updated_at` | `TIMESTAMPTZ` | NO | Fecha de actualización. |
@@ -649,8 +649,8 @@ Canales de comunicación dentro de la app móvil.
 | Columna | Tipo de Dato | Nulo | Descripción / Regla |
 | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | NO (PK) | Identificador de la conversación. |
-| `tipo_canal` | `VARCHAR(30)` | NO | Canales: `JUGADOR_JUGADOR` (directo 1-a-1), `EQUIPO` (interno del club), `JUGADOR_EMPRESA` (consultas y comprobantes a la sede). |
-| `referencia_id` | `UUID` | SÍ | Identificador del contexto según el canal (ej. `equipo.id`, `sede.id`). |
+| `tipo_canal` | `VARCHAR(30)` | NO | Canales: `JUGADOR_JUGADOR` (directo 1-a-1), `EQUIPO` (interno del club), `PARTIDA_ABIERTA` (coordinación partida), `JUGADOR_EMPRESA` (consultas y comprobantes a la sede). |
+| `referencia_id` | `UUID` | SÍ | Identificador del contexto según el canal (ej. `equipo.id`, `partida_abierta.id`, `sede.id`). |
 | `created_at` | `TIMESTAMPTZ` | NO | Fecha de apertura del canal. |
 | `updated_at` | `TIMESTAMPTZ` | NO | Último mensaje registrado (para ordenamiento en bandeja). |
 
@@ -707,7 +707,7 @@ Mensajes tradicionales y **Objetos Interactivos** embebidos en el flujo de conve
   ```json
   {
     "meta_relacional": {
-        "tipo": "EQUIPO | AMIGO",
+        "tipo": "EQUIPO | PARTIDA_ABIERTA | AMIGO",
         "id_relacion": "UUID"
     },
     "estado": "PENDIENTE | ACEPTADA | RECHAZADA"
@@ -875,7 +875,7 @@ CREATE INDEX idx_reserva_cancha_fecha ON reserva (cancha_id, fecha_reserva, esta
 CREATE INDEX idx_reserva_purga_expiracion ON reserva (expira_en) WHERE estado = 'PENDIENTE_PAGO';
 
 -- 4. Búsqueda de partidos abiertos disponibles
-CREATE INDEX idx_junta_disponible ON junta (deporte, estado) WHERE estado = 'ABIERTA';
+CREATE INDEX idx_partida_abierta_disponible ON partida_abierta (deporte, estado) WHERE estado = 'ABIERTA';
 
 -- 5. Chats activos ordenados por actividad reciente
 CREATE INDEX idx_chat_updated_at ON chat (updated_at DESC);
