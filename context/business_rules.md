@@ -170,30 +170,67 @@ Al evaluar el dominio de negocio, se han identificado las siguientes reglas y en
 4. **No Gamificación (Ausencia de Sistema de Reputación)**:
    - **Regla Core:** El sistema no dará soporte a sistemas de calificaciones cruzadas (peer-to-peer), evaluación pública de sedes, ni métricas de asistencia individual o "plantones". Esto se debe a la alta susceptibilidad de ser manipulado por amiguismos, falsos reportes o venganzas.
    - **`equipo`**: Agrupaciones visuales y de chat interno. Permiten reservar a nombre de equipo, pero no poseen un Elo, ranking o historial de victorias/derrotas.
-   - **`junta`**: Partidos abiertos efímeros que funcionan como tablón de anuncios para completar el grupo y prorratear gastos. Se usa el chat para coordinar; al completarse el partido la junta cumple su ciclo sin calificar a los asistentes.
-5. **Fotocopia de precios en reservas (`historico_precio`)**:
+5. **Dinámica de Chat de Equipo (RSVP y Pagos)**:
+   - Los miembros del equipo pueden compartir una reserva (`tipo_origen = EQUIPO`) en el chat grupal como una tarjeta interactiva.
+   - **RSVP:** Los miembros pueden confirmar su asistencia, marcar ausencia o abstenerse.
+   - **Transparencia de Pagos:** Para incentivar la confianza y los abonos directos, el chat cruzará los datos de los miembros con la tabla `pago_reserva`. Así, la tarjeta compartida mostrará en tiempo real quiénes van y cuánto dinero exacto ha aportado cada uno a la sede, facilitando la auditoría interna del grupo.
+6. **Juntas (Partidos Abiertos) y Monedero Virtual**:
+   - **Monedero de Recargas:** La plataforma cuenta con una billetera virtual (Escrow) interna. Al carecer de pasarela de pagos integrada, el saldo ingresará mediante "Recargas". A nivel base de datos se soporta la transacción de "Retiros" hacia cuentas bancarias, pero **por el momento no se desarrollará esa funcionalidad en la UI/App**.
+   - **Lógica de Juntas:** Los usuarios pueden crear Juntas para dividir el costo de una cancha con desconocidos. El sistema retiene el aporte del `monedero` de cada jugador. Si se completa el presupuesto de la cancha, el sistema confirma la reserva y transfiere el fondo a la sede. Si el tiempo expira y no se logra la meta, el sistema reembolsa el dinero automáticamente a los monederos de los jugadores.
+7. **Fotocopia de precios en reservas (`historico_precio`)**:
    - La reserva debe guardar el costo por hora pactado en la transacción original. Cambios futuros en las tarifas dinámicas de la cancha no deben alterar el monto de reservas pasadas o pendientes.
-6. **Validación de cupos mínimos y posiciones por deporte en juntas**:
-   - Restringir la junta al cupo exacto del deporte (ej. fútbol 5 = máx 10 personas, pádel = máx 4 personas). Opcionalmente permitir especificar roles buscados (ej: "Se busca 1 arquero").
-7. **Niveles de permiso en contratos de personal**:
-   - Especificar en la entidad `contrato` los privilegios del trabajador y su alcance (ej. `ADMIN_EMPRESA` —otorgado a la persona que registró la empresa— puede crear sedes, editar precios globales y contratar personal; `ADMIN_SEDE` puede editar precios y cancelar; `RECEPCIONISTA` solo puede confirmar pagos y ver calendario).
-8. **Regla de acumulabilidad de cupones**:
+8. **Niveles de permiso en contratos de personal (Alcance Dinámico)**:
+   - La tabla `contrato` utiliza un sistema de **rol único con alcance dinámico**.
+   - El campo `rol` define qué puede hacer el usuario (`ADMINISTRADOR`, `RECEPCIONISTA`, `OPERADOR_MANTENIMIENTO`).
+   - El campo `sede_id` define **dónde** lo puede hacer: si tiene un UUID específico, el trabajador opera solo en ese local. Si es nulo, el trabajador tiene alcance **Global** (aplica a todas las sedes presentes y futuras de la empresa).
+9. **Regla de acumulabilidad de cupones**:
    - Determinar si un cupón interno de Separa Altoke (`int_descuentos`) se puede aplicar en reservas que ya cuentan con una promoción activa de la empresa.
-9. **Tiempo Real y WebSockets**:
-   - Para soportar el sistema de chat nativo, notificaciones instantáneas de pago y actualizaciones en vivo de cupos en las juntas, se requerirá infraestructura de conexión bidireccional (ej. WebSockets, Server-Sent Events, o servicios como Firebase/Pusher).
-10. **Almacenamiento Interno de Archivos**:
+10. **Tiempo Real y WebSockets**:
+    - Para soportar el sistema de chat nativo, notificaciones instantáneas de pago y actualizaciones en vivo de cupos en las juntas, se requerirá infraestructura de conexión bidireccional (ej. WebSockets, Server-Sent Events, o servicios como Firebase/Pusher).
+11. **Almacenamiento Interno de Archivos**:
     - Dado que los datos se manejarán internamente (sin AWS/GCP), los comprobantes, audios y fotos de sedes deberán persistirse en el sistema de archivos (File System) del servidor. Es recomendable usar un servidor web optimizado para despachar archivos estáticos (ej. Nginx) y, para no perder las ventajas de escalabilidad, se sugiere implementar un Object Storage de código abierto autoalojado (como **MinIO**). Es obligatorio configurar políticas estrictas de copias de seguridad (backups) físicas para este volumen de disco.
-11. **Manejo de Tareas Asíncronas y Colas (Workers/Cron)**:
+12. **Manejo de Tareas Asíncronas y Colas (Workers/Cron)**:
     - El sistema tiene varias reglas dependientes del tiempo: "liberar la cancha si el pago no se confirma en 15 min", "enviar push 2 horas antes del partido", "vencer suscripciones". Esto requiere un gestor de colas de tareas en segundo plano (ej. Celery, RabbitMQ, BullMQ o AWS EventBridge) desconectado del hilo principal de peticiones.
-12. **Auditoría y Trazabilidad (Audit Logs)**:
+13. **Auditoría y Trazabilidad (Audit Logs)**:
     - Implementar un registro inmutable (tabla de auditoría) para acciones críticas. Se debe rastrear de forma exacta quién (ID del recepcionista/admin) canceló una reserva, aprobó un comprobante o modificó un precio, y en qué fecha/hora. Esto es crítico para la resolución de disputas con el usuario final y para auditorías internas de las empresas.
-13. **Estandarización de Zonas Horarias (Timezones)**:
+14. **Estandarización de Zonas Horarias (Timezones)**:
     - Es vital que la capa de persistencia (Base de Datos) guarde todas las fechas y horas (horarios de canchas, reservas, mensajes) estrictamente en formato UTC. La conversión a la zona horaria local (`America/Lima`) debe ser responsabilidad exclusiva del frontend/app móvil para evitar bugs lógicos ante futuras expansiones geográficas.
-14. **Políticas de Retención y Purga (Data Archiving)**:
-   - Los chats masivos temporales (juntas) y las imágenes de comprobantes consumirán mucho almacenamiento rápidamente. Se debe diseñar una estrategia para archivar (mover a storage más barato) o purgar datos transaccionales históricos "fríos" mayores a N meses, evitando encarecer y degradar la base de datos principal.
 15. **Seguridad Multi-inquilino (Multi-tenant Security)**:
     - Al ser una plataforma B2B2C, a nivel de backend (API) deben existir middlewares estrictos de autorización (RBAC) para garantizar que un token JWT de una persona (jugador o trabajadora con contrato en la "Empresa A") no pueda leer chats, confirmar reservas, ni consultar los balances financieros de la "Empresa B" manipulando los IDs de la URL. El token siempre identifica a una `persona`; el acceso B2B se valida contra sus `contrato` vigentes.
 16. **Gestión de Casuísticas Reales de Sede (Encuestas)**:
     - **Lista Negra por Sede:** Adicional al puntaje global, las sedes tienen el poder de bloquear a clientes problemáticos (`sede_lista_negra`). Un usuario en la lista negra de una sede dejará de ver a dicha sede en el buscador y el sistema rechazará sus intentos de reserva.
     - **Libreta de Saldos a Favor:** Ante cancelaciones sin devolución de dinero, la sede puede anotar un monto a favor (`sede_saldo_cliente`). *Requisito de UI:* Debe existir un apartado visible en la app tanto para el cliente (lectura) como para la empresa (edición) que muestre este saldo.
     - **Extensión Horaria Efectiva:** Promociones tipo "acumula 6 horas y la séptima es gratis" son reglas textuales de la sede. Para ejecutarlas, el admin puede modificar la **hora de fin efectiva** de una reserva sin alterar la **hora solicitada**, extendiendo el bloqueo de la cancha sin requerir crear reservas fantasmas.
+17. **Verificación de Cuentas de Usuario (SMS)**:
+    - Las cuentas nuevas deben verificar su número telefónico.
+    - **Limitantes de cuentas no verificadas:** No pueden crear reservas (el flujo les exige verificar), no pueden crear equipos, y no pueden registrar empresas ni operar sedes. Operan en modo de solo lectura y navegación.
+18. **Aprobación Manual de Empresas**:
+    - Las empresas se registran con estado `PENDIENTE`. Sus sedes no son visibles en el buscador de la app hasta que la administración central verifique la legitimidad y cambie el estado a `APROBADA`.
+19. **Modelo de Suscripción (Gratis vs Premium)**:
+    - **Cuenta Premium (De Pago):**
+      - Subir hasta 5 fotos por cancha.
+      - Definir las coordenadas de la sede para que la gente vea la distancia.
+      - Poner su enlace de Google Maps para que con un clic el usuario lo vea en el mapa.
+      - Recibir notificaciones por correo y en la aplicación de una solicitud de reserva.
+      - Registrar horarios de hasta los 14 días siguientes.
+    - **Cuenta Gratuita (Freemium):**
+      - Sin capacidad de subir fotos de la cancha.
+      - Sin soporte para coordenadas de distancia.
+      - Sin enlace a Google Maps.
+      - Sin notificaciones por correo/app de reservas.
+      - Solo pueden registrar horarios para el día de hoy, mañana y pasado mañana (3 días máximo).
+      - **Sin creación de trabajadores:** La cuenta gratuita solo permite un único administrador global. Para que los trabajadores de la sede operen el sistema, el dueño se ve obligado a compartir sus credenciales (perdiendo capacidad de auditoría), fomentando la transición al plan de pago para obtener cuentas de acceso (contratos) separadas.
+20. **Campaña de Referidos B2B**:
+    - Las empresas pueden generar enlaces de invitación para compartirlos con sus clientes (ej. a través de SMS o WhatsApp). 
+    - **Incentivo de captación:** Durante las campañas de expansión, los 3 primeros usuarios que se registren en la plataforma a través del enlace de referidos de una empresa, recibirán de parte de la plataforma un descuento aplicable exclusivamente en su primera reserva con dicha empresa. La empresa no asume un descuento eterno, es una táctica de un solo uso para migrar a sus clientes a la app.
+    - *Validación:* La comprobación de si el descuento ya fue usado se gestiona exclusivamente a nivel de lógica de backend (cruzando el historial de reservas de ese usuario con esa empresa). No requiere flags en base de datos.
+21. **Nombres de Usuario (Username) Públicos**:
+    - Todo usuario registrado debe elegir un `username` único.
+    - **Objetivo de privacidad:** Al invitar a alguien a un equipo o junta, la búsqueda se hará a través del `username` en lugar de exponer o tener que adivinar correos electrónicos o números telefónicos, agilizando la conexión social en la plataforma sin revelar datos sensibles.
+22. **Viralidad Estructural (Referidos y Enlaces Públicos)**:
+    - **Sistema de Referidos (B2C):** Todo usuario al registrarse recibe automáticamente un `codigo_referido` (6 caracteres hexadecimales). Los nuevos usuarios pueden ingresar este código al crear su cuenta.
+      - *Recompensa Condicionada:* Si el usuario invitado completa exitosamente una reserva (`estado = CONFIRMADA`) dentro de su primer mes de registro, el usuario original que lo invitó recibirá automáticamente un cupón de descuento para sus próximos partidos. Esta mecánica asegura retornos reales de inversión y evita el fraude por creación masiva de cuentas vacías.
+    - **Share Tokens (Enlaces Compartibles):** Entidades grupales como *Equipos*, *Juntas* y *Reservas* exponen un `share_token` (token aleatorio sin prefijos) para generar URLs públicas. Estas URLs permiten a usuarios sin cuenta visualizar información de forma segura (ej. ver el "boarding pass" de una reserva con la dirección de la sede) o registrarse e unirse al evento inmediatamente, protegiendo las llaves primarias (UUIDs) de la base de datos contra accesos no autorizados.
+23. **Campañas de Lanzamiento y Retención B2C**:
+    - **Recompensa a "Early Adopters" (Fricción contra multicuentas):** Para desincentivar la creación de múltiples cuentas falsas buscando el descuento de primera reserva, los usuarios que se registren durante la primera semana de lanzamiento recibirán automáticamente un descuento sustancial aplicable **únicamente en su cuarta reserva**. Este cupón tendrá una validez de 1 mes, obligándolos a madurar su cuenta real y generar volumen de transacciones antes de obtener el premio.
+    - **Lealtad del Capitán (Estrategia Sugerida):** Dado que en cada grupo siempre hay un "organizador" (el que se encarga de separar la cancha), la plataforma puede implementar a futuro un cupón automático de "La 10ma cancha invita la casa". Si un jugador acumula 9 reservas organizadas y concretadas a su nombre, la décima reserva (en cualquier sede) tiene un descuento equivalente al 100% asumido por Separa Altoke. Esto fideliza agresivamente al "capitán" para que obligue a sus amigos a usar la app en lugar de llamar directamente por teléfono a la sede.
