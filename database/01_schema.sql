@@ -1,5 +1,5 @@
 -- 01_schema.sql
--- DDL para la base de datos "Separa Altoke"
+-- DDL para la base de datos "Separa Altoke" con Mixin de Auditoría
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
@@ -14,24 +14,43 @@ CREATE TABLE _pais (
     prefijo_telefonico VARCHAR(10) NOT NULL,
     longitud_celular_esperada INT NOT NULL,
     estado BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE _ubigeo_departamento (
     id VARCHAR(2) PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL
+    nombre VARCHAR(100) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE _ubigeo_provincia (
     id VARCHAR(4) PRIMARY KEY,
     departamento_id VARCHAR(2) NOT NULL REFERENCES _ubigeo_departamento(id),
-    nombre VARCHAR(100) NOT NULL
+    nombre VARCHAR(100) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE _ubigeo_distrito (
     id VARCHAR(6) PRIMARY KEY,
     provincia_id VARCHAR(4) NOT NULL REFERENCES _ubigeo_provincia(id),
-    nombre VARCHAR(100) NOT NULL
+    nombre VARCHAR(100) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE _sistema_configuracion (
@@ -39,20 +58,34 @@ CREATE TABLE _sistema_configuracion (
     clave VARCHAR(80) NOT NULL UNIQUE,
     valor JSONB NOT NULL,
     descripcion TEXT,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE _deporte (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nombre VARCHAR(100) NOT NULL UNIQUE,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE _servicio (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nombre VARCHAR(100) NOT NULL UNIQUE,
     icono VARCHAR(100),
-    categoria VARCHAR(50)
+    categoria VARCHAR(50),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE _plan_suscripcion (
@@ -65,7 +98,11 @@ CREATE TABLE _plan_suscripcion (
     max_canchas INT NOT NULL,
     beneficios JSONB NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE _descuentos (
@@ -83,7 +120,11 @@ CREATE TABLE _descuentos (
     fecha_inicio TIMESTAMPTZ NOT NULL,
     fecha_fin TIMESTAMPTZ NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE _programas_referidos (
@@ -96,7 +137,11 @@ CREATE TABLE _programas_referidos (
     fecha_inicio TIMESTAMPTZ NOT NULL,
     fecha_fin TIMESTAMPTZ,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE _campanas_marketing (
@@ -108,7 +153,11 @@ CREATE TABLE _campanas_marketing (
     programada_para TIMESTAMPTZ NOT NULL,
     estado VARCHAR(20) NOT NULL CHECK (estado IN ('BORRADOR', 'PROGRAMADA', 'ENVIADA', 'CANCELADA')),
     enviada_en TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 -- ==========================================
@@ -119,8 +168,8 @@ CREATE TABLE usuario (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(50) NOT NULL UNIQUE,
     codigo_referido VARCHAR(6) NOT NULL UNIQUE,
-    referido_por_usuario_id UUID, -- Se agrega FK más abajo tras crear la tabla persona/usuario
-    referido_por_empresa_id UUID, -- Se agrega FK más abajo tras crear la tabla empresa
+    referido_por_usuario_id UUID,
+    referido_por_empresa_id UUID,
     email VARCHAR(255) NOT NULL UNIQUE,
     telefono VARCHAR(30) UNIQUE,
     google_sub VARCHAR(255) UNIQUE,
@@ -134,7 +183,10 @@ CREATE TABLE usuario (
     reset_password_token VARCHAR(255),
     reset_password_expires_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE usuario_dispositivo (
@@ -146,7 +198,10 @@ CREATE TABLE usuario_dispositivo (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     ultimo_uso_en TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE persona (
@@ -159,7 +214,10 @@ CREATE TABLE persona (
     foto_perfil_url VARCHAR(500),
     _partidos_completados INT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 ALTER TABLE usuario ADD CONSTRAINT fk_usuario_referido FOREIGN KEY (referido_por_usuario_id) REFERENCES usuario(id);
@@ -170,7 +228,11 @@ CREATE TABLE _codigos_referidos (
     programa_referido_id UUID NOT NULL REFERENCES _programas_referidos(id),
     codigo_unico VARCHAR(50) NOT NULL UNIQUE,
     _total_usos INT NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE _referidos_registro (
@@ -180,7 +242,12 @@ CREATE TABLE _referidos_registro (
     estado VARCHAR(30) NOT NULL CHECK (estado IN ('REGISTRADO', 'PRIMER_PARTIDO_COMPLETADO', 'RECOMPENSA_ENTREGADA')),
     fecha_registro TIMESTAMPTZ NOT NULL DEFAULT now(),
     fecha_completado_partido TIMESTAMPTZ,
-    recompensa_entregada_en TIMESTAMPTZ
+    recompensa_entregada_en TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE empresa (
@@ -197,7 +264,10 @@ CREATE TABLE empresa (
     logo_url VARCHAR(500),
     terminos_condiciones TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 ALTER TABLE usuario ADD CONSTRAINT fk_usuario_empresa_referido FOREIGN KEY (referido_por_empresa_id) REFERENCES empresa(id);
@@ -212,7 +282,10 @@ CREATE TABLE suscripcion_empresa (
     auto_renovacion BOOLEAN NOT NULL DEFAULT FALSE,
     comprobante_url VARCHAR(500),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 -- ==========================================
@@ -239,7 +312,10 @@ CREATE TABLE sede (
     valor_adelanto_requerido NUMERIC(10,2) NOT NULL DEFAULT 0.00,
     estado VARCHAR(20) NOT NULL CHECK (estado IN ('ACTIVA', 'INACTIVA')) DEFAULT 'ACTIVA',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE contrato (
@@ -252,7 +328,11 @@ CREATE TABLE contrato (
     fecha_inicio DATE NOT NULL,
     fecha_fin DATE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE sede_horario_atencion (
@@ -260,7 +340,12 @@ CREATE TABLE sede_horario_atencion (
     sede_id UUID NOT NULL REFERENCES sede(id),
     dia_semana INT NOT NULL CHECK (dia_semana >= 0 AND dia_semana <= 6),
     hora_apertura TIME NOT NULL,
-    hora_cierre TIME NOT NULL
+    hora_cierre TIME NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE sede_excepcion_horario (
@@ -270,7 +355,12 @@ CREATE TABLE sede_excepcion_horario (
     estado_operativo VARCHAR(20) NOT NULL CHECK (estado_operativo IN ('CERRADO', 'ABIERTO_ESPECIAL')),
     hora_apertura TIME,
     hora_cierre TIME,
-    descripcion VARCHAR(255)
+    descripcion VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE sede_servicio (
@@ -279,7 +369,12 @@ CREATE TABLE sede_servicio (
     _servicio_id UUID NOT NULL REFERENCES _servicio(id),
     es_gratuito BOOLEAN NOT NULL DEFAULT TRUE,
     costo_adicional NUMERIC(10,2),
-    descripcion VARCHAR(255)
+    descripcion VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE detalle_particular_sede (
@@ -288,7 +383,11 @@ CREATE TABLE detalle_particular_sede (
     titulo VARCHAR(150) NOT NULL,
     descripcion TEXT NOT NULL,
     orden INT NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE sede_saldo_cliente (
@@ -296,7 +395,12 @@ CREATE TABLE sede_saldo_cliente (
     sede_id UUID NOT NULL REFERENCES sede(id),
     persona_id UUID NOT NULL REFERENCES persona(id),
     monto_a_favor NUMERIC(10,2) NOT NULL DEFAULT 0.00,
-    ultimo_movimiento TIMESTAMPTZ NOT NULL DEFAULT now()
+    ultimo_movimiento TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE sede_lista_negra (
@@ -304,7 +408,12 @@ CREATE TABLE sede_lista_negra (
     sede_id UUID NOT NULL REFERENCES sede(id),
     persona_id UUID NOT NULL REFERENCES persona(id),
     motivo TEXT NOT NULL,
-    fecha_bloqueo TIMESTAMPTZ NOT NULL DEFAULT now()
+    fecha_bloqueo TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 -- ==========================================
@@ -320,7 +429,10 @@ CREATE TABLE cancha (
     caracteristicas JSONB,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE cancha_foto (
@@ -328,13 +440,22 @@ CREATE TABLE cancha_foto (
     cancha_id UUID NOT NULL REFERENCES cancha(id),
     foto_url VARCHAR(500) NOT NULL,
     orden INT NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE cancha_solapamiento (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     cancha_principal_id UUID NOT NULL REFERENCES cancha(id),
-    cancha_bloqueada_id UUID NOT NULL REFERENCES cancha(id)
+    cancha_bloqueada_id UUID NOT NULL REFERENCES cancha(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE cancha_horario (
@@ -344,7 +465,13 @@ CREATE TABLE cancha_horario (
     hora_inicio TIME NOT NULL,
     hora_fin TIME NOT NULL,
     precio_por_hora NUMERIC(10,2) NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
+    recargo_luz NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE cancha_bloqueo (
@@ -355,7 +482,11 @@ CREATE TABLE cancha_bloqueo (
     motivo VARCHAR(50) NOT NULL CHECK (motivo IN ('MANTENIMIENTO', 'MAL_CLIMA', 'EVENTO_INTERNO', 'REPARACION')),
     descripcion TEXT,
     registrado_por UUID NOT NULL REFERENCES persona(id),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE promocion_sede (
@@ -371,7 +502,11 @@ CREATE TABLE promocion_sede (
     hora_inicio TIME,
     hora_fin TIME,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 -- ==========================================
@@ -384,7 +519,10 @@ CREATE TABLE equipo (
     share_token VARCHAR(100) NOT NULL UNIQUE,
     creador_id UUID NOT NULL REFERENCES persona(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE equipo_miembro (
@@ -393,7 +531,12 @@ CREATE TABLE equipo_miembro (
     persona_id UUID NOT NULL REFERENCES persona(id),
     rol VARCHAR(30) NOT NULL CHECK (rol IN ('CAPITAN', 'JUGADOR')),
     fecha_ingreso TIMESTAMPTZ NOT NULL DEFAULT now(),
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE reserva (
@@ -422,7 +565,10 @@ CREATE TABLE reserva (
     motivo_cancelacion TEXT,
     cancelado_en TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE reserva_asistencia_equipo (
@@ -430,7 +576,11 @@ CREATE TABLE reserva_asistencia_equipo (
     reserva_id UUID NOT NULL REFERENCES reserva(id),
     persona_id UUID NOT NULL REFERENCES persona(id),
     estado_asistencia VARCHAR(30) NOT NULL CHECK (estado_asistencia IN ('ASISTIRA', 'NO_ASISTIRA', 'SIN_RESPUESTA')) DEFAULT 'SIN_RESPUESTA',
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE pago_reserva (
@@ -444,7 +594,11 @@ CREATE TABLE pago_reserva (
     revisado_por UUID REFERENCES persona(id),
     revisado_en TIMESTAMPTZ,
     motivo_rechazo TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE _descuento_uso (
@@ -453,7 +607,12 @@ CREATE TABLE _descuento_uso (
     persona_id UUID NOT NULL REFERENCES persona(id),
     reserva_id UUID NOT NULL REFERENCES reserva(id),
     monto_descontado NUMERIC(10,2) NOT NULL,
-    fecha_uso TIMESTAMPTZ NOT NULL DEFAULT now()
+    fecha_uso TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 -- ==========================================
@@ -466,7 +625,10 @@ CREATE TABLE monedero (
     saldo_disponible NUMERIC(10,2) NOT NULL DEFAULT 0.00,
     saldo_retenido NUMERIC(10,2) NOT NULL DEFAULT 0.00,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE transaccion_monedero (
@@ -476,7 +638,11 @@ CREATE TABLE transaccion_monedero (
     monto NUMERIC(10,2) NOT NULL,
     referencia_id UUID,
     estado VARCHAR(20) NOT NULL CHECK (estado IN ('PENDIENTE', 'APROBADA', 'RECHAZADA')),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE partida_abierta (
@@ -484,13 +650,16 @@ CREATE TABLE partida_abierta (
     share_token VARCHAR(100) NOT NULL UNIQUE,
     reserva_id UUID NOT NULL UNIQUE REFERENCES reserva(id),
     organizador_id UUID NOT NULL REFERENCES persona(id),
-    _deporte_id UUID NOT NULL REFERENCES _deporte(id), -- Añadido según plan
+    _deporte_id UUID NOT NULL REFERENCES _deporte(id),
     presupuesto_meta NUMERIC(10,2) NOT NULL,
     cupos_totales INT NOT NULL,
     cupos_disponibles INT NOT NULL,
     estado VARCHAR(30) NOT NULL CHECK (estado IN ('RECAUDANDO', 'CONFIRMADA', 'CANCELADA', 'COMPLETADA')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE partida_abierta_participante (
@@ -500,7 +669,10 @@ CREATE TABLE partida_abierta_participante (
     aporte_monedero NUMERIC(10,2) NOT NULL,
     fecha_ingreso TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 -- ==========================================
@@ -512,7 +684,10 @@ CREATE TABLE chat (
     tipo_canal VARCHAR(30) NOT NULL CHECK (tipo_canal IN ('JUGADOR_JUGADOR', 'EQUIPO', 'PARTIDA_ABIERTA', 'JUGADOR_EMPRESA')),
     referencia_id UUID,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE chat_participante (
@@ -522,7 +697,12 @@ CREATE TABLE chat_participante (
     rol VARCHAR(20) NOT NULL CHECK (rol IN ('ADMIN', 'MIEMBRO')),
     ultimo_leido_en TIMESTAMPTZ,
     _no_leidos INT NOT NULL DEFAULT 0,
-    joined_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
 CREATE TABLE mensaje (
@@ -533,27 +713,13 @@ CREATE TABLE mensaje (
     contenido_texto TEXT,
     archivo_url VARCHAR(500),
     datos_objeto JSONB,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by UUID,
+    updated_by UUID,
+    last_action VARCHAR(20) NOT NULL DEFAULT 'CREATE' CHECK (last_action IN ('CREATE', 'UPDATE', 'SOFT_DELETE'))
 );
 
--- ==========================================
--- DOMINIO 8: AUDITORÍA Y TRAZABILIDAD
--- ==========================================
-
-CREATE TABLE auditoria_log (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    usuario_id UUID REFERENCES usuario(id),
-    contrato_id UUID REFERENCES contrato(id),
-    sede_id UUID REFERENCES sede(id),
-    accion VARCHAR(50) NOT NULL CHECK (accion IN ('CANCELACION_RESERVA', 'APROBACION_PAGO', 'RECHAZO_PAGO', 'MODIFICACION_TARIFA', 'BLOQUEO_CANCHA', 'ACCESO_SISTEMA')),
-    tabla_afectada VARCHAR(60) NOT NULL,
-    registro_id UUID NOT NULL,
-    datos_previos JSONB,
-    datos_nuevos JSONB,
-    ip_address VARCHAR(45),
-    user_agent TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
 
 -- ==========================================
 -- ÍNDICES DE RENDIMIENTO OBLIGATORIOS
@@ -565,6 +731,5 @@ CREATE INDEX idx_reserva_purga_expiracion ON reserva (expira_en) WHERE estado = 
 CREATE INDEX idx_partida_abierta_disponible ON partida_abierta (_deporte_id, estado) WHERE estado = 'RECAUDANDO';
 CREATE INDEX idx_chat_updated_at ON chat (updated_at DESC);
 CREATE INDEX idx_mensaje_chat_cronologico ON mensaje (chat_id, created_at ASC);
-CREATE INDEX idx_auditoria_sede_fecha ON auditoria_log (sede_id, created_at DESC);
 CREATE INDEX idx_contrato_persona_activa ON contrato (persona_id, empresa_id, sede_id) WHERE is_active = TRUE;
 CREATE UNIQUE INDEX idx_usuario_google_sub ON usuario (google_sub) WHERE google_sub IS NOT NULL;
