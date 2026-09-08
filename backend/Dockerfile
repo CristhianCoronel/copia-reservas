@@ -8,9 +8,9 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar requerimientos e instalar (luego crearemos requirements.txt)
-# COPY requirements.txt .
-# RUN pip install --no-cache-dir -r requirements.txt
+# Copiar requerimientos e instalar
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar el resto de la aplicación
 COPY . .
