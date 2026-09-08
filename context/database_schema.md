@@ -445,7 +445,6 @@ Franjas horarias de atención y esquemas de tarifas dinámicas (día regular vs 
 | `hora_inicio` | `TIME` | NO | Inicio del rango tarifario (ej. `08:00:00`). |
 | `hora_fin` | `TIME` | NO | Fin del rango tarifario (ej. `18:00:00`). |
 | `precio_por_hora` | `NUMERIC(10,2)` | NO | Tarifa estándar por hora en esa franja. |
-| `recargo_luz` | `NUMERIC(10,2)` | NO | Suplemento por encendido de reflectores (Default `0.00`). |
 | `is_active` | `BOOLEAN` | NO | Franja vigente (Default `TRUE`). |
 
 #### `cancha_bloqueo`

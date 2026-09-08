@@ -100,12 +100,12 @@ export function CompanyCourtsView() {
 
       {/* MODAL: Tarifas Dinámicas */}
       <Modal opened={isTarifaOpen} onClose={() => setIsTarifaOpen(false)} title={<Text fw={800}>Configurar Tarifas: {selectedCourt?.name}</Text>} centered size="lg">
-        <Text size="sm" c="dimmed" mb="md">Define el costo base por hora y los recargos según el momento del día.</Text>
+        <Text size="sm" c="dimmed" mb="md">Define el costo por hora según el momento del día.</Text>
         
         <Card withBorder mb="md" bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8))">
           <Text fw={700} mb="xs">Tarifa Diurna (Lunes a Viernes)</Text>
           <Group grow>
-            <NumberInput label="Precio Base (S/.)" defaultValue={60} prefix="S/. " />
+            <NumberInput label="Precio (S/.)" defaultValue={60} prefix="S/. " />
             <Group grow align="flex-end">
               <TextInput label="Inicio" defaultValue="08:00" type="time" />
               <TextInput label="Fin" defaultValue="18:00" type="time" />
@@ -116,8 +116,11 @@ export function CompanyCourtsView() {
         <Card withBorder mb="md" bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8))">
           <Text fw={700} mb="xs">Tarifa Nocturna (Lunes a Viernes)</Text>
           <Group grow>
-            <NumberInput label="Precio Base (S/.)" defaultValue={80} prefix="S/. " />
-            <NumberInput label="Recargo por Luz (S/.)" defaultValue={10} prefix="+ S/. " />
+            <NumberInput label="Precio (S/.)" defaultValue={80} prefix="S/. " />
+            <Group grow align="flex-end">
+              <TextInput label="Inicio" defaultValue="18:00" type="time" />
+              <TextInput label="Fin" defaultValue="23:00" type="time" />
+            </Group>
           </Group>
         </Card>
         
