@@ -7,40 +7,40 @@ INSERT INTO _pais (codigo_iso, nombre, prefijo_telefonico, longitud_celular_espe
 ('CO', 'Colombia', '+57', 10),
 ('CL', 'Chile', '+56', 9);
 
--- Ubigeo (Ejemplo Mínimo: Lima - Lima - Miraflores / Surquillo)
-INSERT INTO _ubigeo_departamento (id, nombre) VALUES ('15', 'Lima');
-
-INSERT INTO _ubigeo_provincia (id, departamento_id, nombre) VALUES ('1501', '15', 'Lima');
-
+-- Ubigeo
+INSERT INTO _ubigeo_departamento (id, nombre) VALUES ('14', 'Lambayeque'), ('15', 'Lima');
+INSERT INTO _ubigeo_provincia (id, departamento_id, nombre) VALUES ('1401', '14', 'Chiclayo'), ('1501', '15', 'Lima');
 INSERT INTO _ubigeo_distrito (id, provincia_id, nombre) VALUES 
+('140101', '1401', 'Chiclayo'),
 ('150122', '1501', 'Miraflores'),
-('150140', '1501', 'Santiago de Surco'),
 ('150141', '1501', 'Surquillo');
 
--- Configuración Global del Sistema
+-- Configuración Global
 INSERT INTO _sistema_configuracion (clave, valor, descripcion) VALUES
 ('APP_MIN_VERSION_ANDROID', '"1.0.0"', 'Versión mínima requerida de la app Android'),
-('MAX_PENDING_PAYMENT_MINUTES', '15', 'Tiempo máximo en minutos para que una reserva pendiente espere el pago por defecto'),
-('PLATFORM_FEE_PERCENTAGE', '0.00', 'Comisión global de la plataforma sobre pagos online'),
+('MAX_PENDING_PAYMENT_MINUTES', '15', 'Tiempo máximo en minutos para que una reserva pendiente espere'),
+('PLATFORM_FEE_PERCENTAGE', '0.00', 'Comisión global de la plataforma'),
 ('MANTENIMIENTO_ACTIVO', 'false', 'Bandera para poner el sistema en modo mantenimiento');
 
 -- Deportes
 INSERT INTO _deporte (id, nombre, is_active) VALUES
-('99a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Fútbol', true),
-('99a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Pádel', true),
-('99a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Tenis', true),
-('99a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Básquet', true),
-('99a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Vóley', true);
+('11111111-1111-1111-1111-111111111111', 'Fútbol 5', true),
+('22222222-2222-2222-2222-222222222222', 'Fútbol 7', true),
+('33333333-3333-3333-3333-333333333333', 'Fútbol 11', true),
+('44444444-4444-4444-4444-444444444444', 'Vóley', true);
 
--- Servicios Adicionales en Sedes
+-- Servicios
 INSERT INTO _servicio (id, nombre, icono, categoria) VALUES
-('77a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Estacionamiento Privado', '88rking', 'Comodidad'),
-('77a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Duchas / Vestuarios', 'shower', 'Comodidad'),
-('77a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Quiosco / Bar', 'store', 'Alimentos'),
-('77a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Wifi Gratis', 'wifi', 'Conectividad'),
-('77a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Iluminación LED', 'lightbulb', 'Infraestructura');
+('55555555-5555-5555-5555-555555555551', 'Estacionamiento', 'parking', 'Comodidad'),
+('55555555-5555-5555-5555-555555555552', 'Tienda Snack', 'store', 'Alimentos'),
+('55555555-5555-5555-5555-555555555553', 'Baños', 'bath', 'Comodidad'),
+('55555555-5555-5555-5555-555555555554', 'Duchas', 'shower', 'Comodidad'),
+('55555555-5555-5555-5555-555555555555', 'Vestidores', 'shirt', 'Comodidad'),
+('55555555-5555-5555-5555-555555555556', 'WiFi', 'wifi', 'Conectividad'),
+('55555555-5555-5555-5555-555555555557', 'Seguridad', 'shield', 'Seguridad'),
+('55555555-5555-5555-5555-555555555558', 'Cámara', 'video', 'Seguridad');
 
 -- Planes de Suscripción
 INSERT INTO _plan_suscripcion (id, nombre, descripcion, precio_mensual, precio_anual, max_sedes, max_canchas, beneficios) VALUES
-('88a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Plan Freemium', 'Plan gratuito con funciones básicas, ideal para empezar.', 0.00, 0.00, 1, 3, '{"fotos_cancha": false, "coordenadas_gps": false, "notificaciones_email": false, "max_dias_registro": 3, "trabajadores_extra": false}'),
-('88a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Plan Premium B2B', 'Plan profesional con todas las funciones activas y máxima visibilidad.', 99.00, 990.00, 3, 10, '{"fotos_cancha": true, "coordenadas_gps": true, "notificaciones_email": true, "max_dias_registro": 14, "trabajadores_extra": true}');
+('66666666-6666-6666-6666-666666666666', 'Plan Freemium', 'Plan gratuito con funciones básicas.', 0.00, 0.00, 1, 3, '{"fotos_cancha": false}'),
+('77777777-7777-7777-7777-777777777777', 'Plan Premium B2B', 'Plan profesional.', 99.00, 990.00, 3, 10, '{"fotos_cancha": true}');

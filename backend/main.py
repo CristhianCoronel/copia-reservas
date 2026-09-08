@@ -60,6 +60,7 @@ async def listar_canchas(db: AsyncSession = Depends(get_db)):
             "regularPrice": 50.0,
             "peakPrice": 90.0,
             "services": ["Estacionamiento", "Duchas", "Tienda Snack"],
+            "rules": "Prohibido chimpunes con toperoles de aluminio. Uso obligatorio de canilleras.",
             "images": []
         },
         {
@@ -73,6 +74,7 @@ async def listar_canchas(db: AsyncSession = Depends(get_db)):
             "regularPrice": 40.0,
             "peakPrice": 80.0,
             "services": ["Estacionamiento", "Baños"],
+            "rules": "Uso obligatorio de zapatillas de futsal (planta de goma).",
             "images": []
         },
         {
@@ -86,6 +88,7 @@ async def listar_canchas(db: AsyncSession = Depends(get_db)):
             "regularPrice": 80.0,
             "peakPrice": 100.0,
             "services": ["Estacionamiento", "Baños", "Duchas", "Vestidores", "WiFi", "Seguridad"],
+            "rules": "Presentar DNI en portería. Se aceptan toperoles de goma y aluminio.",
             "images": []
         }
     ]
@@ -121,11 +124,24 @@ async def get_system_catalogs():
 
 @app.get("/api/v1/business/courts/{court_id}/availability", tags=["B2B - Business"])
 async def get_court_availability(court_id: str, date: str):
-    # Mock data directly from CourtsView fallback
+    # Dynamic mock based on court_id to match the prices!
+    regular_price = 50.0
+    peak_price = 90.0
+    if court_id == "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee2":
+        regular_price = 40.0
+        peak_price = 80.0
+    elif court_id == "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee3":
+        regular_price = 80.0
+        peak_price = 100.0
+
     return {"data": [
-        {"time": "18:00 - 19:00", "isPeak": True, "price": 150.0, "available": True},
-        {"time": "19:00 - 20:00", "isPeak": True, "price": 150.0, "available": False},
-        {"time": "20:00 - 21:00", "isPeak": True, "price": 150.0, "available": True}
+        {"time": "16:00 - 17:00", "isPeak": False, "price": regular_price, "available": True},
+        {"time": "17:00 - 18:00", "isPeak": False, "price": regular_price, "available": True},
+        {"time": "18:00 - 19:00", "isPeak": True, "price": peak_price, "available": True},
+        {"time": "19:00 - 20:00", "isPeak": True, "price": peak_price, "available": False},
+        {"time": "20:00 - 21:00", "isPeak": True, "price": peak_price, "available": True},
+        {"time": "21:00 - 22:00", "isPeak": True, "price": peak_price, "available": True},
+        {"time": "22:00 - 23:00", "isPeak": True, "price": peak_price, "available": True}
     ]}
 
 @app.post("/api/v1/auth/login", tags=["Auth & Identity"])

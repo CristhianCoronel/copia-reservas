@@ -35,7 +35,11 @@ export function CourtsView() {
   const [selectedSport, setSelectedSport] = useState<string>('TODOS');
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
-  const [selectedDate, setSelectedDate] = useState('2026-08-30');
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    return today.toISOString().split('T')[0];
+  });
   const [availability, setAvailability] = useState<AvailabilitySlot[]>([]);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<AvailabilitySlot[]>([]);
@@ -272,7 +276,7 @@ export function CourtsView() {
                 backgroundColor: 'var(--mantine-color-cancha-8)', 
                 backgroundImage: court.images && court.images.length > 0 
                   ? `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.8)), url(${court.images[0]})` 
-                  : 'linear-gradient(to bottom right, var(--mantine-color-cancha-8), var(--mantine-color-altoke-8))',
+                  : 'linear-gradient(to bottom right, var(--mantine-color-cancha-7), var(--mantine-color-cancha-9))',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 height: 140, 
@@ -284,7 +288,7 @@ export function CourtsView() {
             >
               <Group justify="space-between">
                 <Badge color="rgba(0,0,0,0.5)" size="sm" variant="filled" c="white">{court.sport}</Badge>
-                {court.isCovered && <Badge color="gray" size="sm" variant="light">Techada</Badge>}
+                {court.isCovered && <Badge color="rgba(255,255,255,0.2)" size="sm" variant="filled" c="white">Techada</Badge>}
               </Group>
               <Text fw={800} size="lg" mt="xs" c="white">{court.name}</Text>
             </Card.Section>
@@ -295,18 +299,24 @@ export function CourtsView() {
             </Group>
 
             <Group gap={4} mt="xs" mb="md">
-              {court.services.map(s => (
+              {court.services.map((s: string) => (
                 <Badge key={s} color="gray" variant="light" size="xs" radius="sm">{s}</Badge>
               ))}
             </Group>
 
-            <Group gap={4} mb="lg" align="center">
-              <Text size="sm" c="dimmed">Desde</Text>
-              <Text fw={800} size="lg" c="dark">S/. {Math.min(court.regularPrice, court.peakPrice)}</Text>
+            <Group gap="md" mb="lg" align="center">
+              <Group gap={4}>
+                <IconSun size={18} color="var(--mantine-color-yellow-6)" stroke={1.5} />
+                <Text fw={800} size="md" c="dark">S/ {court.regularPrice}</Text>
+              </Group>
+              <Group gap={4}>
+                <IconMoon size={18} color="var(--mantine-color-indigo-6)" stroke={1.5} />
+                <Text fw={800} size="md" c="dark">S/ {court.peakPrice}</Text>
+              </Group>
             </Group>
   
-              <Button fullWidth onClick={() => { setSelectedCourt(court); setCurrentImageIndex(0); }}>
-                Ver más
+              <Button fullWidth color="altoke.5" c="cancha.9" onClick={() => { setSelectedCourt(court); setCurrentImageIndex(0); }}>
+                Separar Altoke
               </Button>
             </Card>
           ))}
