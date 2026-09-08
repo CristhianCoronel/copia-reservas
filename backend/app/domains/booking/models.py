@@ -1,0 +1,44 @@
+import uuid
+from sqlalchemy import Column, String, Boolean, Date, Time, ForeignKey, Integer, Numeric, Text, ARRAY
+from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.orm import relationship
+from app.core.database import Base
+from app.core.mixins import AuditMixin
+
+class Cancha(AuditMixin, Base):
+    __tablename__ = "cancha"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sede_id = Column(UUID(as_uuid=True), ForeignKey('sede.id'), nullable=False)
+    nombre = Column(String(100), nullable=False)
+    _deporte_id = Column(UUID(as_uuid=True), nullable=False)
+    modalidades = Column(ARRAY(String))
+    caracteristicas = Column(JSONB)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    sede = relationship("Sede", back_populates="canchas")
+    reservas = relationship("Reserva", back_populates="cancha")
+
+
+class Reserva(AuditMixin, Base):
+    __tablename__ = "reserva"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    share_token = Column(String(100), unique=True, nullable=False)
+    cancha_id = Column(UUID(as_uuid=True), ForeignKey('cancha.id'), nullable=False)
+    tipo_origen = Column(String(20), nullable=False)
+    persona_organizadora_id = Column(UUID(as_uuid=True), ForeignKey('persona.id'), nullable=False)
+    equipo_id = Column(UUID(as_uuid=True))
+    fecha_reserva = Column(Date, nullable=False)
+    hora_inicio_solicitada = Column(Time, nullable=False)
+    hora_fin_solicitada = Column(Time, nullable=False)
+    hora_inicio = Column(Time, nullable=False)
+    hora_fin = Column(Time, nullable=False)
+    duracion_horas = Column(Numeric(3,1), nullable=False)
+    precio_hora_historico = Column(Numeric(10,2), nullable=False)
+    precio_total_cancha = Column(Numeric(10,2), nullable=False)
+    descuento_promocion_empresa = Column(Numeric(10,2), default=0.00, nullable=False)
+    descuento_cupon_plataforma = Column(Numeric(10,2), default=0.00, nullable=False)
+    monto_total_final = Column(Numeric(10,2), nullable=False)
+    _saldo_pendiente = Column(Numeric(10,2), nullable=False)
+    estado = Column(String(30), nullable=False)
+    
+    cancha = relationship("Cancha", back_populates="reservas")
