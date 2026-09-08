@@ -43,7 +43,7 @@ export function CourtsView() {
   const [filtersDrawerOpen, setFiltersDrawerOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-
+  const [fetchingCourts, setFetchingCourts] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
 
   const datesList = (() => {
