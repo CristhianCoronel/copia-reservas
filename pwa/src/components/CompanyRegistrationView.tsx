@@ -25,7 +25,10 @@ export function CompanyRegistrationView() {
 
     setLoading(true);
     try {
-      const res = await apiCall('/business/companies/register', 'POST', form);
+      const res = await apiCall('/api/v1/b2b/empresas', 'POST', {
+        ...form,
+        creada_por_persona_id: "pe2a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d" // Mock MVP ID
+      });
       if (res.status) {
         setSuccess(true);
       }

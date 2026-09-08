@@ -12,8 +12,8 @@ export function SuperAdminView() {
     async function loadData() {
       try {
         const [compRes, catRes] = await Promise.all([
-          apiCall('/system/companies/pending'),
-          apiCall('/system/catalogs')
+          apiCall('/api/v1/system/companies/pending'),
+          apiCall('/api/v1/system/catalogs')
         ]);
         
         if (compRes.status) setPendingCompanies(compRes.data);

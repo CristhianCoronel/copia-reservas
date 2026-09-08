@@ -15,8 +15,8 @@ export function ProfileView({ onLogout }: ProfileProps) {
   useEffect(() => {
     async function loadProfile() {
       try {
-        const res = await apiCall('/player/profile/me');
-        if (res.status) {
+        const res = await apiCall('/api/v1/player/profile/me');
+        if (res.status === undefined || res.data) {
           setProfile(res.data);
         }
       } catch (error) {

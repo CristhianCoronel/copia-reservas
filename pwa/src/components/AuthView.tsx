@@ -30,7 +30,7 @@ export function AuthView({ onLogin }: AuthViewProps) {
 
     try {
       // Usamos el endpoint mockeado que configuramos
-      const res = await apiCall('/auth/login', 'POST', { email, password });
+      const res = await apiCall('/api/v1/auth/login', 'POST', { email, password });
       if (res.status && res.data.token) {
         localStorage.setItem('token', res.data.token);
         onLogin();

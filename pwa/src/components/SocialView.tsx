@@ -26,7 +26,7 @@ function PartidasAbiertasTab() {
   useEffect(() => {
     async function loadGroups() {
       try {
-        const res = await apiCall('/player/social/groups');
+        const res = await apiCall('/api/v1/player/social/groups');
         if (res.status && res.data) {
           setGroups(res.data);
         } else { throw new Error(); }

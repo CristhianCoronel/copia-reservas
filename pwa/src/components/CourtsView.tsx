@@ -92,9 +92,9 @@ export function CourtsView() {
 
       setLoadingAvailability(true);
       setSelectedTimeSlots([]);
-      apiCall(`/business/courts/${selectedCourt.id}/availability?date=${selectedDate}`)
+      apiCall(`/api/v1/business/courts/${selectedCourt.id}/availability?date=${selectedDate}`)
         .then(res => {
-          if (res.status && res.data && res.data.length > 0) {
+          if (res.status === undefined || (res.data && res.data.length > 0)) {
             setAvailability(res.data);
           } else {
             setAvailability(mockAvail);
@@ -110,8 +110,8 @@ export function CourtsView() {
   useEffect(() => {
     async function loadCourts() {
       try {
-        const res = await apiCall('/business/courts');
-        if (res.status) {
+        const res = await apiCall('/api/v1/b2c/canchas');
+        if (res.status === undefined || res.data) {
           setCourts(res.data);
         }
       } catch (error) {
@@ -131,10 +131,13 @@ export function CourtsView() {
 
   const handleConfirmBooking = async () => {
     try {
-      await apiCall('/player/reservations', 'POST', {
-        courtId: selectedCourt?.id,
-        date: selectedDate,
-        time: selectedTimeSlots.map(s => s.time).join(', ')
+      await apiCall('/api/v1/b2c/reservas/', 'POST', {
+        usuario_id: "u3a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d", // Mock ID from 03_test_data
+        cancha_id: selectedCourt?.id,
+        fecha_reserva: selectedDate,
+        hora_inicio: selectedTimeSlots[0].time.split(' - ')[0] + ":00",
+        hora_fin: selectedTimeSlots[selectedTimeSlots.length - 1].time.split(' - ')[1] + ":00",
+        monto_total: currentPrice
       });
       setBookingConfirmed(true);
       setTimeout(() => {
