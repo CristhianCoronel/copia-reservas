@@ -86,7 +86,7 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
      - `cancha_horario` define las horas particulares de operación y precios dinámicos *dentro* del marco de atención de la sede. Si una cancha está en mantenimiento diario por unas horas, esas horas simplemente no existen en su tabla de tarifas, invalidando las reservas en ese tramo.
    - **Esquemas de precios**:
      - *Precio fijo*: tarifa uniforme por hora para la cancha sin variación de horario.
-     - *Precio por horario (tarifas dinámicas)*: tarifa variante según el día y franja horaria. Permite definir costo estándar (ej. 08:00 - 17:00) y tarifa pico nocturna con recargo por iluminación (ej. 18:00 - 23:00).
+     - *Precio por horario (tarifas dinámicas)*: tarifa variante según el día y franja horaria. Permite definir un costo estándar (ej. 08:00 - 17:00) y una tarifa pico nocturna o de alta demanda (ej. 18:00 - 23:00) sin importar el motivo del incremento (luz, prime time, etc).
    - **Regulación de reservas por la empresa**:
      - *Máximo de horas*: La `empresa` configura el límite máximo de horas continuas que una persona/equipo puede reservar por transacción (ej. máximo 2 horas consecutivas).
      - *Promociones propias de la empresa*: La empresa registra promociones textuales y su vigencia (ej: "20% de descuento de lunes a miércoles de 14:00 a 17:00", con rango de `fecha_inicio` y `fecha_fin`).
