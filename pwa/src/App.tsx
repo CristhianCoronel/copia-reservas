@@ -72,11 +72,11 @@ export default function App() {
       {/* Contenedor Principal Flexbox */}
       <div className={classes.shellConstrain} style={{ backgroundColor: 'var(--mantine-color-body)' }}>
         
-        {/* Header */}
-        <header style={{ height: 60, borderBottom: '1px solid var(--mantine-color-default-border)', flexShrink: 0 }}>
+        {/* Header con color de marca (Cancha 900) */}
+        <header style={{ height: 60, backgroundColor: 'var(--mantine-color-cancha-9)', flexShrink: 0 }}>
           <Group h="100%" px="md" justify="space-between">
               <img 
-                src={colorScheme === 'dark' ? '/separaaltoke_extendidodark.svg' : '/separaaltoke_extendidolight.svg'} 
+                src="/separaaltoke_extendidodark.svg"
                 alt="Separa Altoke" 
                 height={28} 
               />
@@ -84,7 +84,7 @@ export default function App() {
             {/* Avatar interactivo en lugar del botón */}
             <UnstyledButton onClick={openModal}>
               {appMode === 'jugador' ? (
-                <Avatar color="dark" radius="xl" size="sm">JP</Avatar>
+                <Avatar color="altoke.5" radius="xl" size="sm" styles={{ placeholder: { color: 'var(--mantine-color-cancha-9)' } }}>JP</Avatar>
               ) : appMode === 'empresa' ? (
                 <Avatar src="https://images.unsplash.com/photo-1577223625816-7546f13df25d?auto=format&fit=crop&w=100&q=80" radius="md" size="sm" />
               ) : (
@@ -125,24 +125,24 @@ export default function App() {
             {appMode === 'jugador' ? (
               <>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('canchas')}>
-                  <IconCompass  size={24} color={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
-                  <Text fz={11} fw={activeTab === 'canchas' ? 800 : 600} c={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Explorar</Text>
+                  <IconCompass  size={24} color={activeTab === 'canchas' ? 'var(--mantine-color-cancha-9)' : 'var(--mantine-color-niebla-5)'} stroke={1.5} />
+                  <Text fz={11} fw={activeTab === 'canchas' ? 800 : 600} c={activeTab === 'canchas' ? 'var(--mantine-color-cancha-9)' : 'var(--mantine-color-niebla-5)'} mt={4}>Explorar</Text>
                 </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('social')}>
-                  <IconUsers size={24} color={activeTab === 'social' ? 'var(--mantine-color-text)' : '#94A3B8'} />
-                  <Text fz={11} fw={activeTab === 'social' ? 800 : 600} c={activeTab === 'social' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Social</Text>
+                  <IconUsers size={24} color={activeTab === 'social' ? 'var(--mantine-color-cancha-9)' : 'var(--mantine-color-niebla-5)'} stroke={1.5} />
+                  <Text fz={11} fw={activeTab === 'social' ? 800 : 600} c={activeTab === 'social' ? 'var(--mantine-color-cancha-9)' : 'var(--mantine-color-niebla-5)'} mt={4}>Social</Text>
                 </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('reservas')}>
-                  <IconCalendarEvent size={24} color={activeTab === 'reservas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
-                  <Text fz={11} fw={activeTab === 'reservas' ? 800 : 600} c={activeTab === 'reservas' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Reservas</Text>
+                  <IconCalendarEvent size={24} color={activeTab === 'reservas' ? 'var(--mantine-color-cancha-9)' : 'var(--mantine-color-niebla-5)'} stroke={1.5} />
+                  <Text fz={11} fw={activeTab === 'reservas' ? 800 : 600} c={activeTab === 'reservas' ? 'var(--mantine-color-cancha-9)' : 'var(--mantine-color-niebla-5)'} mt={4}>Reservas</Text>
                 </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('billetera')}>
-                  <IconWallet size={24} color={activeTab === 'billetera' ? 'var(--mantine-color-text)' : '#94A3B8'} />
-                  <Text fz={11} fw={activeTab === 'billetera' ? 800 : 600} c={activeTab === 'billetera' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Billetera</Text>
+                  <IconWallet size={24} color={activeTab === 'billetera' ? 'var(--mantine-color-cancha-9)' : 'var(--mantine-color-niebla-5)'} stroke={1.5} />
+                  <Text fz={11} fw={activeTab === 'billetera' ? 800 : 600} c={activeTab === 'billetera' ? 'var(--mantine-color-cancha-9)' : 'var(--mantine-color-niebla-5)'} mt={4}>Billetera</Text>
                 </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('perfil')}>
-                  <IconUser size={24} color={activeTab === 'perfil' ? 'var(--mantine-color-text)' : '#94A3B8'} />
-                  <Text fz={11} fw={activeTab === 'perfil' ? 800 : 600} c={activeTab === 'perfil' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Perfil</Text>
+                  <IconUser size={24} color={activeTab === 'perfil' ? 'var(--mantine-color-cancha-9)' : 'var(--mantine-color-niebla-5)'} stroke={1.5} />
+                  <Text fz={11} fw={activeTab === 'perfil' ? 800 : 600} c={activeTab === 'perfil' ? 'var(--mantine-color-cancha-9)' : 'var(--mantine-color-niebla-5)'} mt={4}>Perfil</Text>
                 </UnstyledButton>
               </>
             ) : appMode === 'empresa' ? (
@@ -195,7 +195,7 @@ export default function App() {
           onClick={switchToJugador}
         >
           <Group wrap="nowrap">
-            <Avatar color="dark" radius="xl" size="md">JP</Avatar>
+            <Avatar color="altoke.5" radius="xl" size="md" styles={{ placeholder: { color: 'var(--mantine-color-cancha-9)' } }}>JP</Avatar>
             <div style={{ flex: 1 }}>
               <Text fw={800}>Juan Pérez</Text>
               <Text size="xs" c="dimmed">Jugador</Text>

@@ -26,21 +26,21 @@ INSERT INTO _sistema_configuracion (clave, valor, descripcion) VALUES
 
 -- Deportes
 INSERT INTO _deporte (id, nombre, is_active) VALUES
-('d1a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Fútbol', true),
-('d2a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Pádel', true),
-('d3a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Tenis', true),
-('d4a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Básquet', true),
-('d5a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Vóley', true);
+('99a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Fútbol', true),
+('99a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Pádel', true),
+('99a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Tenis', true),
+('99a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Básquet', true),
+('99a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Vóley', true);
 
 -- Servicios Adicionales en Sedes
 INSERT INTO _servicio (id, nombre, icono, categoria) VALUES
-('s1a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Estacionamiento Privado', 'parking', 'Comodidad'),
-('s2a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Duchas / Vestuarios', 'shower', 'Comodidad'),
-('s3a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Quiosco / Bar', 'store', 'Alimentos'),
-('s4a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Wifi Gratis', 'wifi', 'Conectividad'),
-('s5a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Iluminación LED', 'lightbulb', 'Infraestructura');
+('77a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Estacionamiento Privado', '88rking', 'Comodidad'),
+('77a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Duchas / Vestuarios', 'shower', 'Comodidad'),
+('77a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Quiosco / Bar', 'store', 'Alimentos'),
+('77a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Wifi Gratis', 'wifi', 'Conectividad'),
+('77a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Iluminación LED', 'lightbulb', 'Infraestructura');
 
 -- Planes de Suscripción
 INSERT INTO _plan_suscripcion (id, nombre, descripcion, precio_mensual, precio_anual, max_sedes, max_canchas, beneficios) VALUES
-('p1a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Plan Freemium', 'Plan gratuito con funciones básicas, ideal para empezar.', 0.00, 0.00, 1, 3, '{"fotos_cancha": false, "coordenadas_gps": false, "notificaciones_email": false, "max_dias_registro": 3, "trabajadores_extra": false}'),
-('p2a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Plan Premium B2B', 'Plan profesional con todas las funciones activas y máxima visibilidad.', 99.00, 990.00, 3, 10, '{"fotos_cancha": true, "coordenadas_gps": true, "notificaciones_email": true, "max_dias_registro": 14, "trabajadores_extra": true}');
+('88a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Plan Freemium', 'Plan gratuito con funciones básicas, ideal para empezar.', 0.00, 0.00, 1, 3, '{"fotos_cancha": false, "coordenadas_gps": false, "notificaciones_email": false, "max_dias_registro": 3, "trabajadores_extra": false}'),
+('88a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d', 'Plan Premium B2B', 'Plan profesional con todas las funciones activas y máxima visibilidad.', 99.00, 990.00, 3, 10, '{"fotos_cancha": true, "coordenadas_gps": true, "notificaciones_email": true, "max_dias_registro": 14, "trabajadores_extra": true}');

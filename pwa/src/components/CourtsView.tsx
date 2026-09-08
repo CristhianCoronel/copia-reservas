@@ -44,21 +44,31 @@ export function CourtsView() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
 
-  const [datesList] = useState(() => {
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const datesList = (() => {
     const dates = [];
-    const baseDate = new Date('2026-08-30T12:00:00');
-    for (let i = 0; i < 15; i++) {
+    const baseDate = new Date(); // Today
+    baseDate.setHours(12, 0, 0, 0);
+    baseDate.setDate(baseDate.getDate() + (weekOffset * 7));
+    for (let i = 0; i < 7; i++) {
       const d = new Date(baseDate);
       d.setDate(baseDate.getDate() + i);
       dates.push(d);
     }
     return dates;
-  });
-  const [fetchingCourts, setFetchingCourts] = useState(false);
+  })();
 
-  const getDayName = (date: Date, index: number) => {
-    if (index === 0) return 'Hoy';
-    if (index === 1) return 'Mañ';
+  const weekTitle = (() => {
+    const first = datesList[0];
+    const last = datesList[6];
+    const months = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+    return `(${first.getDate()}-${last.getDate()} ${months[first.getMonth()]})`;
+  })();
+
+  const getDayName = (date: Date, index: number, isCurrentWeek: boolean) => {
+    if (isCurrentWeek && index === 0) return 'Hoy';
+    if (isCurrentWeek && index === 1) return 'Mañ';
     const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     return days[date.getDay()];
   };
@@ -69,6 +79,13 @@ export function CourtsView() {
     const months = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
     return `${days[d.getDay()]} ${d.getDate()} de ${months[d.getMonth()]}`;
   };
+
+  // Set default selected date initially
+  useEffect(() => {
+    if (datesList.length > 0 && !selectedDate) {
+      setSelectedDate(datesList[0].toISOString().split('T')[0]);
+    }
+  }, [weekOffset]);
 
   const handleDateSelect = (dateStr: string) => {
     if (dateStr === selectedDate) return;
@@ -132,7 +149,7 @@ export function CourtsView() {
   const handleConfirmBooking = async () => {
     try {
       await apiCall('/api/v1/b2c/reservas/', 'POST', {
-        usuario_id: "u3a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d", // Mock ID from 03_test_data
+        usuario_id: "11111111-1111-1111-1111-111111111111", // Mock ID from new seed
         cancha_id: selectedCourt?.id,
         fecha_reserva: selectedDate,
         hora_inicio: selectedTimeSlots[0].time.split(' - ')[0] + ":00",
@@ -182,7 +199,14 @@ export function CourtsView() {
 
   return (
     <div style={{ padding: 16 }}>
-      <Text fw={700} mb="xs">Fecha a jugar</Text>
+      <Group justify="space-between" mb="xs">
+        <Text fw={700}>Fecha a jugar</Text>
+        <Group gap="xs">
+          <Text size="xs" fw={700} c="var(--mantine-color-cancha-9)">{weekTitle}</Text>
+          <ActionIcon variant="light" color="cancha.9" size="sm" onClick={() => setWeekOffset(o => Math.max(0, o - 1))} disabled={weekOffset === 0}><IconChevronLeft size={16} stroke={1.5} /></ActionIcon>
+          <ActionIcon variant="light" color="cancha.9" size="sm" onClick={() => setWeekOffset(o => o + 1)}><IconChevronRight size={16} stroke={1.5} /></ActionIcon>
+        </Group>
+      </Group>
       <ScrollArea type="never" mb="lg">
         <Group wrap="nowrap" gap="xs">
           {datesList.map((d, index) => {
@@ -199,13 +223,13 @@ export function CourtsView() {
                   flexDirection: 'column', 
                   alignItems: 'center',
                   gap: 4,
-                  backgroundColor: isSelected ? 'var(--mantine-color-dark-filled)' : 'transparent',
+                  backgroundColor: isSelected ? 'var(--mantine-color-cancha-9)' : 'transparent',
                   color: isSelected ? 'var(--mantine-color-white)' : 'var(--mantine-color-text)',
-                  border: `1px solid ${isSelected ? 'var(--mantine-color-dark-filled)' : 'var(--mantine-color-default-border)'}`,
+                  border: `1px solid ${isSelected ? 'var(--mantine-color-cancha-9)' : 'var(--mantine-color-default-border)'}`,
                   borderRadius: 'var(--mantine-radius-md)'
                 }}
               >
-                <Text size="xs" fw={isSelected ? 800 : 500}>{getDayName(d, index)}</Text>
+                <Text size="xs" fw={isSelected ? 800 : 500}>{getDayName(d, index, weekOffset === 0)}</Text>
                 <Text size="md" fw={800}>{d.getDate()}</Text>
               </UnstyledButton>
             );
@@ -215,18 +239,18 @@ export function CourtsView() {
       
       <Group justify="space-between" mb="xs">
         <Text fw={700}>Filtrar por deporte</Text>
-        <Button variant="default" size="xs" radius="xl" leftSection={<IconFilter size={14}/>} onClick={() => setFiltersDrawerOpen(true)}>
+        <Button variant="default" size="xs" radius="xl" leftSection={<IconFilter size={14} stroke={1.5}/>} onClick={() => setFiltersDrawerOpen(true)}>
           Más Filtros
         </Button>
       </Group>
       
       <ScrollArea type="never" mb="md">
         <Group wrap="nowrap" gap="xs">
-          {['TODOS', 'FUTBOL5', 'PADEL', 'BASQUET'].map((sport) => (
+          {['TODOS', 'Fútbol 5', 'Fútbol 7', 'Fútbol 11', 'Vóley'].map((sport) => (
             <Button 
               key={sport} 
               variant={selectedSport === sport ? 'filled' : 'outline'}
-              color={selectedSport === sport ? 'dark' : 'gray'}
+              color={selectedSport === sport ? 'cancha.9' : 'gray'}
               radius="xl"
               size="xs"
               onClick={() => setSelectedSport(sport)}
@@ -238,15 +262,17 @@ export function CourtsView() {
       </ScrollArea>
 
       {(loading || fetchingCourts) ? (
-        <Center p="xl" mt="xl"><Loader color="dark" /></Center>
+        <Center p="xl" mt="xl"><Loader color="cancha.9" /></Center>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 40 }}>
           {filteredCourts.map(court => (
             <Card key={court.id} shadow="sm" padding="lg" radius="md" withBorder>
               <Card.Section 
               style={{ 
-                backgroundColor: court.imageColor, 
-                backgroundImage: court.images && court.images.length > 0 ? `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.8)), url(${court.images[0]})` : undefined,
+                backgroundColor: 'var(--mantine-color-cancha-8)', 
+                backgroundImage: court.images && court.images.length > 0 
+                  ? `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.8)), url(${court.images[0]})` 
+                  : 'linear-gradient(to bottom right, var(--mantine-color-cancha-8), var(--mantine-color-altoke-8))',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 height: 140, 
@@ -257,14 +283,14 @@ export function CourtsView() {
               }}
             >
               <Group justify="space-between">
-                <Badge color="dark" size="sm" variant="filled">{court.sport}</Badge>
+                <Badge color="rgba(0,0,0,0.5)" size="sm" variant="filled" c="white">{court.sport}</Badge>
                 {court.isCovered && <Badge color="gray" size="sm" variant="light">Techada</Badge>}
               </Group>
-              <Text fw={800} size="lg" mt="xs" c={court.images ? 'white' : 'dark'}>{court.name}</Text>
+              <Text fw={800} size="lg" mt="xs" c="white">{court.name}</Text>
             </Card.Section>
             
             <Group gap={4} mt="sm">
-              <IconMapPin size={14} color="gray" />
+              <IconMapPin size={14} color="gray" stroke={1.5} />
               <Text size="xs" fw={700} c="dimmed">{court.distanceKm ? `${court.distanceKm} km` : '2.0 km'} - {court.address || court.companyName}</Text>
             </Group>
 
@@ -391,26 +417,42 @@ export function CourtsView() {
         padding="md"
         styles={{ content: { maxWidth: 480, margin: '0 auto' } }}
       >
-        <Text fw={600} size="sm" mb="xs">Rango de Horas (Libres)</Text>
+        <Text fw={700} size="sm" mb="md">Rango de Precios</Text>
         <RangeSlider 
-          defaultValue={[18, 22]} 
-          min={6} max={24} 
-          step={1}
-          minRange={2}
-          marks={[{ value: 6, label: '6h' }, { value: 12, label: '12h' }, { value: 18, label: '18h' }, { value: 24, label: '24h' }]} 
+          defaultValue={[40, 100]} 
+          min={30} max={150} 
+          step={5}
+          label={(value) => `S/. ${value}`}
+          marks={[{ value: 40, label: 'S/. 40' }, { value: 100, label: 'S/. 100' }]} 
           mb="xl"
-          color="dark"
+          color="cancha.9"
         />
 
-        <Text fw={600} size="sm" mt="xl" mb="xs">Servicios Ofrecidos</Text>
+        <Text fw={700} size="sm" mt="xl" mb="md">Horario de Juego</Text>
+        <RangeSlider 
+          defaultValue={[8, 26]} 
+          min={8} max={26} 
+          step={1}
+          minRange={1}
+          label={(value) => value >= 24 ? `0${value - 24}:00` : `${value}:00`}
+          marks={[
+            { value: 8, label: <Group gap={4}><IconSun size={12}/>08:00</Group> }, 
+            { value: 14, label: '14:00' }, 
+            { value: 20, label: '20:00' }, 
+            { value: 26, label: <Group gap={4}><IconMoon size={12}/>02:00</Group> }
+          ]} 
+          mb="xl"
+          color="cancha.9"
+        />
+
+        <Text fw={700} size="sm" mt="xl" mb="xs">Servicios</Text>
         <Group gap="sm" mb="xl">
-          <Checkbox label="Estacionamiento" color="dark" defaultChecked />
-          <Checkbox label="Duchas" color="dark" />
-          <Checkbox label="WiFi" color="dark" />
-          <Checkbox label="Bar / Snack" color="dark" />
+          {["Estacionamiento", "Tienda Snack", "Baños", "Duchas", "Vestidores", "WiFi", "Seguridad", "Cámara"].map(s => (
+            <Checkbox key={s} label={s} color="cancha.9" defaultChecked={s === 'Estacionamiento' || s === 'Baños'} />
+          ))}
         </Group>
 
-        <Button fullWidth color="dark" onClick={() => setFiltersDrawerOpen(false)}>Aplicar Filtros</Button>
+        <Button fullWidth color="cancha.9" onClick={() => setFiltersDrawerOpen(false)}>Aplicar Filtros</Button>
       </Drawer>
     </div>
   );

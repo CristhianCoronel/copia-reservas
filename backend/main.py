@@ -48,27 +48,47 @@ async def health_check():
 @app.get("/api/v1/b2c/canchas", tags=["B2C - Booking"])
 async def listar_canchas(db: AsyncSession = Depends(get_db)):
     """Endpoint MVP: Obtiene la lista de canchas activas."""
-    result = await db.execute(
-        select(booking_models.Cancha).where(booking_models.Cancha.is_active == True)
-    )
-    canchas = result.scalars().all()
-    
-    # Formateamos para que coincida con la interfaz Court del Frontend
-    data = []
-    for c in canchas:
-        data.append({
-            "id": str(c.id),
-            "name": c.nombre,
-            "sport": "FUTBOL5", # MVP Hardcode
+    data = [
+        {
+            "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee1",
+            "name": "La 7 de Balta (Sintético)",
+            "sport": "Fútbol 7",
             "isCovered": False,
-            "services": ["Estacionamiento", "Duchas"],
-            "regularPrice": 120.0,
-            "peakPrice": 150.0,
-            "imageColor": "#1E293B",
-            "distanceKm": 1.5,
-            "address": "Sede Principal",
-            "rules": "Prohibido toperoles"
-        })
+            "address": "Av. Balta 123, Chiclayo",
+            "distanceKm": 1.2,
+            "companyName": "Chiclayo Deportes",
+            "regularPrice": 50.0,
+            "peakPrice": 90.0,
+            "services": ["Estacionamiento", "Duchas", "Tienda Snack"],
+            "images": []
+        },
+        {
+            "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee2",
+            "name": "El 5 Rápido",
+            "sport": "Fútbol 5",
+            "isCovered": True,
+            "address": "Av. Balta 123, Chiclayo",
+            "distanceKm": 1.2,
+            "companyName": "Chiclayo Deportes",
+            "regularPrice": 40.0,
+            "peakPrice": 80.0,
+            "services": ["Estacionamiento", "Baños"],
+            "images": []
+        },
+        {
+            "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee3",
+            "name": "La 11 Oficial",
+            "sport": "Fútbol 11",
+            "isCovered": False,
+            "address": "Av. Grau 456, Chiclayo",
+            "distanceKm": 2.5,
+            "companyName": "Complejo Grau",
+            "regularPrice": 80.0,
+            "peakPrice": 100.0,
+            "services": ["Estacionamiento", "Baños", "Duchas", "Vestidores", "WiFi", "Seguridad"],
+            "images": []
+        }
+    ]
     return {"data": data}
 
 @app.get("/api/v1/player/profile/me", tags=["B2C - Player"])

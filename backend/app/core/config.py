@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     google_client_id: str = ""
     google_client_secret: str = ""
     
-    cors_origins: List[str] = ["*"]
+    cors_origins: List[str] = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4261"]
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
