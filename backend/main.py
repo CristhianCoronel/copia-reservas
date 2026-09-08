@@ -11,6 +11,12 @@ from app.domains.auth import models as auth_models
 from app.domains.b2b_core import models as b2b_models
 from app.domains.booking import models as booking_models
 
+from app.domains.auth.router import router as auth_router
+from app.domains.b2b_core.router import router as b2b_router
+from app.domains.booking.router import router as booking_router
+
+# (Espacio en blanco)
+
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -47,6 +53,11 @@ async def listar_canchas(db: AsyncSession = Depends(get_db)):
     )
     canchas = result.scalars().all()
     return {"data": [{"id": str(c.id), "nombre": c.nombre, "deporte_id": str(c._deporte_id)} for c in canchas]}
+
+# Aquí montamos los routers oficiales
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth & Identity"])
+app.include_router(b2b_router, prefix="/api/v1/b2b", tags=["B2B - Administration"])
+app.include_router(booking_router, prefix="/api/v1/b2c/reservas", tags=["B2C - Booking"])
 
 if __name__ == "__main__":
     import uvicorn
