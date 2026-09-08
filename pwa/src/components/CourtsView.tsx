@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, Text, Group, Badge, Button, ScrollArea, Modal, Loader, Center, UnstyledButton, Drawer, Checkbox, RangeSlider, ActionIcon, Image, Tabs } from '@mantine/core';
-import { IconSun, IconMoon, IconCheck, IconAlertTriangle, IconFilter, IconMapPin, IconBrandWhatsapp, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
+import { IconSun, IconMoon, IconCheck, IconAlertTriangle, IconFilter, IconMapPin, IconBrandWhatsapp, IconChevronLeft, IconChevronRight, IconClock, IconStar } from '@tabler/icons-react';
 import { apiCall } from '../api';
 
 interface Court {
@@ -273,51 +273,67 @@ export function CourtsView() {
             <Card key={court.id} shadow="sm" padding="lg" radius="md" withBorder>
               <Card.Section 
               style={{ 
-                backgroundColor: 'var(--mantine-color-cancha-8)', 
+                backgroundColor: 'var(--mantine-color-cancha-2)', 
                 backgroundImage: court.images && court.images.length > 0 
-                  ? `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.8)), url(${court.images[0]})` 
-                  : 'linear-gradient(to bottom right, var(--mantine-color-cancha-7), var(--mantine-color-cancha-9))',
+                  ? `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5)), url(${court.images[0]})` 
+                  : 'linear-gradient(to bottom right, var(--mantine-color-cancha-2), var(--mantine-color-cancha-3))',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 height: 140, 
-                padding: 16, 
+                padding: 12, 
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'flex-end'
+                justifyContent: 'flex-start',
+                alignItems: 'flex-start'
               }}
             >
-              <Group justify="space-between">
-                <Badge color="rgba(0,0,0,0.5)" size="sm" variant="filled" c="white">{court.sport}</Badge>
-                {court.isCovered && <Badge color="rgba(255,255,255,0.2)" size="sm" variant="filled" c="white">Techada</Badge>}
+              <Group gap={8}>
+                <Badge color="var(--mantine-color-cancha-9)" size="sm" variant="filled" c="white">{court.sport}</Badge>
+                {court.isCovered && <Badge bg="#DEF0E6" c="cancha.9" size="sm" variant="filled">Techada</Badge>}
               </Group>
-              <Text fw={800} size="lg" mt="xs" c="white">{court.name}</Text>
             </Card.Section>
             
-            <Group gap={4} mt="sm">
-              <IconMapPin size={14} color="gray" stroke={1.5} />
-              <Text size="xs" fw={700} c="dimmed">{court.distanceKm ? `${court.distanceKm} km` : '2.0 km'} - {court.address || court.companyName}</Text>
+            <Text fw={800} size="lg" mt="md" c="dark">{court.name}</Text>
+            
+            <Group gap={6} mt="xs">
+              <IconMapPin size={16} color="var(--mantine-color-dimmed)" stroke={1.5} />
+              <Text size="sm" c="dimmed">{court.distanceKm ? `${court.distanceKm} km` : '2.0 km'} - {court.address || court.companyName}</Text>
             </Group>
 
-            <Group gap={4} mt="xs" mb="md">
+            <Group gap={4} mt="sm">
               {court.services.map((s: string) => (
-                <Badge key={s} color="gray" variant="light" size="xs" radius="sm">{s}</Badge>
+                <Badge key={s} bg="#DEF0E6" c="cancha.9" variant="filled" size="xs" radius="sm">{s}</Badge>
               ))}
             </Group>
 
-            <Group gap="md" mb="lg" align="center">
-              <Group gap={4}>
-                <IconSun size={18} color="var(--mantine-color-yellow-6)" stroke={1.5} />
-                <Text fw={800} size="md" c="dark">S/ {court.regularPrice}</Text>
-              </Group>
-              <Group gap={4}>
-                <IconMoon size={18} color="var(--mantine-color-indigo-6)" stroke={1.5} />
-                <Text fw={800} size="md" c="dark">S/ {court.peakPrice}</Text>
-              </Group>
+            <Group gap={6} mt="sm">
+              <IconClock size={16} color="var(--mantine-color-dimmed)" stroke={1.5} />
+              <Text size="sm" c="dimmed">Atención desde 08:00 am hasta 11:00 pm</Text>
             </Group>
-  
-              <Button fullWidth color="altoke.5" c="cancha.9" onClick={() => { setSelectedCourt(court); setCurrentImageIndex(0); }}>
+
+            <Group gap={6} mt="xs">
+              <IconStar size={16} color="var(--mantine-color-altoke-5)" stroke={1.5} style={{ fill: 'var(--mantine-color-altoke-5)' }} />
+              <Text size="sm" c="dimmed">4.8 (32 reseñas)</Text>
+            </Group>
+
+            <Group justify="space-between" mt="lg" align="flex-end" wrap="nowrap">
+              <div>
+                <Text size="xs" c="dimmed" mb={4} fw={600}>Precio:</Text>
+                <Group gap={12}>
+                  <Group gap={4}>
+                    <IconSun size={16} color="var(--mantine-color-yellow-6)" stroke={1.5} />
+                    <Text fw={800} size="sm" c="dark">S/{court.regularPrice}<Text component="span" size="xs" c="dimmed" fw={500}>/hora</Text></Text>
+                  </Group>
+                  <Group gap={4}>
+                    <IconMoon size={16} color="var(--mantine-color-indigo-6)" stroke={1.5} />
+                    <Text fw={800} size="sm" c="dark">S/{court.peakPrice}<Text component="span" size="xs" c="dimmed" fw={500}>/hora</Text></Text>
+                  </Group>
+                </Group>
+              </div>
+              <Button color="altoke.5" c="cancha.9" radius="xl" onClick={() => { setSelectedCourt(court); setCurrentImageIndex(0); }}>
                 Separar Altoke
               </Button>
+            </Group>
             </Card>
           ))}
         </div>
