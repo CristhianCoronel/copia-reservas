@@ -207,8 +207,8 @@ export function CourtsView() {
         <Text fw={700}>Fecha a jugar</Text>
         <Group gap="xs">
           <Text size="xs" fw={700} c="var(--mantine-color-cancha-9)">{weekTitle}</Text>
-          <ActionIcon variant="light" color="cancha.9" size="sm" onClick={() => setWeekOffset(o => Math.max(0, o - 1))} disabled={weekOffset === 0}><IconChevronLeft size={16} stroke={1.5} /></ActionIcon>
-          <ActionIcon variant="light" color="cancha.9" size="sm" onClick={() => setWeekOffset(o => o + 1)}><IconChevronRight size={16} stroke={1.5} /></ActionIcon>
+          <ActionIcon variant="filled" color="cancha.9" size="sm" onClick={() => setWeekOffset(o => Math.max(0, o - 1))} disabled={weekOffset === 0}><IconChevronLeft size={16} stroke={1.5} /></ActionIcon>
+          <ActionIcon variant="filled" color="cancha.9" size="sm" onClick={() => setWeekOffset(o => o + 1)}><IconChevronRight size={16} stroke={1.5} /></ActionIcon>
         </Group>
       </Group>
       <ScrollArea type="never" mb="lg">
