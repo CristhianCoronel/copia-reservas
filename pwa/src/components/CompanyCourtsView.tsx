@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, Text, Group, Button, Divider, Badge, Modal, TextInput, Select, MultiSelect, NumberInput, Textarea, ActionIcon } from '@mantine/core';
 import { IconPlus, IconTag, IconCalendarTime, IconLock, IconCheck, IconTrash } from '@tabler/icons-react';
+import { apiCall } from '../api';
 
 interface CompanyCourt {
   id: string;
@@ -23,6 +24,19 @@ export function CompanyCourtsView() {
   const [isBloqueoOpen, setIsBloqueoOpen] = useState(false);
 
   const [selectedCourt, setSelectedCourt] = useState<CompanyCourt | null>(null);
+  const [sportsOptions, setSportsOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function loadSports() {
+      try {
+        const res = await apiCall('/api/v1/system/catalogs');
+        if (res.status && res.data?.sports) {
+          setSportsOptions(res.data.sports.filter((s: any) => s.is_active).map((s: any) => s.name));
+        }
+      } catch (e) { console.error(e); }
+    }
+    loadSports();
+  }, []);
 
   const openTarifa = (court: CompanyCourt) => {
     setSelectedCourt(court);
@@ -81,7 +95,7 @@ export function CompanyCourtsView() {
         <Select 
           label="Deporte (Catálogo Oficial)" 
           placeholder="Selecciona el deporte" 
-          data={['Fútbol', 'Pádel', 'Básquet', 'Tenis', 'Vóley']} 
+          data={sportsOptions} 
           required 
           mb="md" 
         />

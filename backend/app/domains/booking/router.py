@@ -157,5 +157,97 @@ async def get_social_groups():
     return {"data": []}
 
 @router.get("/system/catalogs", tags=["System - SuperAdmin"])
-async def get_system_catalogs():
-    return {"data": [{"id": "1", "name": "Deportes", "items": 4}]}
+async def get_system_catalogs(db: AsyncSession = Depends(get_db)):
+    """Obtiene los catálogos del sistema: deportes y servicios."""
+    deportes_result = await db.execute(select(models.Deporte))
+    servicios_result = await db.execute(select(models.Servicio))
+    
+    deportes = deportes_result.scalars().all()
+    servicios = servicios_result.scalars().all()
+    
+    return {"status": True, "data": {
+        "sports": [{"id": str(d.id), "name": d.nombre, "is_active": d.is_active} for d in deportes],
+        "services": [{"id": str(s.id), "name": s.nombre, "icon": s.icono, "category": s.categoria} for s in servicios]
+    }}
+
+# --- CRUD Deportes ---
+from pydantic import BaseModel
+from typing import Optional
+
+class DeportePayload(BaseModel):
+    nombre: str
+    is_active: bool = True
+
+class ServicioPayload(BaseModel):
+    nombre: str
+    icono: Optional[str] = None
+    categoria: Optional[str] = None
+
+@router.post("/system/catalogs/deportes", tags=["System - SuperAdmin"])
+async def create_deporte(payload: DeportePayload, db: AsyncSession = Depends(get_db)):
+    nuevo = models.Deporte(nombre=payload.nombre, is_active=payload.is_active)
+    db.add(nuevo)
+    await db.commit()
+    await db.refresh(nuevo)
+    return {"status": True, "data": {"id": str(nuevo.id), "name": nuevo.nombre, "is_active": nuevo.is_active}}
+
+@router.put("/system/catalogs/deportes/{deporte_id}", tags=["System - SuperAdmin"])
+async def update_deporte(deporte_id: str, payload: DeportePayload, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(models.Deporte).where(models.Deporte.id == deporte_id))
+    deporte = result.scalars().first()
+    if not deporte:
+        raise HTTPException(status_code=404, detail="Deporte no encontrado")
+    deporte.nombre = payload.nombre
+    deporte.is_active = payload.is_active
+    await db.commit()
+    return {"status": True, "data": {"id": str(deporte.id), "name": deporte.nombre, "is_active": deporte.is_active}}
+
+@router.delete("/system/catalogs/deportes/{deporte_id}", tags=["System - SuperAdmin"])
+async def delete_deporte(deporte_id: str, db: AsyncSession = Depends(get_db)):
+    # Verificar que no haya canchas vinculadas
+    canchas_result = await db.execute(select(models.Cancha).where(models.Cancha._deporte_id == deporte_id))
+    if canchas_result.scalars().first():
+        raise HTTPException(status_code=409, detail="No se puede eliminar: hay canchas vinculadas a este deporte")
+    result = await db.execute(select(models.Deporte).where(models.Deporte.id == deporte_id))
+    deporte = result.scalars().first()
+    if not deporte:
+        raise HTTPException(status_code=404, detail="Deporte no encontrado")
+    await db.delete(deporte)
+    await db.commit()
+    return {"status": True, "message": "Deporte eliminado"}
+
+# --- CRUD Servicios ---
+@router.post("/system/catalogs/servicios", tags=["System - SuperAdmin"])
+async def create_servicio(payload: ServicioPayload, db: AsyncSession = Depends(get_db)):
+    nuevo = models.Servicio(nombre=payload.nombre, icono=payload.icono, categoria=payload.categoria)
+    db.add(nuevo)
+    await db.commit()
+    await db.refresh(nuevo)
+    return {"status": True, "data": {"id": str(nuevo.id), "name": nuevo.nombre, "icon": nuevo.icono, "category": nuevo.categoria}}
+
+@router.put("/system/catalogs/servicios/{servicio_id}", tags=["System - SuperAdmin"])
+async def update_servicio(servicio_id: str, payload: ServicioPayload, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(models.Servicio).where(models.Servicio.id == servicio_id))
+    servicio = result.scalars().first()
+    if not servicio:
+        raise HTTPException(status_code=404, detail="Servicio no encontrado")
+    servicio.nombre = payload.nombre
+    servicio.icono = payload.icono
+    servicio.categoria = payload.categoria
+    await db.commit()
+    return {"status": True, "data": {"id": str(servicio.id), "name": servicio.nombre, "icon": servicio.icono, "category": servicio.categoria}}
+
+@router.delete("/system/catalogs/servicios/{servicio_id}", tags=["System - SuperAdmin"])
+async def delete_servicio(servicio_id: str, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+    # Verificar que no haya sedes vinculadas
+    linked = await db.execute(text("SELECT 1 FROM sede_servicio WHERE servicio_id = :sid LIMIT 1"), {"sid": servicio_id})
+    if linked.first():
+        raise HTTPException(status_code=409, detail="No se puede eliminar: hay sedes vinculadas a este servicio")
+    result = await db.execute(select(models.Servicio).where(models.Servicio.id == servicio_id))
+    servicio = result.scalars().first()
+    if not servicio:
+        raise HTTPException(status_code=404, detail="Servicio no encontrado")
+    await db.delete(servicio)
+    await db.commit()
+    return {"status": True, "message": "Servicio eliminado"}

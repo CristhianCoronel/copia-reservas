@@ -5,6 +5,19 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.core.mixins import AuditMixin
 
+class Deporte(AuditMixin, Base):
+    __tablename__ = "_deporte"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    nombre = Column(String(100), unique=True, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+class Servicio(AuditMixin, Base):
+    __tablename__ = "_servicio"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    nombre = Column(String(100), unique=True, nullable=False)
+    icono = Column(String(100))
+    categoria = Column(String(50))
+
 class Cancha(AuditMixin, Base):
     __tablename__ = "cancha"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

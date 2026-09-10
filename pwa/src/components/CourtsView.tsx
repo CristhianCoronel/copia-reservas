@@ -49,6 +49,7 @@ export function CourtsView() {
 
   const [fetchingCourts, setFetchingCourts] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [sportsList, setSportsList] = useState<string[]>([]);
 
   const datesList = (() => {
     const dates = [];
@@ -90,6 +91,18 @@ export function CourtsView() {
       setSelectedDate(datesList[0].toISOString().split('T')[0]);
     }
   }, [weekOffset]);
+
+  useEffect(() => {
+    async function loadSports() {
+      try {
+        const res = await apiCall('/api/v1/system/catalogs');
+        if (res.status && res.data?.sports) {
+          setSportsList(res.data.sports.filter((s: any) => s.is_active).map((s: any) => s.name));
+        }
+      } catch (e) { console.error(e); }
+    }
+    loadSports();
+  }, []);
 
   const handleDateSelect = (dateStr: string) => {
     if (dateStr === selectedDate) return;
@@ -249,7 +262,7 @@ export function CourtsView() {
       
       <ScrollArea type="never" mb="md">
         <Group wrap="nowrap" gap="xs">
-          {['TODOS', 'Fútbol 5', 'Fútbol 7', 'Fútbol 11', 'Vóley'].map((sport) => (
+          {['TODOS', ...sportsList].map((sport) => (
             <Button 
               key={sport} 
               variant={selectedSport === sport ? 'filled' : 'outline'}

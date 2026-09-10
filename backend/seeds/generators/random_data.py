@@ -101,7 +101,6 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                 "valor_adelanto_requerido": 50.00
             })
             
-            # 1. Contrato
             data["contrato"].append({
                 "id": macro_processor.process(f"${{UUID:fake_contrato_{i}}}"),
                 "empresa_id": empresa_id,
@@ -113,7 +112,6 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                 "is_active": True
             })
 
-            # 2. Sede Horario Atencion (0 = Lunes a 6 = Domingo)
             for dia in range(7):
                 data["sede_horario_atencion"].append({
                     "id": macro_processor.process(f"${{UUID:fake_sede_horario_{i}_{dia}}}"),
@@ -123,7 +121,6 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                     "hora_cierre": "23:00:00"
                 })
 
-            # 3. Servicios de la Sede
             servicio_keys = [
                 "servicio_estacionamiento", "servicio_tienda", "servicio_banos",
                 "servicio_duchas", "servicio_vestidores", "servicio_wifi",
@@ -140,7 +137,6 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                     "descripcion": None
                 })
 
-            # 4. Cancha y Horarios
             cancha_id = macro_processor.process(f"${{UUID:fake_cancha_{i}}}")
             data["cancha"].append({
                 "id": cancha_id,
@@ -152,7 +148,6 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
             })
             
             for dia in range(7):
-                # Horario regular (Valle)
                 data["cancha_horario"].append({
                     "id": macro_processor.process(f"${{UUID:fake_cancha_horario_valle_{i}_{dia}}}"),
                     "cancha_id": cancha_id,
@@ -162,7 +157,6 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                     "precio_por_hora": 60.00,
                     "is_active": True
                 })
-                # Horario Pico
                 data["cancha_horario"].append({
                     "id": macro_processor.process(f"${{UUID:fake_cancha_horario_pico_{i}_{dia}}}"),
                     "cancha_id": cancha_id,
@@ -173,11 +167,10 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                     "is_active": True
                 })
             
-            # 4.5 Fotos de la Cancha (Imágenes de Unsplash)
             imagenes_unsplash = [
                 "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
                 "https://images.unsplash.com/photo-1459865264687-595d652de67e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-                "https://images.unsplash.com/photo-1518605368461-1ee7c515a81e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
             ]
             
             for f_idx, img_url in enumerate(random.sample(imagenes_unsplash, 2)):
@@ -188,12 +181,9 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                     "orden": f_idx
                 })
             
-            # 5. Reservas aleatorias (Próximos 4 días)
-            # Generar de 1 a 3 reservas por cancha para los próximos 4 días
             num_reservas = random.randint(1, 3)
             fechas_elegidas = random.sample(next_4_days, k=min(num_reservas, 4))
             for idx, fecha in enumerate(fechas_elegidas):
-                # Horario aleatorio entre 16:00 y 22:00
                 hora_inicio_int = random.randint(16, 22)
                 hora_fin_int = hora_inicio_int + 1
                 
@@ -204,7 +194,7 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                     "id": macro_processor.process(f"${{UUID:fake_reserva_{i}_{idx}}}"),
                     "cancha_id": cancha_id,
                     "tipo_origen": "INDIVIDUAL",
-                    "persona_organizadora_id": persona_id, # Usamos al creador u otro aleatorio
+                    "persona_organizadora_id": persona_id,
                     "fecha_reserva": fecha.isoformat(),
                     "hora_inicio_solicitada": f"{hora_inicio_int:02d}:00:00",
                     "hora_fin_solicitada": f"{hora_fin_int:02d}:00:00",
@@ -214,7 +204,7 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                     "precio_hora_historico": precio,
                     "precio_total_cancha": precio,
                     "monto_total_final": precio,
-                    "_saldo_pendiente": 0.00, # O precio si debe
+                    "_saldo_pendiente": 0.00,
                     "estado": "CONFIRMADA",
                     "share_token": f"rsv-{random.randint(100000, 999999)}"
                 })

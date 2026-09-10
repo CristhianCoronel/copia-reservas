@@ -116,12 +116,9 @@ async def seed(env: str, reset: bool, fake_count: int):
         if fake_count > 0:
             all_tables.extend(fake_data.keys())
             
-    # Remove duplicates preserving order
     all_tables = list(dict.fromkeys(all_tables))
     
     from sqlalchemy import text
-    
-    # Ocultar los logs de ejecución de SQL para el conteo final
     engine.sync_engine.echo = False
     
     async with engine.begin() as conn:
