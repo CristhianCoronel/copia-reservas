@@ -30,7 +30,7 @@ export function PlayerReservationsView() {
   const [voucherModalBooking, setVoucherModalBooking] = useState<PlayerBooking | null>(null);
 
   useEffect(() => {
-    // Simulating API call with rich mock data
+    // ::!todo!::Conectar con API real
     setTimeout(() => {
       setBookings([
         {

@@ -1,0 +1,4 @@
+id,username,email,telefono,proveedor_auth,rol,is_active,email_verificado,password_hash,codigo_referido
+${UUID:usuario_admin},admin_altoke,admin@separaaltoke.com,+51999999999,LOCAL,ADMIN,true,true,${HASH_PASSWORD:admin123},ADM001
+${UUID:usuario_dueno},dueno_chiclayo,dueno@chiclayo.com,+51987654321,LOCAL,PLAYER,true,true,${HASH_PASSWORD:dueno123},DUE001
+${UUID:usuario_jugador},jugador_pro,jugador@test.com,+51912345678,LOCAL,PLAYER,true,true,${HASH_PASSWORD:jugador123},JUG001

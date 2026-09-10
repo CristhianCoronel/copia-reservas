@@ -12,32 +12,27 @@ export function AuthView({ onLogin }: AuthViewProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleAuth = async () => {
     setLoading(true);
+    setErrorMsg('');
 
     if (!email) {
-      alert("Ingresa un usuario o correo electrónico.");
-      setLoading(false);
-      return;
-    }
-
-    if (email !== 'juan' && email !== 'admin' && email !== '999999999') {
-      alert("Credenciales incorrectas (prueba con 'juan', 'admin' o '999999999')");
+      setErrorMsg("Ingresa un usuario o correo electrónico.");
       setLoading(false);
       return;
     }
 
     try {
-      // Usamos el endpoint mockeado que configuramos
       const res = await apiCall('/api/v1/auth/login', 'POST', { email, password });
       if (res.status && res.data.token) {
         localStorage.setItem('token', res.data.token);
         onLogin();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Ocurrió un error al intentar autenticarse.");
+      setErrorMsg(error.message || "Credenciales incorrectas o error en el servidor.");
     } finally {
       setLoading(false);
     }
@@ -66,11 +61,12 @@ export function AuthView({ onLogin }: AuthViewProps) {
         ) : (
           <>
             <TextInput
-              placeholder="Usuario"
+              placeholder="Usuario o Correo"
               leftSection={<IconUser size={18} color="#94A3B8" />}
               size="md"
               value={email}
               onChange={(e) => setEmail(e.currentTarget.value)}
+              error={errorMsg !== ''}
             />
 
             <PasswordInput
@@ -79,7 +75,14 @@ export function AuthView({ onLogin }: AuthViewProps) {
               size="md"
               value={password}
               onChange={(e) => setPassword(e.currentTarget.value)}
+              error={errorMsg !== ''}
             />
+
+            {errorMsg && (
+              <Text c="red" size="sm" ta="center">
+                {errorMsg}
+              </Text>
+            )}
 
             <Group justify="flex-end">
               <Anchor component="button" size="xs" c="dimmed" style={{ textDecoration: 'none' }}>

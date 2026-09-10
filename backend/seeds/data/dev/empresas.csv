@@ -1,0 +1,2 @@
+id,creada_por_persona_id,share_token,ruc,razon_social,nombre_comercial,estado_aprobacion,telefono_contacto,email_contacto
+${UUID:empresa_1},${UUID:persona_dueno},triple-doble-share,20123456789,Triple Doble SAC,Triple Doble,APROBADA,+51987654321,contacto@tripledoble.com

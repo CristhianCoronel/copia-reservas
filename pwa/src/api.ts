@@ -5,14 +5,12 @@ export async function apiCall<T = any>(
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' = 'GET',
   body?: any
 ): Promise<{ message: string; status: boolean; data: T }> {
-  // Obtenemos el JWT almacenado durante el login
   const token = localStorage.getItem('token');
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   };
   
-  // Si existe el token, lo agregamos en el formato estándar Bearer
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -22,13 +20,11 @@ export async function apiCall<T = any>(
     headers,
   };
   
-  // Agregamos el body solo para métodos que lo soportan
   if (body && ['POST', 'PUT', 'PATCH'].includes(method)) {
     config.body = JSON.stringify(body);
   }
   
   try {
-    // Usamos fetch nativo para la petición
     const response = await fetch(`${API_URL}${endpoint}`, config);
     if (!response.ok) {
       throw new Error(`Error en la petición HTTP: ${response.status} ${response.statusText}`);

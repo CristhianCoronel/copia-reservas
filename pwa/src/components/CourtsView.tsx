@@ -52,7 +52,8 @@ export function CourtsView() {
 
   const datesList = (() => {
     const dates = [];
-    const baseDate = new Date(); // Today
+    const baseDate = new Date();
+
     baseDate.setHours(12, 0, 0, 0);
     baseDate.setDate(baseDate.getDate() + (weekOffset * 7));
     for (let i = 0; i < 7; i++) {
@@ -84,7 +85,6 @@ export function CourtsView() {
     return `${days[d.getDay()]} ${d.getDate()} de ${months[d.getMonth()]}`;
   };
 
-  // Set default selected date initially
   useEffect(() => {
     if (datesList.length > 0 && !selectedDate) {
       setSelectedDate(datesList[0].toISOString().split('T')[0]);
@@ -98,7 +98,6 @@ export function CourtsView() {
     setTimeout(() => setFetchingCourts(false), 800);
   };
 
-  // Cada vez que cambia la cancha o fecha, cargamos disponibilidad
   useEffect(() => {
     if (selectedCourt) {
       const mockAvail = [
@@ -153,7 +152,7 @@ export function CourtsView() {
   const handleConfirmBooking = async () => {
     try {
       await apiCall('/api/v1/b2c/reservas/', 'POST', {
-        usuario_id: "11111111-1111-1111-1111-111111111111", // Mock ID from new seed
+        usuario_id: "11111111-1111-1111-1111-111111111111", // ::!todo!::Usar ID de usuario real
         cancha_id: selectedCourt?.id,
         fecha_reserva: selectedDate,
         hora_inicio: selectedTimeSlots[0].time.split(' - ')[0] + ":00",
@@ -194,7 +193,6 @@ export function CourtsView() {
         if (slotHour === hours[0] - 1 || slotHour === hours[hours.length - 1] + 1) {
           setSelectedTimeSlots([...selectedTimeSlots, slot]);
         } else {
-          // Restart selection block
           setSelectedTimeSlots([slot]);
         }
       }

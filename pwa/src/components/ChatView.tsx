@@ -16,7 +16,6 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
   if (activeChat) {
     return (
       <Box style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)' }}>
-        {/* Header del Chat Interno */}
         <Group wrap="nowrap" mb={0} align="center" style={{ borderBottom: '1px solid var(--mantine-color-default-border)', padding: '16px 16px 12px 16px' }}>
           <ActionIcon variant="subtle" color="dark" onClick={() => setActiveChat(null)}>
             <IconChevronLeft size={20} />
@@ -29,11 +28,9 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
           </div>
         </Group>
 
-        {/* Historial de Mensajes */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             
-            {/* Objeto Interactivo: RESERVA (Enviado por la Sede) */}
             <div style={{ alignSelf: 'flex-start', maxWidth: '85%', width: '100%' }}>
               <Text size="xs" c="dimmed" mb={4}>{activeChat} • 18:29</Text>
               <Card withBorder radius="md" padding="sm" shadow="sm">
@@ -60,7 +57,6 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
               </Card>
             </div>
 
-            {/* Mensaje de texto normal (Sede) */}
             <div style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
               <Text size="xs" c="dimmed" mb={4}>{activeChat} • 18:30</Text>
               <Box bg="light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6))" p="sm" style={{ borderRadius: '0 12px 12px 12px' }}>
@@ -68,7 +64,6 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
               </Box>
             </div>
 
-            {/* Mensaje de texto normal (Usuario) */}
             <div style={{ alignSelf: 'flex-end', maxWidth: '85%' }}>
               <Text size="xs" c="dimmed" mb={4} ta="right">Tú • 18:31</Text>
               <Box bg="dark" c="white" p="sm" style={{ borderRadius: '12px 0 12px 12px' }}>
@@ -76,7 +71,6 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
               </Box>
             </div>
 
-            {/* Objeto Interactivo: COMPROBANTE_PAGO (Enviado por el Usuario) */}
             <div style={{ alignSelf: 'flex-end', maxWidth: '85%', width: '100%' }}>
               <Text size="xs" c="dimmed" mb={4} ta="right">Tú • 18:32</Text>
               <Card withBorder radius="md" padding="sm" shadow="sm">
@@ -94,7 +88,6 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
               </Card>
             </div>
             
-            {/* Objeto Interactivo: INVITACION (Ejemplo adicional) */}
              <Center my="lg">
                 <Text size="xs" c="dimmed">-- Ejemplo de Objeto Interactivo: Invitación --</Text>
              </Center>
@@ -112,7 +105,6 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
           </div>
         </div>
 
-        {/* Input Area */}
         <Group wrap="nowrap" align="flex-end" style={{ padding: '0 16px 16px 16px' }}>
           <ActionIcon size={36} variant="light" color="gray">
             <IconPaperclip size={20} />
@@ -129,7 +121,6 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
     );
   }
 
-  // Lista de Chats
   return (
     <Box p={propsActiveChat !== undefined ? 0 : 16}>
       {propsActiveChat === undefined && (

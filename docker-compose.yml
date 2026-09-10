@@ -39,7 +39,22 @@ services:
     volumes:
       # Sincroniza el código en tiempo real para el hot-reload en desarrollo
       - ./backend:/app
+      - ./database:/database
     restart: unless-stopped
+
+  seeder:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: separaaltoke_seeder
+    profiles: ["seed"]
+    depends_on:
+      - db
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+    command: ["python", "-m", "seeds.cli", "seed", "--env", "dev", "--fake-count", "10"]
 
 volumes:
   postgres_data:

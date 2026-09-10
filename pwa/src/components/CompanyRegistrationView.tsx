@@ -7,7 +7,7 @@ export function CompanyRegistrationView() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   
-  // Simulamos que el usuario logueado en este momento no ha verificado su teléfono
+  // ::!todo!::Validar usuario real
   const [isUserPhoneVerified, setIsUserPhoneVerified] = useState(false);
 
   const [form, setForm] = useState({
@@ -27,7 +27,7 @@ export function CompanyRegistrationView() {
     try {
       const res = await apiCall('/api/v1/b2b/empresas', 'POST', {
         ...form,
-        creada_por_persona_id: "pe2a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d" // Mock MVP ID
+        creada_por_persona_id: "pe2a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d" // ::!todo!::Usar ID de usuario real
       });
       if (res.status) {
         setSuccess(true);

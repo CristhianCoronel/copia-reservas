@@ -12,7 +12,7 @@ def generate_share_token(prefix="emp"):
 
 @router.post("/empresas", response_model=schemas.EmpresaResponse, status_code=status.HTTP_201_CREATED)
 async def registrar_empresa(empresa_in: schemas.EmpresaCreate, db: AsyncSession = Depends(get_db)):
-    # Validar RUC único
+
     result = await db.execute(select(models.Empresa).where(models.Empresa.ruc == empresa_in.ruc))
     if result.scalars().first():
         raise HTTPException(status_code=400, detail="El RUC ya está registrado en la plataforma.")
@@ -28,7 +28,7 @@ async def registrar_empresa(empresa_in: schemas.EmpresaCreate, db: AsyncSession 
     )
     db.add(nueva_empresa)
     
-    # Otorgar contrato de ADMINISTRADOR a la persona que la crea
+
     await db.flush()
     nuevo_contrato = models.Contrato(
         empresa_id=nueva_empresa.id,
@@ -42,3 +42,23 @@ async def registrar_empresa(empresa_in: schemas.EmpresaCreate, db: AsyncSession 
     await db.commit()
     await db.refresh(nueva_empresa)
     return nueva_empresa
+
+
+@router.get("/system/companies/pending", tags=["System - SuperAdmin"])
+async def get_pending_companies(db: AsyncSession = Depends(get_db)):
+    """Obtiene la lista de empresas pendientes de validación/aprobación por sistema."""
+    query = select(models.Empresa).where(models.Empresa.estado_aprobacion == 'PENDIENTE')
+    result = await db.execute(query)
+    empresas = result.scalars().all()
+    
+    data = []
+    for e in empresas:
+        data.append({
+            "id": str(e.id),
+            "companyName": e.razon_social,
+            "contactName": e.contacto_legal if e.contacto_legal else "Sin Nombre",
+            "phone": e.telefono_contacto,
+            "document": e.ruc
+        })
+        
+    return {"data": data}

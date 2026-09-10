@@ -6,12 +6,11 @@ export function CompanyEditView() {
   const [activeTab, setActiveTab] = useState<string | null>('datos');
   const [activeSede, setActiveSede] = useState<string | null>('sede-1');
   
-  // Simulación de suscripción
+  // ::!todo!::Conectar con API real
   const isPremium = false;
 
   return (
     <div style={{ padding: 16 }}>
-      {/* Cabecera y Selector Multi-Sede */}
       <Group justify="space-between" align="center" mb="md">
         <div>
           <Text fw={800} size="xl">Gestión de Sede</Text>
@@ -44,7 +43,6 @@ export function CompanyEditView() {
           </Tabs.Tab>
         </Tabs.List>
 
-        {/* Pestaña: DATOS GENERALES */}
         <Tabs.Panel value="datos" pt="md">
           <Card withBorder padding="md" radius="md">
             <TextInput label="Nombre del Local" defaultValue="Sede Los Olivos" mb="md" />
@@ -71,7 +69,6 @@ export function CompanyEditView() {
           </Card>
         </Tabs.Panel>
 
-        {/* Pestaña: REGLAS Y PAGOS */}
         <Tabs.Panel value="reglas" pt="md">
           <Card withBorder padding="md" radius="md" mb="md">
             <Text fw={800} size="md" mb="md">Configuración de Pagos en Reservas</Text>
@@ -112,7 +109,6 @@ export function CompanyEditView() {
           </Card>
         </Tabs.Panel>
 
-        {/* Pestaña: PERSONAL Y CONTRATOS */}
         <Tabs.Panel value="personal" pt="md">
           {!isPremium ? (
             <Alert icon={<IconLock size={20} />} title="Plan Freemium" color="orange" mb="md">

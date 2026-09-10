@@ -15,7 +15,6 @@ export function WalletView() {
 
   return (
     <Box p="md">
-      {/* Tarjeta de Saldo */}
       <Card 
         shadow="md" 
         padding="xl" 
@@ -36,7 +35,6 @@ export function WalletView() {
         </Group>
       </Card>
       
-      {/* Botones de Acción */}
       <Group grow mt="md">
         <Button 
           color="dark" 
@@ -48,7 +46,6 @@ export function WalletView() {
         </Button>
       </Group>
 
-      {/* Historial de Movimientos */}
       <Title order={4} mt="xl" mb="md">Últimos Movimientos</Title>
       
       <Box style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -83,7 +80,6 @@ export function WalletView() {
         ))}
       </Box>
 
-      {/* Modal de Recarga con Voucher */}
       <Modal 
         opened={rechargeModalOpen} 
         onClose={() => {
@@ -129,7 +125,7 @@ export function WalletView() {
           disabled={!voucherFile}
           leftSection={<IconCheck size={16} />}
           onClick={() => {
-            // Lógica de simulación
+            // ::!todo!::Conectar con API real
             setRechargeModalOpen(false);
             setVoucherFile(null);
           }}

@@ -18,12 +18,10 @@ const mockCourts: CompanyCourt[] = [
 export function CompanyCourtsView() {
   const [courts, setCourts] = useState<CompanyCourt[]>(mockCourts);
   
-  // Modal States
   const [isNewCourtOpen, setIsNewCourtOpen] = useState(false);
   const [isTarifaOpen, setIsTarifaOpen] = useState(false);
   const [isBloqueoOpen, setIsBloqueoOpen] = useState(false);
 
-  // Selected Court for Modals
   const [selectedCourt, setSelectedCourt] = useState<CompanyCourt | null>(null);
 
   const openTarifa = (court: CompanyCourt) => {
@@ -78,7 +76,6 @@ export function CompanyCourtsView() {
         ))}
       </div>
 
-      {/* MODAL: Nueva Cancha */}
       <Modal opened={isNewCourtOpen} onClose={() => setIsNewCourtOpen(false)} title={<Text fw={800}>Crear Nueva Cancha</Text>} centered>
         <TextInput label="Nombre Identificador" placeholder="Ej. Cancha 3 - Loza Sur" required mb="md" />
         <Select 
@@ -98,7 +95,6 @@ export function CompanyCourtsView() {
         <Button fullWidth color="dark" mt="md" onClick={() => setIsNewCourtOpen(false)}>Guardar Cancha</Button>
       </Modal>
 
-      {/* MODAL: Tarifas Dinámicas */}
       <Modal opened={isTarifaOpen} onClose={() => setIsTarifaOpen(false)} title={<Text fw={800}>Configurar Tarifas: {selectedCourt?.name}</Text>} centered size="lg">
         <Text size="sm" c="dimmed" mb="md">Define el costo por hora según el momento del día.</Text>
         
@@ -127,7 +123,6 @@ export function CompanyCourtsView() {
         <Button fullWidth color="dark" mt="xl" onClick={() => setIsTarifaOpen(false)}>Actualizar Tarifario</Button>
       </Modal>
 
-      {/* MODAL: Bloqueos */}
       <Modal opened={isBloqueoOpen} onClose={() => setIsBloqueoOpen(false)} title={<Text fw={800}>Bloquear Cancha: {selectedCourt?.name}</Text>} centered>
         <Text size="sm" c="dimmed" mb="md">Impide que los clientes reserven esta cancha durante un rango de tiempo específico.</Text>
         

@@ -19,12 +19,11 @@ export function CompanyReservationsView() {
   const [activeTab, setActiveTab] = useState<string | null>('agenda');
   const [selectedCourt, setSelectedCourt] = useState<string | null>('1');
 
-  // Modales
   const [manualResModal, setManualResModal] = useState(false);
   const [detailModal, setDetailModal] = useState(false);
   const [cancelModal, setCancelModal] = useState(false);
 
-  // Datos mock para Agenda
+  // ::!todo!::Usar datos reales de Agenda
   const schedule = [
     { time: '18:00', status: 'LIBRE', user: null, phone: null, paymentStatus: null },
     { time: '19:00', status: 'OCUPADO', user: 'Juan Pérez', phone: '999888777', paymentStatus: 'CONFIRMADO' },
@@ -166,7 +165,6 @@ export function CompanyReservationsView() {
         </Tabs.Panel>
       </Tabs>
 
-      {/* Modal: Reserva Manual */}
       <Modal opened={manualResModal} onClose={() => setManualResModal(false)} title={<Text fw={800}>Registrar Reserva Manual</Text>} centered>
         <Alert color="blue" mb="md" variant="light">
           Agendando para: <b>Hoy a las {selectedSlot?.time}</b>
@@ -177,7 +175,6 @@ export function CompanyReservationsView() {
         <Button fullWidth color="dark" onClick={() => setManualResModal(false)}>Crear Reserva</Button>
       </Modal>
 
-      {/* Modal: Detalle Ocupado */}
       <Modal opened={detailModal} onClose={() => setDetailModal(false)} title={<Text fw={800}>Detalle del Turno</Text>} centered>
         <Card withBorder bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8))" mb="md">
           <Text fw={800} size="lg">{selectedSlot?.user}</Text>
@@ -192,7 +189,6 @@ export function CompanyReservationsView() {
         </Button>
       </Modal>
 
-      {/* Modal: Cancelar / Reembolso */}
       <Modal opened={cancelModal} onClose={() => setCancelModal(false)} title={<Text fw={800} c="red">Cancelar Turno</Text>} centered>
         <Text size="sm" mb="md">Al cancelar, liberarás la cancha para que otros puedan agendar.</Text>
         <Alert icon={<IconWallet size={16} />} title="Saldo a Favor (Monedero Sede)" color="grape" variant="light" mb="xl">

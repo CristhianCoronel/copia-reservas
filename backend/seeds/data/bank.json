@@ -1,0 +1,13 @@
+{
+  "nombres": ["Juan", "Carlos", "Luis", "Jorge", "Victor", "Diego", "Miguel", "Pedro", "Roberto", "Jose", "Maria", "Ana", "Carmen", "Rosa", "Elena", "Lucia", "Sofia", "Valeria", "Camila", "Valentina"],
+  "apellidos": ["Garcia", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Perez", "Sanchez", "Ramirez", "Torres", "Flores", "Rivera", "Gomez", "Diaz", "Cruz", "Reyes", "Morales", "Ortiz", "Gutierrez", "Chavez"],
+  "dominios_email": ["gmail.com", "hotmail.com", "yahoo.com", "outlook.com", "test.com", "correo.pe"],
+  "nombres_empresa": ["Deportes {apellido} SAC", "Canchas {nombre}", "Complejo Deportivo {apellido}", "{apellido} Sport Center", "Club {nombre}"],
+  "nombres_sede": ["Sede {distrito}", "{nombre} Centro", "{apellido} Norte", "Local Principal"],
+  "direcciones_sede": ["Av. Balta {numero}, {distrito}", "Calle Real {numero}, {distrito}", "Av. Grau {numero}, {distrito}", "Los Pinos {numero}, {distrito}"],
+  "nombres_cancha_f5": ["El 5 Rápido", "Cancha 1", "Sintético F5", "La Pichanga", "F5 Techado"],
+  "nombres_cancha_f7": ["La 7 Oficial", "Sintético Pro 7v7", "Cancha Principal", "F7 VIP", "La 7 Libre"],
+  "nombres_cancha_f11": ["Estadio Principal", "Grama F11", "La Oficial", "Cancha 11x11"],
+  "tipos_superficie": ["Grass Sintético", "Grass Natural", "Loza", "Parquet"],
+  "nombres_equipo": ["Los {apellido} FC", "{distrito} City", "Sporting {nombre}", "Real {distrito}", "Club Atletico {apellido}", "Deportivo {nombre}"]
+}

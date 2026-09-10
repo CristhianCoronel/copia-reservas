@@ -1,0 +1,4 @@
+id,usuario_id,nombres,apellidos,tipo_documento,numero_documento
+${UUID:persona_admin},${UUID:usuario_admin},Admin,Sistema,DNI,00000000
+${UUID:persona_dueno},${UUID:usuario_dueno},Diego,Alarcón,DNI,45871236
+${UUID:persona_jugador},${UUID:usuario_jugador},Juan,García,DNI,22222222

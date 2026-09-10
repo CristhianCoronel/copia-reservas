@@ -3,6 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { IconPlayFootball, IconCompass, IconUsers, IconCalendarEvent, IconUser, IconBusinessplan, IconMapPin, IconBuilding, IconMessageCircle, IconWallet } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 import classes from './App.module.css';
+import { apiCall } from './api';
 
 import { CourtsView } from './components/CourtsView';
 import { SocialView } from './components/SocialView';
@@ -24,34 +25,64 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const { colorScheme } = useMantineColorScheme();
+  
+  const [accountsData, setAccountsData] = useState<any>(null);
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(localStorage.getItem('activeCompanyId'));
+  const [activeVenueId, setActiveVenueId] = useState<string | null>(localStorage.getItem('activeVenueId'));
 
-  // Verificar si hay token al montar la aplicación
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       setIsAuthenticated(true);
+      const savedMode = localStorage.getItem('appMode') as 'jugador' | 'empresa' | 'superadmin';
+      if (savedMode) setAppMode(savedMode);
+      
+      apiCall('/api/v1/player/profile/me/accounts').then(res => {
+        if (res.status === undefined || res.data) {
+          setAccountsData(res.data);
+        }
+      }).catch(console.error);
     }
   }, []);
 
+  const handleOpenModal = () => {
+    apiCall('/api/v1/player/profile/me/accounts').then(res => {
+      if (res.status === undefined || res.data) {
+        setAccountsData(res.data);
+      }
+    }).catch(console.error);
+    openModal();
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('appMode');
+    localStorage.removeItem('activeCompanyId');
+    localStorage.removeItem('activeVenueId');
     setIsAuthenticated(false);
   };
 
   const switchToJugador = () => {
     setAppMode('jugador');
+    localStorage.setItem('appMode', 'jugador');
     setActiveTab('canchas');
     closeModal();
   };
 
-  const switchToEmpresa = () => {
+  const switchToEmpresa = (companyId: string, venueId: string) => {
     setAppMode('empresa');
+    localStorage.setItem('appMode', 'empresa');
+    setActiveCompanyId(companyId);
+    localStorage.setItem('activeCompanyId', companyId);
+    setActiveVenueId(venueId);
+    localStorage.setItem('activeVenueId', venueId);
     setActiveTab('reservas');
     closeModal();
   };
 
   const switchToSuperAdmin = () => {
     setAppMode('superadmin');
+    localStorage.setItem('appMode', 'superadmin');
     setActiveTab('admin');
     closeModal();
   };
@@ -69,10 +100,8 @@ export default function App() {
   return (
     <Center style={{ minHeight: '100vh', backgroundColor: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-8))' }}>
       
-      {/* Contenedor Principal Flexbox */}
       <div className={classes.shellConstrain} style={{ backgroundColor: 'var(--mantine-color-body)' }}>
         
-        {/* Header con color de marca (Cancha 900) */}
         <header style={{ height: 60, backgroundColor: 'var(--mantine-color-cancha-9)', flexShrink: 0 }}>
           <Group h="100%" px="md" justify="space-between">
               <img 
@@ -81,10 +110,11 @@ export default function App() {
                 height={28} 
               />
             
-            {/* Avatar interactivo en lugar del botón */}
-            <UnstyledButton onClick={openModal}>
+            <UnstyledButton onClick={handleOpenModal}>
               {appMode === 'jugador' ? (
-                <Avatar color="altoke.5" radius="xl" size="sm" styles={{ placeholder: { color: 'var(--mantine-color-cancha-9)' } }}>JP</Avatar>
+                <Avatar color="altoke.5" radius="xl" size="sm" styles={{ placeholder: { color: 'var(--mantine-color-cancha-9)' } }}>
+                  {accountsData?.personal?.avatar || 'JP'}
+                </Avatar>
               ) : appMode === 'empresa' ? (
                 <Avatar src="https://images.unsplash.com/photo-1577223625816-7546f13df25d?auto=format&fit=crop&w=100&q=80" radius="md" size="sm" />
               ) : (
@@ -94,7 +124,6 @@ export default function App() {
           </Group>
         </header>
 
-        {/* Contenido Principal con Scroll Interno */}
         <main style={{ flex: 1, overflowY: 'auto' }}>
           <ScrollArea type="hover" style={{ height: '100%' }}>
             {appMode === 'jugador' && activeTab === 'canchas' && <CourtsView />}
@@ -119,7 +148,6 @@ export default function App() {
           </ScrollArea>
         </main>
 
-        {/* Footer */}
         <footer style={{ height: 70, borderTop: '1px solid var(--mantine-color-default-border)', flexShrink: 0 }}>
           <Group h="100%" grow px="md" gap={0}>
             {appMode === 'jugador' ? (
@@ -177,7 +205,6 @@ export default function App() {
 
       </div>
 
-      {/* Modal de Selector de Roles */}
       <Modal 
         opened={modalOpened} 
         onClose={closeModal} 
@@ -185,99 +212,87 @@ export default function App() {
         centered
         overlayProps={{ backgroundOpacity: 0.5, blur: 3 }}
       >
-        <Text fw={700} size="sm" c="dimmed" mb="xs">TU PERFIL PERSONAL</Text>
-        <Card 
-          padding="md" 
-          radius="md" 
-          withBorder 
-          mb="xl" 
-          style={{ cursor: 'pointer', borderColor: appMode === 'jugador' ? 'var(--mantine-color-text)' : undefined }}
-          onClick={switchToJugador}
-        >
-          <Group wrap="nowrap">
-            <Avatar color="altoke.5" radius="xl" size="md" styles={{ placeholder: { color: 'var(--mantine-color-cancha-9)' } }}>JP</Avatar>
-            <div style={{ flex: 1 }}>
-              <Text fw={800}>Juan Pérez</Text>
-              <Text size="xs" c="dimmed">Jugador</Text>
-            </div>
-          </Group>
-        </Card>
+        {accountsData && accountsData.personal && (
+          <>
+            <Text fw={700} size="sm" c="dimmed" mb="xs">TU PERFIL PERSONAL</Text>
+            <Card 
+              padding="md" 
+              radius="md" 
+              withBorder 
+              mb="xl" 
+              style={{ cursor: 'pointer', borderColor: appMode === 'jugador' ? 'var(--mantine-color-text)' : undefined }}
+              onClick={switchToJugador}
+            >
+              <Group wrap="nowrap">
+                <Avatar color="altoke.5" radius="xl" size="md" styles={{ placeholder: { color: 'var(--mantine-color-cancha-9)' } }}>
+                  {accountsData.personal.avatar}
+                </Avatar>
+                <div style={{ flex: 1 }}>
+                  <Text fw={800}>{accountsData.personal.fullName}</Text>
+                  <Text size="xs" c="dimmed">{accountsData.personal.role === 'ADMIN' ? 'Administrador' : 'Jugador'}</Text>
+                </div>
+              </Group>
+            </Card>
+          </>
+        )}
 
-        <Text fw={700} size="sm" c="dimmed" mb="xs">EMPRESAS Y SEDES</Text>
-        
-        {/* Empresa 1 */}
-        <Group gap={6} mb="xs"><IconBuilding size={16}/><Text size="xs" fw={800}>Separa Altoke Norte</Text></Group>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Card 
-            padding="sm" 
-            radius="md" 
-            withBorder 
-            style={{ cursor: 'pointer', borderColor: appMode === 'empresa' ? 'var(--mantine-color-text)' : undefined }}
-            onClick={switchToEmpresa}
-          >
-            <Group wrap="nowrap">
-              <Avatar src="https://images.unsplash.com/photo-1577223625816-7546f13df25d?auto=format&fit=crop&w=100&q=80" radius="md" size="md" />
-              <div style={{ flex: 1 }}>
-                <Text fw={800} size="sm">Complejo Triple Doble</Text>
-                <Text size="xs" c="dimmed"><IconMapPin size={10} /> Av. Principal 123</Text>
+        {accountsData && accountsData.companies && accountsData.companies.length > 0 && (
+          <>
+            <Text fw={700} size="sm" c="dimmed" mb="xs">EMPRESAS Y SEDES</Text>
+            {accountsData.companies.map((company: any) => (
+              <div key={company.id}>
+                <Group gap={6} mt="md" mb="xs">
+                  <IconBuilding size={16}/>
+                  <Text size="xs" fw={800}>{company.commercialName}</Text>
+                </Group>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {company.venues.map((venue: any) => (
+                    <Card 
+                      key={venue.id}
+                      padding="sm" 
+                      radius="md" 
+                      withBorder 
+                      style={{ cursor: 'pointer', borderColor: (appMode === 'empresa' && activeVenueId === venue.id) ? 'var(--mantine-color-text)' : undefined }}
+                      onClick={() => switchToEmpresa(company.id, venue.id)}
+                    >
+                      <Group wrap="nowrap">
+                        <Avatar src={`https://ui-avatars.com/api/?name=${encodeURIComponent(venue.name)}&background=random`} radius="md" size="md" />
+                        <div style={{ flex: 1 }}>
+                          <Text fw={800} size="sm">{venue.name}</Text>
+                          <Text size="xs" c="dimmed"><IconMapPin size={10} /> {venue.address}</Text>
+                        </div>
+                      </Group>
+                    </Card>
+                  ))}
+                  {company.venues.length === 0 && (
+                    <Text size="xs" c="dimmed" fs="italic">No hay sedes registradas en esta empresa.</Text>
+                  )}
+                </div>
               </div>
-            </Group>
-          </Card>
-          
-          <Card 
-            padding="sm" 
-            radius="md" 
-            withBorder 
-            style={{ cursor: 'pointer' }}
-            onClick={switchToEmpresa}
-          >
-            <Group wrap="nowrap">
-              <Avatar src="https://images.unsplash.com/photo-1518605368461-1e1e1fd51ed4?auto=format&fit=crop&w=100&q=80" radius="md" size="md" />
-              <div style={{ flex: 1 }}>
-                <Text fw={800} size="sm">Canchas El Golazo</Text>
-                <Text size="xs" c="dimmed"><IconMapPin size={10} /> Surco 456</Text>
-              </div>
-            </Group>
-          </Card>
-        </div>
+            ))}
+          </>
+        )}
 
-        {/* Empresa 2 */}
-        <Group gap={6} mt="md" mb="xs"><IconBuilding size={16}/><Text size="xs" fw={800}>Canchas El Barrio SAC</Text></Group>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Card 
-            padding="sm" 
-            radius="md" 
-            withBorder 
-            style={{ cursor: 'pointer' }}
-            onClick={switchToEmpresa}
-          >
-            <Group wrap="nowrap">
-              <Avatar src="https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=100&q=80" radius="md" size="md" />
-              <div style={{ flex: 1 }}>
-                <Text fw={800} size="sm">Sede Central El Barrio</Text>
-                <Text size="xs" c="dimmed"><IconMapPin size={10} /> San Juan de Lurigancho 901</Text>
-              </div>
-            </Group>
-          </Card>
-        </div>
-
-        <Text fw={700} size="sm" c="dimmed" mt="lg" mb="xs">ADMINISTRACIÓN SISTEMA</Text>
-        <Card 
-          padding="sm" 
-          radius="md" 
-          withBorder 
-          style={{ cursor: 'pointer', borderColor: appMode === 'superadmin' ? 'var(--mantine-color-text)' : undefined }}
-          onClick={switchToSuperAdmin}
-        >
-          <Group wrap="nowrap">
-            <Avatar color="red" radius="md" size="md">SA</Avatar>
-            <div style={{ flex: 1 }}>
-              <Text fw={800} size="sm">Super Admin</Text>
-              <Text size="xs" c="dimmed">Separa Altoke (Plataforma)</Text>
-            </div>
-          </Group>
-        </Card>
-
+        {accountsData && accountsData.isSuperAdmin && (
+          <>
+            <Text fw={700} size="sm" c="dimmed" mt="lg" mb="xs">ADMINISTRACIÓN SISTEMA</Text>
+            <Card 
+              padding="sm" 
+              radius="md" 
+              withBorder 
+              style={{ cursor: 'pointer', borderColor: appMode === 'superadmin' ? 'var(--mantine-color-text)' : undefined }}
+              onClick={switchToSuperAdmin}
+            >
+              <Group wrap="nowrap">
+                <Avatar color="red" radius="md" size="md">SA</Avatar>
+                <div style={{ flex: 1 }}>
+                  <Text fw={800} size="sm">Super Admin</Text>
+                  <Text size="xs" c="dimmed">Separa Altoke (Plataforma)</Text>
+                </div>
+              </Group>
+            </Card>
+          </>
+        )}
       </Modal>
 
     </Center>

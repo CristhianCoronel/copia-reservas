@@ -67,7 +67,7 @@ function PartidasAbiertasTab() {
   }, []);
 
   const handleJoinGroup = async (groupId: string) => {
-    // Simulamos que la petición a la API es exitosa para actualizar la interfaz
+    // ::!todo!::Conectar con API real
     setGroups(prev => prev.map(g => {
       if (g.id === groupId && g.currentPlayers < g.maxPlayers) {
         return { ...g, currentPlayers: g.currentPlayers + 1 };

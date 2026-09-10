@@ -1,0 +1,5 @@
+clave,valor,descripcion
+APP_MIN_VERSION_ANDROID,"1.0.0",Versión mínima requerida de la app Android
+MAX_PENDING_PAYMENT_MINUTES,15,Tiempo máximo en minutos para que una reserva pendiente espere
+PLATFORM_FEE_PERCENTAGE,0.00,Comisión global de la plataforma
+MANTENIMIENTO_ACTIVO,false,Bandera para poner el sistema en modo mantenimiento

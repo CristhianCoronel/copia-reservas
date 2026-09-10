@@ -2,8 +2,10 @@ import { createTheme, virtualColor, colorsTuple } from '@mantine/core';
 
 export const theme = createTheme({
   fontFamily: 'Inter, sans-serif',
-  primaryColor: 'altoke', // Altoke para llamados a la acción
-  autoContrast: true, // Para que el texto sea oscuro sobre el color lima
+  primaryColor: 'altoke',
+
+  autoContrast: true,
+
   headings: {
     fontFamily: 'Manrope, sans-serif',
     sizes: {
@@ -25,23 +27,31 @@ export const theme = createTheme({
       "#F4F9EC", "#E7EDDF", "#D3DBC9", "#B7C0AC", "#8D9782",
       "#6B7660", "#4E5847", "#363F30", "#20261C", "#0E0F0A"
     ],
-    // Modo claro usa hueso/niebla claros
     gray: [
       "#F4F9EC", "#E7EDDF", "#D3DBC9", "#B7C0AC", "#8D9782",
       "#6B7660", "#4E5847", "#363F30", "#20261C", "#0E0F0A"
     ],
-    // Modo oscuro basado en Carbón y verde muy profundo
     dark: [
-      "#F4F9EC", // 0: Texto primario
-      "#D3DBC9", // 1: Texto secundario
-      "#B7C0AC", // 2: Texto apagado
-      "#6B7660", // 3: Elementos inactivos
-      "#363F30", // 4: Bordes sutiles
-      "#20261C", // 5: Hover en fondos
-      "#141812", // 6: bg-surface (Tarjetas, modales)
-      "#0E0F0A", // 7: bg-base (Fondo de la app)
-      "#0A0B07", // 8: Fondos más oscuros
-      "#050503"  // 9: Negro
+      "#F4F9EC",
+
+      "#D3DBC9",
+
+      "#B7C0AC",
+
+      "#6B7660",
+
+      "#363F30",
+
+      "#20261C",
+
+      "#141812",
+
+      "#0E0F0A",
+
+      "#0A0B07",
+
+      "#050503"
+
     ],
   },
   components: {
@@ -53,7 +63,8 @@ export const theme = createTheme({
     },
     Card: {
       defaultProps: {
-        radius: 'xl', // Guía marca tarjetas muy redondeadas
+        radius: 'xl',
+
       }
     },
     Badge: {

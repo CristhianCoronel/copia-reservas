@@ -15,9 +15,9 @@ export function ProfileView({ onLogout }: ProfileProps) {
   useEffect(() => {
     async function loadProfile() {
       try {
-        const res = await apiCall('/api/v1/player/profile/me');
+        const res = await apiCall('/api/v1/player/profile/me/accounts');
         if (res.status === undefined || res.data) {
-          setProfile(res.data);
+          setProfile(res.data.personal);
         }
       } catch (error) {
         console.error(error);
@@ -36,7 +36,6 @@ export function ProfileView({ onLogout }: ProfileProps) {
 
   return (
     <div style={{ padding: 16 }}>
-      {/* Header Perfil */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
         <Avatar size="xl" color="dark" radius="100%" mb="sm">
           {profile.fullName.substring(0, 2).toUpperCase()}
@@ -45,7 +44,6 @@ export function ProfileView({ onLogout }: ProfileProps) {
         <Text size="xs" c="dimmed">{profile.role} Activo • DNI {profile.document}</Text>
       </div>
 
-      {/* Verificar Cuenta */}
       <Card padding="lg" radius="md" withBorder mb="xl">
         <Group gap="xs" mb="sm">
           <IconCheck size={20} color="#10B981" />
@@ -71,7 +69,6 @@ export function ProfileView({ onLogout }: ProfileProps) {
         <Button fullWidth mt="md" color="dark">Enviar SMS de Verificación</Button>
       </Card>
 
-      {/* Programa Jugador Invita Jugador */}
       <Card padding="lg" radius="md" withBorder mb="xl">
         <Group gap="xs" mb="sm">
           <IconGift size={20} color="#025865" />
@@ -105,7 +102,6 @@ export function ProfileView({ onLogout }: ProfileProps) {
         </Group>
       </Card>
 
-      {/* Banner Aliado B2B */}
       <Card padding="lg" radius="md" withBorder mb="xl" style={{ backgroundColor: 'var(--mantine-color-dark-8)', color: 'white' }}>
         <Group justify="space-between" wrap="nowrap">
           <div>
@@ -120,7 +116,6 @@ export function ProfileView({ onLogout }: ProfileProps) {
         </Group>
       </Card>
 
-      {/* Menú Adicional */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <Card padding="md" radius="md" withBorder>
           <Group justify="space-between" wrap="nowrap" mb="sm">
