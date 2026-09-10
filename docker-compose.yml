@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-separaaltoke_db}
     ports:
-      - "5432:5432"
+      - "5332:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # Autoejecuta los scripts SQL en orden alfabético al inicializar la BD por primera vez
