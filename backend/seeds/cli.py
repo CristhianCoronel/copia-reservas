@@ -38,6 +38,12 @@ async def bulk_insert(conn, table_name, data):
                             row[col_name] = json.loads(value)
                     elif py_type is str:
                         row[col_name] = str(value)
+                    elif py_type is __import__('datetime').date and not isinstance(value, __import__('datetime').date):
+                        row[col_name] = __import__('datetime').date.fromisoformat(value)
+                    elif py_type is __import__('datetime').time and not isinstance(value, __import__('datetime').time):
+                        row[col_name] = __import__('datetime').time.fromisoformat(value)
+                    elif py_type is __import__('datetime').datetime and not isinstance(value, __import__('datetime').datetime):
+                        row[col_name] = __import__('datetime').datetime.fromisoformat(value.replace('Z', '+00:00'))
                 except Exception:
                     pass
 
@@ -77,7 +83,9 @@ async def seed(env: str, reset: bool, fake_count: int):
                 ("usuarios.csv", "usuario"),
                 ("personas.csv", "persona"),
                 ("empresas.csv", "empresa"),
-                ("sedes.csv", "sede")
+                ("sedes.csv", "sede"),
+                ("contratos.csv", "contrato"),
+                ("canchas.csv", "cancha")
             ]
             for file_name, table in dev_files:
                 file_path = os.path.join(dev_dir, file_name)
@@ -100,8 +108,29 @@ async def seed(env: str, reset: bool, fake_count: int):
                     print(f"Inserting {len(data)} generated rows into {table}...")
                     await bulk_insert(conn, table, data)
                     
-    print("Seeding complete!")
-
+    print("Seeding complete! Verifying inserted data...")
+    
+    all_tables = [t[1] for t in master_files]
+    if env == "dev":
+        all_tables.extend([t[1] for t in dev_files])
+        if fake_count > 0:
+            all_tables.extend(fake_data.keys())
+            
+    # Remove duplicates preserving order
+    all_tables = list(dict.fromkeys(all_tables))
+    
+    from sqlalchemy import text
+    
+    # Ocultar los logs de ejecución de SQL para el conteo final
+    engine.sync_engine.echo = False
+    
+    async with engine.begin() as conn:
+        print("\n--- Final Table Counts ---")
+        for table in all_tables:
+            result = await conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
+            count = result.scalar()
+            print(f"{table}: {count} rows")
+        print("--------------------------\n")
 def main():
     parser = argparse.ArgumentParser(description="Seed the Separa Altoke Database")
     parser.add_argument("command", choices=["seed", "reset"], help="Command to run")

@@ -51,7 +51,7 @@ async def health_check():
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth & Identity"])
 app.include_router(player_router, prefix="/api/v1/player", tags=["B2C - Player"])
 app.include_router(b2b_router, prefix="/api/v1/b2b", tags=["B2B - Administration"])
-app.include_router(booking_router, prefix="/api/v1/b2c/reservas", tags=["B2C - Booking"])
+app.include_router(booking_router, prefix="/api/v1", tags=["Booking & Misc"])
 
 if __name__ == "__main__":
     import uvicorn

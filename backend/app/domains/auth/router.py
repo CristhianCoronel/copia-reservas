@@ -125,13 +125,27 @@ async def get_my_accounts(current_user: models.Usuario = Depends(get_current_use
     persona = current_user.persona
     
 
+    from sqlalchemy import func
+    
+    result_referrals = await db.execute(
+        select(func.count(models.Usuario.id)).where(models.Usuario.referido_por_usuario_id == current_user.id)
+    )
+    successful_referrals = result_referrals.scalar() or 0
+
     personal_data = {
         "fullName": f"{persona.nombres} {persona.apellidos}" if persona else current_user.username,
         "document": persona.numero_documento if persona else "",
         "role": current_user.rol,
-        "avatar": "".join([part[0] for part in (f"{persona.nombres} {persona.apellidos}" if persona else current_user.username).split()[:2]]).upper()
+        "avatar": "".join([part[0] for part in (f"{persona.nombres} {persona.apellidos}" if persona else current_user.username).split()[:2]]).upper(),
+        "username": current_user.username,
+        "email": current_user.email,
+        "phone": current_user.telefono,
+        "referral": {
+            "code": current_user.codigo_referido,
+            "successfulReferrals": successful_referrals,
+            "totalEarned": successful_referrals * 15.0
+        }
     }
-    
 
     from app.domains.b2b_core.models import Empresa, Contrato, Sede
     from sqlalchemy import or_

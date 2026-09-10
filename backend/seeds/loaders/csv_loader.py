@@ -29,6 +29,11 @@ class MacroProcessor:
             key = value[16:-1]
             return self._generate_hash(key)
             
+        if value.startswith("${HEX:") and value.endswith("}"):
+            length = int(value[6:-1])
+            import secrets
+            return secrets.token_hex(length)[:length].upper()
+            
         return value
 
 def load_csv(file_path: str, macro_processor: MacroProcessor):

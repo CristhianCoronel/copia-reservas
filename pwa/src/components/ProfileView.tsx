@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Text, Group, Avatar, Button, ActionIcon, CopyButton, Divider, SegmentedControl, useMantineColorScheme, Center, Loader } from '@mantine/core';
+import { Card, Text, Group, Avatar, Button, ActionIcon, CopyButton, Divider, SegmentedControl, useMantineColorScheme, Center, Loader, Badge } from '@mantine/core';
 import { IconStar, IconWallet, IconGift, IconCopy, IconCheck, IconCalendarEvent, IconSettings, IconLogout, IconChevronRight } from '@tabler/icons-react';
 import { apiCall } from '../api';
 
@@ -41,7 +41,12 @@ export function ProfileView({ onLogout }: ProfileProps) {
           {profile.fullName.substring(0, 2).toUpperCase()}
         </Avatar>
         <Text fw={800} size="xl">{profile.fullName}</Text>
-        <Text size="xs" c="dimmed">{profile.role} Activo • DNI {profile.document}</Text>
+        <Text size="xs" c="dimmed" mb="xs">{profile.role} Activo • DNI {profile.document}</Text>
+        <Group gap="xs" justify="center">
+          <Badge color="dark" variant="light" size="sm" style={{ textTransform: 'none' }}>@{profile.username}</Badge>
+          <Badge color="dark" variant="light" size="sm" style={{ textTransform: 'none' }}>{profile.email}</Badge>
+          {profile.phone && <Badge color="dark" variant="light" size="sm" style={{ textTransform: 'none' }}>{profile.phone}</Badge>}
+        </Group>
       </div>
 
       <Card padding="lg" radius="md" withBorder mb="xl">

@@ -17,6 +17,16 @@ class Cancha(AuditMixin, Base):
 
     sede = relationship("Sede", back_populates="canchas")
     reservas = relationship("Reserva", back_populates="cancha")
+    fotos = relationship("CanchaFoto", back_populates="cancha")
+
+class CanchaFoto(AuditMixin, Base):
+    __tablename__ = "cancha_foto"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    cancha_id = Column(UUID(as_uuid=True), ForeignKey('cancha.id'), nullable=False)
+    foto_url = Column(String(500), nullable=False)
+    orden = Column(Integer, default=0, nullable=False)
+
+    cancha = relationship("Cancha", back_populates="fotos")
 
 
 class Reserva(AuditMixin, Base):

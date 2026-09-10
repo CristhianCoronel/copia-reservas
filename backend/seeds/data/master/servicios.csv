@@ -1,9 +1,9 @@
 id,nombre,icono,categoria
-55555555-5555-5555-5555-555555555551,Estacionamiento,parking,Comodidad
-55555555-5555-5555-5555-555555555552,Tienda Snack,store,Alimentos
-55555555-5555-5555-5555-555555555553,Baños,bath,Comodidad
-55555555-5555-5555-5555-555555555554,Duchas,shower,Comodidad
-55555555-5555-5555-5555-555555555555,Vestidores,shirt,Comodidad
-55555555-5555-5555-5555-555555555556,WiFi,wifi,Conectividad
-55555555-5555-5555-5555-555555555557,Seguridad,shield,Seguridad
-55555555-5555-5555-5555-555555555558,Cámara,video,Seguridad
+${UUID:servicio_estacionamiento},Estacionamiento,parking,Comodidad
+${UUID:servicio_tienda},Tienda Snack,store,Alimentos
+${UUID:servicio_banos},Baños,bath,Comodidad
+${UUID:servicio_duchas},Duchas,shower,Comodidad
+${UUID:servicio_vestidores},Vestidores,shirt,Comodidad
+${UUID:servicio_wifi},WiFi,wifi,Conectividad
+${UUID:servicio_seguridad},Seguridad,shield,Seguridad
+${UUID:servicio_camara},Cámara,video,Seguridad

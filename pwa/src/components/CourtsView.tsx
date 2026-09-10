@@ -94,8 +94,6 @@ export function CourtsView() {
   const handleDateSelect = (dateStr: string) => {
     if (dateStr === selectedDate) return;
     setSelectedDate(dateStr);
-    setFetchingCourts(true);
-    setTimeout(() => setFetchingCourts(false), 800);
   };
 
   useEffect(() => {
@@ -129,19 +127,22 @@ export function CourtsView() {
 
   useEffect(() => {
     async function loadCourts() {
+      if (!selectedDate) return;
+      setFetchingCourts(true);
       try {
-        const res = await apiCall('/api/v1/b2c/canchas');
+        const res = await apiCall(`/api/v1/b2c/canchas?date=${selectedDate}`);
         if (res.status === undefined || res.data) {
           setCourts(res.data);
         }
       } catch (error) {
         console.error("Error al cargar canchas:", error);
       } finally {
+        setFetchingCourts(false);
         setLoading(false);
       }
     }
     loadCourts();
-  }, []);
+  }, [selectedDate]);
 
   const filteredCourts = selectedSport === 'TODOS' 
     ? courts 
@@ -304,15 +305,7 @@ export function CourtsView() {
               ))}
             </Group>
 
-            <Group gap={6} mt="sm">
-              <IconClock size={16} color="var(--mantine-color-dimmed)" stroke={1.5} />
-              <Text size="sm" c="dimmed">Atención desde 08:00 am hasta 11:00 pm</Text>
-            </Group>
 
-            <Group gap={6} mt="xs">
-              <IconStar size={16} color="var(--mantine-color-altoke-5)" stroke={1.5} style={{ fill: 'var(--mantine-color-altoke-5)' }} />
-              <Text size="sm" c="dimmed">4.8 (32 reseñas)</Text>
-            </Group>
 
             <Group justify="space-between" mt="lg" align="flex-end" wrap="nowrap">
               <div>

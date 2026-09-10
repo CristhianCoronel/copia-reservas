@@ -11,7 +11,7 @@ router = APIRouter()
 def generate_reserva_token():
     return f"rsv-{uuid.uuid4().hex[:8]}"
 
-@router.post("/", response_model=schemas.ReservaResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/b2c/reservas", response_model=schemas.ReservaResponse, status_code=status.HTTP_201_CREATED)
 async def crear_reserva(res_in: schemas.ReservaCreate, db: AsyncSession = Depends(get_db)):
 
     overlapping_query = select(models.Reserva).where(
@@ -67,8 +67,8 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy import func
 from datetime import datetime
 
-@router.get("/canchas", tags=["B2C - Booking"])
-async def listar_canchas(db: AsyncSession = Depends(get_db)):
+@router.get("/b2c/canchas", tags=["B2C - Booking"])
+async def listar_canchas(date: str = None, db: AsyncSession = Depends(get_db)):
     """Obtiene la lista de canchas activas con información de su sede y empresa."""
     from app.domains.b2b_core.models import Sede, Empresa
     
@@ -77,7 +77,8 @@ async def listar_canchas(db: AsyncSession = Depends(get_db)):
         .join(Sede, models.Cancha.sede_id == Sede.id)
         .join(Empresa, Sede.empresa_id == Empresa.id)
         .options(
-            selectinload(models.Cancha.sede).selectinload(Sede.empresa)
+            selectinload(models.Cancha.sede).selectinload(Sede.empresa),
+            selectinload(models.Cancha.fotos)
         )
         .where(models.Cancha.is_active == True)
     )
@@ -98,7 +99,7 @@ async def listar_canchas(db: AsyncSession = Depends(get_db)):
             "peakPrice": 80.0,
             "services": ["Estacionamiento", "Baños"] if c.caracteristicas else [],
             "rules": c.sede.politica_cancelacion if c.sede else "",
-            "images": []
+            "images": [f.foto_url for f in sorted(c.fotos, key=lambda x: x.orden)] if c.fotos else []
         })
         
     return {"data": data}

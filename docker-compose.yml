@@ -56,6 +56,18 @@ services:
       - ./backend:/app
     command: ["python", "-m", "seeds.cli", "seed", "--env", "dev", "--fake-count", "10"]
 
+  frontend:
+    build:
+      context: ./pwa
+      dockerfile: Dockerfile
+    container_name: separaaltoke_frontend
+    profiles: ["prod"]
+    ports:
+      - "4264:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:
