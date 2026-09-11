@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import or_, and_, desc
+from sqlalchemy import or_, and_, desc, func
 from app.core.database import get_db
 from app.domains.auth.router import get_current_user
 from app.domains.auth import models as auth_models
@@ -47,6 +47,62 @@ async def get_social_groups(current_user: auth_models.Usuario = Depends(get_curr
             "sport": "PADEL" # Simplificación
         })
     return {"status": True, "data": data}
+
+import random
+import datetime
+
+@router.post("/teams", response_model=dict, tags=["B2C - Player"])
+async def create_team(
+    data: schemas.EquipoCreate, 
+    current_user: auth_models.Usuario = Depends(get_current_user), 
+    db: AsyncSession = Depends(get_db)
+):
+    from app.domains.booking.models import Equipo, EquipoMiembro
+    
+    # Verify uniqueness of name
+    existing = await db.execute(select(Equipo).where(Equipo.nombre == data.nombre))
+    if existing.scalars().first():
+        raise HTTPException(status_code=400, detail="Ya existe un equipo con ese nombre.")
+
+    # Create Equipo
+    nuevo_equipo = Equipo(
+        nombre=data.nombre,
+        share_token=f"eq-{random.randint(1000, 9999)}",
+        creador_id=current_user.persona.id
+    )
+    db.add(nuevo_equipo)
+    await db.flush()
+
+    # Create EquipoMiembro
+    miembro_admin = EquipoMiembro(
+        equipo_id=nuevo_equipo.id,
+        persona_id=current_user.persona.id,
+        rol="CAPITAN",
+        is_active=True
+    )
+    db.add(miembro_admin)
+
+    # Create Chat
+    nuevo_chat = social_models.Chat(
+        tipo_canal="EQUIPO",
+        referencia_id=nuevo_equipo.id
+    )
+    db.add(nuevo_chat)
+    await db.flush()
+
+    # Create ChatParticipante
+    now = datetime.datetime.now(datetime.timezone.utc)
+    chat_part = social_models.ChatParticipante(
+        chat_id=nuevo_chat.id,
+        persona_id=current_user.persona.id,
+        rol="ADMIN",
+        _no_leidos=0,
+        joined_at=now
+    )
+    db.add(chat_part)
+
+    await db.commit()
+    return {"status": True, "message": "Equipo creado exitosamente", "equipo_id": str(nuevo_equipo.id)}
 
 @router.get("/teams", response_model=dict, tags=["B2C - Player"])
 async def get_my_teams(current_user: auth_models.Usuario = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -166,6 +222,123 @@ async def get_team_members(team_id: UUID, current_user: auth_models.Usuario = De
                     })
 
     return {"status": True, "data": members_data}
+
+@router.post("/teams/{team_id}/invite", response_model=dict, tags=["B2C - Player"])
+async def invite_team_member(
+    team_id: UUID,
+    data: schemas.EquipoInviteRequest,
+    current_user: auth_models.Usuario = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    from app.domains.booking.models import EquipoMiembro, Equipo
+    import datetime
+    
+    # 1. Buscar al usuario invitado
+    q_user = select(auth_models.Usuario).options(selectinload(auth_models.Usuario.persona)).where(
+        or_(auth_models.Usuario.email == data.identifier, auth_models.Usuario.username == data.identifier)
+    )
+    user_invitado = (await db.execute(q_user)).scalars().first()
+    if not user_invitado:
+        return {"status": False, "message": "Usuario no encontrado", "data": []}
+
+    if user_invitado.id == current_user.id:
+        return {"status": False, "message": "No puedes invitarte a ti mismo", "data": []}
+
+    # 2. Verificar que el invitado no esté en el equipo ya
+    q_miembro = select(EquipoMiembro).where(
+        EquipoMiembro.equipo_id == team_id,
+        EquipoMiembro.persona_id == user_invitado.persona.id
+    )
+    is_member = (await db.execute(q_miembro)).scalars().first()
+    if is_member:
+        return {"status": False, "message": "El usuario ya es miembro de este equipo", "data": []}
+
+    # 2.5 Buscar el nombre del equipo
+    q_equipo = select(Equipo).where(Equipo.id == team_id)
+    equipo = (await db.execute(q_equipo)).scalars().first()
+    if not equipo:
+        return {"status": False, "message": "Equipo no encontrado", "data": []}
+
+    # 3. Buscar si ya tienen invitación pendiente
+    q_inv = (
+        select(social_models.Mensaje)
+        .join(social_models.Chat, social_models.Mensaje.chat_id == social_models.Chat.id)
+        .join(social_models.ChatParticipante, social_models.Chat.id == social_models.ChatParticipante.chat_id)
+        .where(social_models.Mensaje.tipo_mensaje == 'INVITACION')
+        .where(social_models.Mensaje.datos_objeto.op("->>")('estado') == 'PENDIENTE')
+        .where(social_models.ChatParticipante.persona_id == user_invitado.persona.id)
+    )
+    res_inv = await db.execute(q_inv)
+    pendings = res_inv.scalars().all()
+    for m in pendings:
+        meta = (m.datos_objeto or {}).get("meta_relacional", {})
+        if meta.get("tipo") == "EQUIPO" and meta.get("id_relacion") == str(team_id):
+            return {"status": False, "message": "El usuario ya tiene una invitación pendiente", "data": []}
+
+    # 4. Buscar o crear el chat JUGADOR_JUGADOR
+    chat_id = None
+    q_chats = (
+        select(social_models.Chat.id)
+        .where(social_models.Chat.tipo_canal == "JUGADOR_JUGADOR")
+    )
+    all_j2j_chats = (await db.execute(q_chats)).scalars().all()
+    if all_j2j_chats:
+        q_find = (
+            select(social_models.ChatParticipante.chat_id)
+            .where(social_models.ChatParticipante.chat_id.in_(all_j2j_chats))
+            .where(social_models.ChatParticipante.persona_id.in_([current_user.persona.id, user_invitado.persona.id]))
+            .group_by(social_models.ChatParticipante.chat_id)
+            .having(func.count(social_models.ChatParticipante.id) == 2)
+        )
+        chat_id = (await db.execute(q_find)).scalars().first()
+
+    if not chat_id:
+        nuevo_chat = social_models.Chat(tipo_canal="JUGADOR_JUGADOR")
+        db.add(nuevo_chat)
+        await db.flush()
+        chat_id = nuevo_chat.id
+        db.add(social_models.ChatParticipante(chat_id=chat_id, persona_id=current_user.persona.id, rol="ADMIN", _no_leidos=0, joined_at=datetime.datetime.now(datetime.timezone.utc)))
+        db.add(social_models.ChatParticipante(chat_id=chat_id, persona_id=user_invitado.persona.id, rol="ADMIN", _no_leidos=0, joined_at=datetime.datetime.now(datetime.timezone.utc)))
+        await db.flush()
+
+    # 5. Enviar mensaje de INVITACION
+    msg = social_models.Mensaje(
+        chat_id=chat_id,
+        remitente_id=current_user.persona.id,
+        tipo_mensaje="INVITACION",
+        contenido_texto=f"Te he invitado a unirte a {equipo.nombre}",
+        datos_objeto={
+            "meta_relacional": {
+                "tipo": "EQUIPO",
+                "id_relacion": str(team_id)
+            },
+            "estado": "PENDIENTE"
+        }
+    )
+    db.add(msg)
+    
+    # 6. Incrementar no leídos
+    q_upd = select(social_models.ChatParticipante).where(
+        social_models.ChatParticipante.chat_id == chat_id,
+        social_models.ChatParticipante.persona_id == user_invitado.persona.id
+    )
+    target_part = (await db.execute(q_upd)).scalars().first()
+    if target_part:
+        target_part._no_leidos += 1
+        
+    await db.commit()
+    
+    return {
+        "status": True, 
+        "message": "Invitación enviada", 
+        "data": {
+            "id": str(user_invitado.persona.id),
+            "nombre": f"{user_invitado.persona.nombres} {user_invitado.persona.apellidos}",
+            "rol": "MIEMBRO",
+            "estado": "PENDIENTE",
+            "is_me": False
+        }
+    }
 
 @router.get("/chats", response_model=dict, tags=["B2C - Player"])
 async def get_my_chats(current_user: auth_models.Usuario = Depends(get_current_user), db: AsyncSession = Depends(get_db)):

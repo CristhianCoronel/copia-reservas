@@ -52,6 +52,12 @@ class GrupoAbiertoResponse(BaseModel):
     totalCourtPrice: float
     sport: str
 
+class EquipoCreate(BaseModel):
+    nombre: str
+
+class EquipoInviteRequest(BaseModel):
+    identifier: str
+
 class EquipoResponse(BaseModel):
     id: UUID
     name: str

@@ -188,6 +188,9 @@ function EquiposTab() {
   const [myTeams, setMyTeams] = useState<any[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [createTeamOpened, setCreateTeamOpened] = useState(false);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [inviteInput, setInviteInput] = useState("");
+  const [inviteError, setInviteError] = useState("");
   const [loading, setLoading] = useState(true);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
@@ -244,6 +247,37 @@ function EquiposTab() {
     }
   };
 
+  const handleCreateTeam = async () => {
+    if (!newTeamName.trim()) return;
+    try {
+      const res = await apiCall('/api/v1/player/social/teams', 'POST', { nombre: newTeamName });
+      if (res.status) {
+        setMyTeams([{ id: res.equipo_id, name: newTeamName, sport: 'Fútbol', members: 1, role: 'CAPITAN' }, ...myTeams]);
+        setCreateTeamOpened(false);
+        setNewTeamName("");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleInviteMember = async () => {
+    if (!inviteInput.trim() || !selectedTeam) return;
+    setInviteError("");
+    try {
+      const res = await apiCall(`/api/v1/player/social/teams/${selectedTeam.id}/invite`, 'POST', { identifier: inviteInput.trim() });
+      if (res.status && res.data) {
+        setTeamMembers([...teamMembers, res.data]);
+        setInviteInput("");
+      } else if (res.status === false && res.message) {
+        setInviteError(res.message);
+      }
+    } catch (e: any) {
+      console.error(e);
+      setInviteError(e.message || "Ocurrió un error al enviar la invitación");
+    }
+  };
+
   return (
     <div style={{ paddingTop: 16 }}>
       <Group gap="xs" mb="xs"><IconShieldCheck size={24}/><Text fw={800} size="xl">Tus Equipos</Text></Group>
@@ -278,27 +312,34 @@ function EquiposTab() {
       )}
 
       <Text fw={700} mb="sm">Mis Equipos</Text>
-      <Card padding="md" radius="md" withBorder>
-        {myTeams.map((team, index) => (
-          <div key={team.id}>
-            <Group justify="space-between" mb="md">
-              <div>
-                <Text fw={800} size="lg">{team.name}</Text>
-                <Text size="sm" c="dimmed">{team.sport} • {team.members} Miembros</Text>
-              </div>
-              <Group gap="xs">
-                <Badge color={team.role === 'ADMIN' ? 'dark' : 'gray'} variant={team.role === 'ADMIN' ? 'filled' : 'light'}>
-                  {team.role}
-                </Badge>
-                <ActionIcon variant="default" onClick={() => setSelectedTeam(team)}>
-                  <IconChevronRight size={18} />
-                </ActionIcon>
+      {myTeams.length === 0 && !loading ? (
+        <Card padding="xl" radius="md" withBorder ta="center">
+          <Text size="sm" c="dimmed" mb="md">Aún no tienes ningún equipo registrado.</Text>
+          <Button variant="light" color="dark" onClick={() => setCreateTeamOpened(true)}>Registrar mi primer equipo</Button>
+        </Card>
+      ) : (
+        <Card padding="md" radius="md" withBorder>
+          {myTeams.map((team, index) => (
+            <div key={team.id}>
+              <Group justify="space-between" mb="md">
+                <div>
+                  <Text fw={800} size="lg">{team.name}</Text>
+                  <Text size="sm" c="dimmed">{team.sport} • {team.members} Miembros</Text>
+                </div>
+                <Group gap="xs">
+                  <Badge color={team.role === 'ADMIN' ? 'dark' : 'gray'} variant={team.role === 'ADMIN' ? 'filled' : 'light'}>
+                    {team.role}
+                  </Badge>
+                  <ActionIcon variant="default" onClick={() => setSelectedTeam(team)}>
+                    <IconChevronRight size={18} />
+                  </ActionIcon>
+                </Group>
               </Group>
-            </Group>
-            {index < myTeams.length - 1 && <Divider mb="md" />}
-          </div>
-        ))}
-      </Card>
+              {index < myTeams.length - 1 && <Divider mb="md" />}
+            </div>
+          ))}
+        </Card>
+      )}
 
       <Modal 
         opened={!!selectedTeam} 
@@ -308,13 +349,21 @@ function EquiposTab() {
       >
         <Text size="sm" c="dimmed" mb="md">Gestiona los miembros del equipo y la participación.</Text>
 
-        {selectedTeam?.role === 'ADMIN' && (
+        {['ADMIN', 'CAPITAN'].includes(selectedTeam?.role) && (
           <Card padding="sm" radius="md" withBorder mb="lg">
             <Text size="xs" fw={700} mb="xs">Invitar nuevo jugador:</Text>
             <Group wrap="nowrap">
-              <TextInput placeholder="correo@ejemplo.com" flex={1} />
-              <ActionIcon size={36} color="dark" variant="filled"><IconSend size={18} /></ActionIcon>
+              <TextInput 
+                placeholder="Usuario o correo electrónico" 
+                flex={1} 
+                value={inviteInput} 
+                onChange={(e) => { setInviteInput(e.currentTarget.value); setInviteError(""); }} 
+              />
+              <ActionIcon size={36} color="dark" variant="filled" onClick={handleInviteMember}><IconSend size={18} /></ActionIcon>
             </Group>
+            {inviteError && (
+              <Text c="red" size="xs" mt="xs">{inviteError}</Text>
+            )}
           </Card>
         )}
 
@@ -343,9 +392,8 @@ function EquiposTab() {
       </Modal>
 
       <Modal opened={createTeamOpened} onClose={() => setCreateTeamOpened(false)} title={<Text fw={800} size="lg">Crear Nuevo Equipo</Text>} centered>
-        <TextInput label="Nombre del Equipo" placeholder="Ej. Los Galácticos" mb="md" data-autofocus />
-        <Select label="Deporte principal" placeholder="Selecciona un deporte" data={['Fútbol 5', 'Fútbol 7', 'Fútbol 11', 'Pádel', 'Básquet']} mb="xl" />
-        <Button fullWidth color="dark" onClick={() => setCreateTeamOpened(false)}>Crear Equipo</Button>
+        <TextInput label="Nombre del Equipo" placeholder="Ej. Los Galácticos" mb="xl" data-autofocus value={newTeamName} onChange={(e) => setNewTeamName(e.currentTarget.value)} />
+        <Button fullWidth color="dark" onClick={handleCreateTeam}>Crear Equipo</Button>
       </Modal>
     </div>
   );
