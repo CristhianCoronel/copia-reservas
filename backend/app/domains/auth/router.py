@@ -148,6 +148,7 @@ async def get_my_accounts(current_user: models.Usuario = Depends(get_current_use
     }
 
     from app.domains.b2b_core.models import Empresa, Contrato, Sede
+    from app.domains.booking.models import Reserva, Cancha, PagoReserva, PartidaAbierta, PartidaAbiertaParticipante, Equipo, EquipoMiembro
     from sqlalchemy import or_
 
     companies_data = []
@@ -195,3 +196,110 @@ async def get_my_accounts(current_user: models.Usuario = Depends(get_current_use
             "isSuperAdmin": current_user.rol == "ADMIN"
         }
     }
+
+@player_router.get("/reservations", tags=["B2C - Player"])
+async def get_my_reservations(current_user: models.Usuario = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from app.domains.booking.models import Reserva, Cancha, PagoReserva
+    from app.domains.b2b_core.models import Sede
+    persona_id = current_user.persona.id
+    query = (
+        select(Reserva)
+        .join(Cancha, Reserva.cancha_id == Cancha.id)
+        .join(Sede, Cancha.sede_id == Sede.id)
+        .options(
+            selectinload(Reserva.cancha).selectinload(Cancha.sede), 
+            selectinload(Reserva.pagos).selectinload(PagoReserva.persona)
+        )
+        .where(Reserva.persona_organizadora_id == persona_id)
+        .order_by(Reserva.fecha_reserva.desc(), Reserva.hora_inicio.desc())
+    )
+    result = await db.execute(query)
+    reservas = result.scalars().all()
+    
+    data = []
+    for r in reservas:
+        pagos = []
+        for p in r.pagos:
+            pagos.append({
+                "id": str(p.id),
+                "amount": float(p.monto),
+                "status": p.estado,
+                "user": f"{p.persona.nombres} {p.persona.apellidos}" if p.persona else "Participante",
+                "avatar": "ME" if p.persona_id == persona_id else "".join([part[0] for part in f"{p.persona.nombres} {p.persona.apellidos}".split()[:2]]).upper() if p.persona else "OT"
+            })
+            
+        data.append({
+            "id": str(r.id),
+            "courtName": r.cancha.nombre,
+            "venueName": r.cancha.sede.nombre,
+            "date": r.fecha_reserva.strftime("%Y-%m-%d"),
+            "time": f"{r.hora_inicio.strftime('%H:%M')} - {r.hora_fin.strftime('%H:%M')}",
+            "status": r.estado,
+            "totalPrice": float(r.precio_total_cancha),
+            "pendingAmount": float(r._saldo_pendiente),
+            "payments": pagos
+        })
+    return {"status": True, "data": data}
+
+@player_router.get("/social/groups", tags=["B2C - Player"])
+async def get_social_groups(current_user: models.Usuario = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from app.domains.booking.models import PartidaAbierta, Reserva, Cancha
+    from app.domains.b2b_core.models import Sede
+    
+    # Obtener partidas abiertas en estado de recaudación
+    query = (
+        select(PartidaAbierta)
+        .join(Reserva, PartidaAbierta.reserva_id == Reserva.id)
+        .join(Cancha, Reserva.cancha_id == Cancha.id)
+        .join(Sede, Cancha.sede_id == Sede.id)
+        .options(
+            selectinload(PartidaAbierta.reserva).selectinload(Reserva.cancha).selectinload(Cancha.sede)
+        )
+        .where(PartidaAbierta.estado == 'RECAUDANDO')
+    )
+    result = await db.execute(query)
+    partidas = result.scalars().all()
+    
+    data = []
+    for p in partidas:
+        data.append({
+            "id": str(p.id),
+            "title": "Partida Abierta",
+            "organizer": "Organizador",
+            "organizerRating": 4.5,
+            "courtName": p.reserva.cancha.sede.nombre,
+            "date": p.reserva.fecha_reserva.strftime("%Y-%m-%d"),
+            "time": p.reserva.hora_inicio.strftime('%H:%M'),
+            "maxPlayers": p.cupos_totales,
+            "currentPlayers": p.cupos_totales - p.cupos_disponibles,
+            "totalCourtPrice": float(p.presupuesto_meta),
+            "sport": "PADEL" # Simplificación
+        })
+    return {"status": True, "data": data}
+
+@player_router.get("/teams", tags=["B2C - Player"])
+async def get_my_teams(current_user: models.Usuario = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from app.domains.booking.models import EquipoMiembro, Equipo
+    persona_id = current_user.persona.id
+    
+    query = (
+        select(EquipoMiembro)
+        .join(Equipo, EquipoMiembro.equipo_id == Equipo.id)
+        .options(selectinload(EquipoMiembro.equipo))
+        .where(EquipoMiembro.persona_id == persona_id)
+        .where(EquipoMiembro.is_active == True)
+    )
+    result = await db.execute(query)
+    miembros = result.scalars().all()
+    
+    data = []
+    for m in miembros:
+        data.append({
+            "id": str(m.equipo.id),
+            "name": m.equipo.nombre,
+            "sport": "Fútbol",
+            "members": 1, # Simplificación
+            "role": m.rol
+        })
+    return {"status": True, "data": data}
+

@@ -185,12 +185,26 @@ function EquiposTab() {
   const [invitations, setInvitations] = useState([
     { id: 'inv1', teamName: 'Los Galácticos FC', inviter: 'Mario Vargas' }
   ]);
-  const [myTeams, setMyTeams] = useState([
-    { id: 'team1', name: 'Deportivo Los Pinos', sport: 'Fútbol 7', members: 12, role: 'ADMIN' },
-    { id: 'team2', name: 'Viernes de Fulbito', sport: 'Fútbol 5', members: 8, role: 'MIEMBRO' }
-  ]);
+  const [myTeams, setMyTeams] = useState<any[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [createTeamOpened, setCreateTeamOpened] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadTeams() {
+      try {
+        const res = await apiCall('/api/v1/player/teams');
+        if (res.status && res.data) {
+          setMyTeams(res.data);
+        } else { throw new Error(); }
+      } catch (error) {
+        setMyTeams([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadTeams();
+  }, []);
 
   const handleAcceptInvite = (id: string, teamName: string) => {
     setInvitations(invitations.filter(inv => inv.id !== id));
@@ -211,6 +225,8 @@ function EquiposTab() {
       <Button fullWidth leftSection={<IconPlus size={16} />} color="dark" variant="filled" mb="xl" onClick={() => setCreateTeamOpened(true)}>
         CREAR NUEVO EQUIPO
       </Button>
+      
+      {loading ? <Center p="xl"><Loader color="dark" /></Center> : null}
 
       {invitations.length > 0 && (
         <>

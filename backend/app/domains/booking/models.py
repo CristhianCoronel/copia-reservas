@@ -63,5 +63,62 @@ class Reserva(AuditMixin, Base):
     monto_total_final = Column(Numeric(10,2), nullable=False)
     _saldo_pendiente = Column(Numeric(10,2), nullable=False)
     estado = Column(String(30), nullable=False)
-    
     cancha = relationship("Cancha", back_populates="reservas")
+    pagos = relationship("PagoReserva", back_populates="reserva")
+    partida_abierta = relationship("PartidaAbierta", back_populates="reserva", uselist=False)
+
+class Equipo(AuditMixin, Base):
+    __tablename__ = "equipo"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    nombre = Column(String(120), unique=True, nullable=False)
+    share_token = Column(String(100), unique=True, nullable=False)
+    creador_id = Column(UUID(as_uuid=True), ForeignKey('persona.id'), nullable=False)
+
+    miembros = relationship("EquipoMiembro", back_populates="equipo")
+
+class EquipoMiembro(AuditMixin, Base):
+    __tablename__ = "equipo_miembro"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    equipo_id = Column(UUID(as_uuid=True), ForeignKey('equipo.id'), nullable=False)
+    persona_id = Column(UUID(as_uuid=True), ForeignKey('persona.id'), nullable=False)
+    rol = Column(String(30), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    equipo = relationship("Equipo", back_populates="miembros")
+
+class PagoReserva(AuditMixin, Base):
+    __tablename__ = "pago_reserva"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    reserva_id = Column(UUID(as_uuid=True), ForeignKey('reserva.id'), nullable=False)
+    persona_id = Column(UUID(as_uuid=True), ForeignKey('persona.id'), nullable=False)
+    monto = Column(Numeric(10,2), nullable=False)
+    metodo_pago = Column(String(40), nullable=False)
+    comprobante_url = Column(String(500))
+    estado = Column(String(20), nullable=False)
+    
+    reserva = relationship("Reserva", back_populates="pagos")
+    persona = relationship("Persona")
+
+class PartidaAbierta(AuditMixin, Base):
+    __tablename__ = "partida_abierta"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    share_token = Column(String(100), unique=True, nullable=False)
+    reserva_id = Column(UUID(as_uuid=True), ForeignKey('reserva.id'), nullable=False)
+    organizador_id = Column(UUID(as_uuid=True), ForeignKey('persona.id'), nullable=False)
+    _deporte_id = Column(UUID(as_uuid=True), ForeignKey('_deporte.id'), nullable=False)
+    presupuesto_meta = Column(Numeric(10,2), nullable=False)
+    cupos_totales = Column(Integer, nullable=False)
+    cupos_disponibles = Column(Integer, nullable=False)
+    estado = Column(String(30), nullable=False)
+
+    reserva = relationship("Reserva", back_populates="partida_abierta")
+    participantes = relationship("PartidaAbiertaParticipante", back_populates="partida")
+
+class PartidaAbiertaParticipante(AuditMixin, Base):
+    __tablename__ = "partida_abierta_participante"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    partida_abierta_id = Column(UUID(as_uuid=True), ForeignKey('partida_abierta.id'), nullable=False)
+    persona_id = Column(UUID(as_uuid=True), ForeignKey('persona.id'), nullable=False)
+    aporte_monedero = Column(Numeric(10,2), nullable=False)
+
+    partida = relationship("PartidaAbierta", back_populates="participantes")

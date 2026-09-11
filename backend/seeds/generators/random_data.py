@@ -17,7 +17,12 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
         "cancha_horario": [],
         "sede_servicio": [],
         "reserva": [],
-        "cancha_foto": []
+        "cancha_foto": [],
+        "equipo": [],
+        "equipo_miembro": [],
+        "pago_reserva": [],
+        "partida_abierta": [],
+        "partida_abierta_participante": []
     }
     
     import datetime
@@ -46,7 +51,7 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
             "rol": "PLAYER",
             "is_active": True,
             "email_verificado": True,
-            "password_hash": macro_processor.process("${HASH_PASSWORD:123456}"),
+            "password_hash": macro_processor.process(f"${{HASH_PASSWORD:{username}-}}"),
             "codigo_referido": "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
         }
         
@@ -142,7 +147,7 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                 "id": cancha_id,
                 "sede_id": sede_id,
                 "nombre": get_random(bank, "nombres_cancha_f5"),
-                "_deporte_id": "11111111-1111-1111-1111-111111111111", # ID F5
+                "_deporte_id": macro_processor.process("${UUID:deporte_futbol5}"), # ID F5
                 "caracteristicas": {"superficie": get_random(bank, "tipos_superficie"), "techado": random.choice([True, False])},
                 "is_active": True
             })
@@ -181,8 +186,27 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                     "orden": f_idx
                 })
             
-            num_reservas = random.randint(1, 3)
+            num_reservas = random.randint(1, 4)
             fechas_elegidas = random.sample(next_4_days, k=min(num_reservas, 4))
+            
+            # Crear un equipo para este usuario (50% de probabilidad)
+            if random.random() > 0.5:
+                equipo_id = macro_processor.process(f"${{UUID:fake_equipo_{i}}}")
+                nombre_equipo = get_random(bank, "apellidos") + " FC " + "".join(random.choices(string.ascii_uppercase, k=3))
+                data["equipo"].append({
+                    "id": equipo_id,
+                    "nombre": nombre_equipo,
+                    "share_token": f"eq-{random.randint(1000, 9999)}",
+                    "creador_id": persona_id
+                })
+                data["equipo_miembro"].append({
+                    "id": macro_processor.process(f"${{UUID:fake_equipo_miembro_{i}_admin}}"),
+                    "equipo_id": equipo_id,
+                    "persona_id": persona_id,
+                    "rol": "CAPITAN",
+                    "is_active": True
+                })
+
             for idx, fecha in enumerate(fechas_elegidas):
                 hora_inicio_int = random.randint(16, 22)
                 hora_fin_int = hora_inicio_int + 1
@@ -190,10 +214,15 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                 is_peak = hora_inicio_int >= 18
                 precio = 120.00 if is_peak else 60.00
                 
+                is_social = random.random() > 0.5
+                reserva_id = macro_processor.process(f"${{UUID:fake_reserva_{i}_{idx}}}")
+                max_jugadores = random.choice([10, 14]) if is_social else None
+                monto_por_persona = precio / max_jugadores if is_social else precio
+                
                 data["reserva"].append({
-                    "id": macro_processor.process(f"${{UUID:fake_reserva_{i}_{idx}}}"),
+                    "id": reserva_id,
                     "cancha_id": cancha_id,
-                    "tipo_origen": "INDIVIDUAL",
+                    "tipo_origen": "PARTIDA_ABIERTA" if is_social else "INDIVIDUAL",
                     "persona_organizadora_id": persona_id,
                     "fecha_reserva": fecha.isoformat(),
                     "hora_inicio_solicitada": f"{hora_inicio_int:02d}:00:00",
@@ -204,9 +233,39 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                     "precio_hora_historico": precio,
                     "precio_total_cancha": precio,
                     "monto_total_final": precio,
-                    "_saldo_pendiente": 0.00,
-                    "estado": "CONFIRMADA",
+                    "_saldo_pendiente": precio - monto_por_persona,
+                    "estado": "CONFIRMADA" if not is_social else "PENDIENTE_PAGO",
                     "share_token": f"rsv-{random.randint(100000, 999999)}"
                 })
-            
+                
+                if is_social:
+                    partida_id = macro_processor.process(f"${{UUID:fake_partida_{i}_{idx}}}")
+                    data["partida_abierta"].append({
+                        "id": partida_id,
+                        "share_token": f"pa-{random.randint(10000, 99999)}",
+                        "reserva_id": reserva_id,
+                        "organizador_id": persona_id,
+                        "_deporte_id": macro_processor.process("${UUID:deporte_futbol5}"),
+                        "presupuesto_meta": precio,
+                        "cupos_totales": max_jugadores,
+                        "cupos_disponibles": max_jugadores - 1,
+                        "estado": "RECAUDANDO"
+                    })
+                    data["partida_abierta_participante"].append({
+                        "id": macro_processor.process(f"${{UUID:fake_partida_part_{i}_{idx}_org}}"),
+                        "partida_abierta_id": partida_id,
+                        "persona_id": persona_id,
+                        "aporte_monedero": monto_por_persona
+                    })
+                
+                # Pago organizador
+                data["pago_reserva"].append({
+                    "id": macro_processor.process(f"${{UUID:fake_pago_{i}_{idx}_org}}"),
+                    "reserva_id": reserva_id,
+                    "persona_id": persona_id,
+                    "monto": monto_por_persona,
+                    "estado": "APROBADO",
+                    "metodo_pago": "YAPE"
+                })
+
     return data

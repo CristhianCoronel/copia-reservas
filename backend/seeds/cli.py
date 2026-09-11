@@ -92,6 +92,12 @@ async def seed(env: str, reset: bool, fake_count: int):
                 if os.path.exists(file_path):
                     print(f"Loading {file_name} into {table}...")
                     data = load_csv(file_path, macro)
+                    
+                    if table == "usuario":
+                        for row in data:
+                            if not row.get("password_hash"):
+                                row["password_hash"] = macro.process(f"${{HASH_PASSWORD:{row['username']}-}}")
+                                
                     await bulk_insert(conn, table, data)
                     
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, Text, Group, Badge, Button, Divider, Center, Loader, Tabs, ActionIcon, Modal, Avatar, CopyButton, Tooltip, FileInput, Collapse } from '@mantine/core';
 import { IconCalendarEvent, IconClock, IconShare, IconCopy, IconCheck, IconWallet, IconUpload, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
+import { apiCall } from '../api';
 
 interface Payment {
   id: string;
@@ -16,7 +17,7 @@ interface PlayerBooking {
   venueName: string;
   date: string;
   time: string;
-  status: 'CONFIRMED' | 'PENDING' | 'COMPLETED' | 'CANCELLED';
+  status: 'CONFIRMADA' | 'PENDIENTE_PAGO' | 'COMPLETADA' | 'CANCELADA';
   totalPrice: number;
   pendingAmount: number;
   payments: Payment[];
@@ -30,60 +31,28 @@ export function PlayerReservationsView() {
   const [voucherModalBooking, setVoucherModalBooking] = useState<PlayerBooking | null>(null);
 
   useEffect(() => {
-    // ::!todo!::Conectar con API real
-    setTimeout(() => {
-      setBookings([
-        {
-          id: 'res_1',
-          courtName: 'Cancha 1 (Techada)',
-          venueName: 'Padel Club Sur',
-          date: 'Viernes 5 de Septiembre',
-          time: '20:00 - 21:30',
-          status: 'CONFIRMED',
-          totalPrice: 120,
-          pendingAmount: 60,
-          payments: [
-            { id: 'p1', user: 'Juan Pérez (Tú)', status: 'APROBADO', amount: 30, avatar: 'JP' },
-            { id: 'p2', user: 'Mario Vargas', status: 'APROBADO', amount: 30, avatar: 'MV' },
-            { id: 'p3', user: 'Carlos Díaz', status: 'PENDIENTE', amount: 30, avatar: 'CD' },
-            { id: 'p4', user: 'Luis García', status: 'PENDIENTE', amount: 30, avatar: 'LG' }
-          ]
-        },
-        {
-          id: 'res_2',
-          courtName: 'Cancha Principal Fútbol 7',
-          venueName: 'Complejo Triple Doble',
-          date: 'Sábado 6 de Septiembre',
-          time: '18:00 - 19:00',
-          status: 'PENDING',
-          totalPrice: 140,
-          pendingAmount: 140,
-          payments: []
-        },
-        {
-          id: 'res_3',
-          courtName: 'Cancha 3',
-          venueName: 'Padel Club Sur',
-          date: 'Lunes 1 de Septiembre',
-          time: '19:00 - 20:30',
-          status: 'COMPLETED',
-          totalPrice: 120,
-          pendingAmount: 0,
-          payments: [
-            { id: 'p5', user: 'Juan Pérez (Tú)', status: 'APROBADO', amount: 120, avatar: 'JP' }
-          ]
-        }
-      ]);
-      setLoading(false);
-    }, 800);
+    async function loadBookings() {
+      try {
+        const res = await apiCall('/api/v1/player/reservations');
+        if (res.status && res.data) {
+          setBookings(res.data);
+        } else { throw new Error(); }
+      } catch (error) {
+        // Fallback or error handling
+        setBookings([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadBookings();
   }, []);
 
   if (loading) {
     return <Center p="xl"><Loader color="dark" /></Center>;
   }
 
-  const upcomingBookings = bookings.filter(b => b.status === 'CONFIRMED' || b.status === 'PENDING');
-  const pastBookings = bookings.filter(b => b.status === 'COMPLETED' || b.status === 'CANCELLED');
+  const upcomingBookings = bookings.filter(b => b.status === 'CONFIRMADA' || b.status === 'PENDIENTE_PAGO');
+  const pastBookings = bookings.filter(b => b.status === 'COMPLETADA' || b.status === 'CANCELADA');
 
   const toggleExpand = (id: string) => {
     setExpandedBookings(prev => ({ ...prev, [id]: !prev[id] }));
@@ -100,10 +69,10 @@ export function PlayerReservationsView() {
             <Text size="sm" c="dimmed">{booking.venueName}</Text>
           </div>
           <Badge 
-            color={booking.status === 'CONFIRMED' ? 'green' : booking.status === 'COMPLETED' ? 'dark' : booking.status === 'CANCELLED' ? 'red' : 'orange'} 
+            color={booking.status === 'CONFIRMADA' ? 'green' : booking.status === 'COMPLETADA' ? 'dark' : booking.status === 'CANCELADA' ? 'red' : 'orange'} 
             variant="light"
           >
-            {booking.status === 'CONFIRMED' ? 'CONFIRMADA' : booking.status === 'COMPLETED' ? 'FINALIZADA' : booking.status === 'CANCELLED' ? 'CANCELADA' : 'PENDIENTE PAGO'}
+            {booking.status === 'CONFIRMADA' ? 'CONFIRMADA' : booking.status === 'COMPLETADA' ? 'FINALIZADA' : booking.status === 'CANCELADA' ? 'CANCELADA' : 'PENDIENTE PAGO'}
           </Badge>
         </Group>
 
@@ -126,7 +95,7 @@ export function PlayerReservationsView() {
             <Text fw={800} size="lg">S/. {booking.totalPrice.toFixed(2)}</Text>
           </div>
 
-          {(booking.status === 'CONFIRMED' || booking.status === 'PENDING') && (
+          {(booking.status === 'CONFIRMADA' || booking.status === 'PENDIENTE_PAGO') && (
             <CopyButton value={`https://separaaltoke.com/r/${booking.id}`} timeout={2000}>
               {({ copied, copy }) => (
                 <Button color={copied ? 'teal' : 'gray'} variant="light" size="sm" onClick={copy} leftSection={copied ? <IconCheck size={16} /> : <IconShare size={16} />}>
