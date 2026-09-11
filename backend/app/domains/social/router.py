@@ -391,7 +391,13 @@ async def get_my_chats(current_user: auth_models.Usuario = Depends(get_current_u
     return {"status": True, "data": chats_data}
 
 @router.get("/chats/{chat_id}/messages", response_model=dict, tags=["B2C - Player"])
-async def get_chat_messages(chat_id: UUID, current_user: auth_models.Usuario = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def get_chat_messages(
+    chat_id: UUID, 
+    offset: int = 0, 
+    limit: int = 50, 
+    current_user: auth_models.Usuario = Depends(get_current_user), 
+    db: AsyncSession = Depends(get_db)
+):
     persona_id = current_user.persona.id
 
     query_part = select(social_models.ChatParticipante).where(
@@ -406,10 +412,18 @@ async def get_chat_messages(chat_id: UUID, current_user: auth_models.Usuario = D
         select(social_models.Mensaje)
         .options(selectinload(social_models.Mensaje.remitente))
         .where(social_models.Mensaje.chat_id == chat_id)
-        .order_by(social_models.Mensaje.created_at.asc())
+        .order_by(social_models.Mensaje.created_at.desc())
+        .offset(offset)
+        .limit(limit + 1)
     )
     result_msgs = await db.execute(query_msgs)
-    mensajes = result_msgs.scalars().all()
+    mensajes_desc = result_msgs.scalars().all()
+    
+    has_more = len(mensajes_desc) > limit
+    mensajes = mensajes_desc[:limit]
+    
+    # Invertir para que los mensajes más antiguos queden arriba (orden cronológico normal)
+    mensajes.reverse()
 
     msgs_data = []
     for m in mensajes:
@@ -418,6 +432,7 @@ async def get_chat_messages(chat_id: UUID, current_user: auth_models.Usuario = D
             "chat_id": str(m.chat_id),
             "remitente_id": str(m.remitente_id),
             "remitente_nombre": f"{m.remitente.nombres} {m.remitente.apellidos}" if m.remitente else "Desconocido",
+            "is_me": str(m.remitente_id) == str(persona_id),
             "tipo_mensaje": m.tipo_mensaje,
             "contenido_texto": m.contenido_texto,
             "archivo_url": m.archivo_url,
@@ -425,7 +440,63 @@ async def get_chat_messages(chat_id: UUID, current_user: auth_models.Usuario = D
             "created_at": m.created_at.isoformat()
         })
 
-    return {"status": True, "data": msgs_data}
+    return {"status": True, "data": msgs_data, "has_more": has_more}
+
+@router.post("/chats/{chat_id}/messages", response_model=dict, tags=["B2C - Player"])
+async def send_chat_message(
+    chat_id: UUID, 
+    data: schemas.MensajeCreate,
+    current_user: auth_models.Usuario = Depends(get_current_user), 
+    db: AsyncSession = Depends(get_db)
+):
+    persona_id = current_user.persona.id
+
+    query_part = select(social_models.ChatParticipante).where(
+        social_models.ChatParticipante.chat_id == chat_id,
+        social_models.ChatParticipante.persona_id == persona_id
+    )
+    result_part = await db.execute(query_part)
+    if not result_part.scalars().first():
+        raise HTTPException(status_code=403, detail="No eres participante de este chat.")
+
+    nuevo_mensaje = social_models.Mensaje(
+        chat_id=chat_id,
+        remitente_id=persona_id,
+        tipo_mensaje=data.tipo_mensaje,
+        contenido_texto=data.contenido_texto,
+        archivo_url=data.archivo_url,
+        datos_objeto=data.datos_objeto
+    )
+    db.add(nuevo_mensaje)
+    
+    # Incrementar no leídos a otros participantes
+    q_otros = select(social_models.ChatParticipante).where(
+        social_models.ChatParticipante.chat_id == chat_id,
+        social_models.ChatParticipante.persona_id != persona_id
+    )
+    res_otros = await db.execute(q_otros)
+    otros = res_otros.scalars().all()
+    for o in otros:
+        o._no_leidos += 1
+
+    await db.commit()
+    await db.refresh(nuevo_mensaje)
+    
+    return {
+        "status": True, 
+        "data": {
+            "id": str(nuevo_mensaje.id),
+            "chat_id": str(nuevo_mensaje.chat_id),
+            "remitente_id": str(nuevo_mensaje.remitente_id),
+            "remitente_nombre": f"{current_user.persona.nombres} {current_user.persona.apellidos}",
+            "is_me": True,
+            "tipo_mensaje": nuevo_mensaje.tipo_mensaje,
+            "contenido_texto": nuevo_mensaje.contenido_texto,
+            "archivo_url": nuevo_mensaje.archivo_url,
+            "datos_objeto": nuevo_mensaje.datos_objeto,
+            "created_at": nuevo_mensaje.created_at.isoformat()
+        }
+    }
 
 @router.post("/interact", response_model=dict, tags=["B2C - Player"])
 async def interact_with_object(payload: dict, current_user: auth_models.Usuario = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -464,6 +535,32 @@ async def interact_with_object(payload: dict, current_user: auth_models.Usuario 
                         is_active=True
                     )
                     db.add(new_em)
+                
+                # Add to ChatParticipante
+                q_chat = select(social_models.Chat).where(
+                    social_models.Chat.tipo_canal == "EQUIPO",
+                    social_models.Chat.referencia_id == UUID(equipo_id)
+                )
+                res_chat = await db.execute(q_chat)
+                chat_equipo = res_chat.scalars().first()
+                if chat_equipo:
+                    q_part = select(social_models.ChatParticipante).where(
+                        social_models.ChatParticipante.chat_id == chat_equipo.id,
+                        social_models.ChatParticipante.persona_id == persona_id
+                    )
+                    res_part = await db.execute(q_part)
+                    part = res_part.scalars().first()
+                    if not part:
+                        import datetime
+                        new_part = social_models.ChatParticipante(
+                            chat_id=chat_equipo.id,
+                            persona_id=persona_id,
+                            rol="MIEMBRO",
+                            _no_leidos=0,
+                            joined_at=datetime.datetime.now(datetime.timezone.utc)
+                        )
+                        db.add(new_part)
+
             datos_objeto["estado"] = "ACEPTADA"
         elif action == "RECHAZAR":
             datos_objeto["estado"] = "RECHAZADA"

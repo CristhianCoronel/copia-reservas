@@ -14,6 +14,10 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
   const [messages, setMessages] = useState<any[]>([]);
   const [loadingChats, setLoadingChats] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [messageText, setMessageText] = useState("");
 
   const activeChat = propsActiveChat !== undefined ? propsActiveChat : localActiveChat;
   const setActiveChat = propsSetActiveChat !== undefined ? propsSetActiveChat : setLocalActiveChat;
@@ -40,10 +44,12 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
     async function loadMessages() {
       if (!activeChat) return;
       setLoadingMessages(true);
+      setOffset(0);
       try {
-        const res = await apiCall(`/api/v1/player/social/chats/${activeChat.id}/messages`);
+        const res = await apiCall(`/api/v1/player/social/chats/${activeChat.id}/messages?offset=0&limit=50`);
         if (res.status && res.data) {
           setMessages(res.data);
+          setHasMore(res.has_more || false);
         }
       } catch (error) {
         console.error(error);
@@ -53,6 +59,24 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
     }
     loadMessages();
   }, [activeChat]);
+
+  const loadMoreMessages = async () => {
+    if (!activeChat || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const newOffset = offset + 50;
+      const res = await apiCall(`/api/v1/player/social/chats/${activeChat.id}/messages?offset=${newOffset}&limit=50`);
+      if (res.status && res.data) {
+        setMessages([...res.data, ...messages]);
+        setOffset(newOffset);
+        setHasMore(res.has_more || false);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const handleInteract = async (mensajeId: string, action: string) => {
     try {
@@ -74,6 +98,22 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!messageText.trim() || !activeChat) return;
+    const text = messageText.trim();
+    setMessageText("");
+    try {
+      const res = await apiCall(`/api/v1/player/social/chats/${activeChat.id}/messages`, 'POST', { tipo_mensaje: 'TEXTO', contenido_texto: text });
+      if (res.status && res.data) {
+        setMessages([...messages, res.data]);
+      }
+    } catch (error) {
+      console.error(error);
+      setMessageText(text); // Revert
+      alert("Error al enviar el mensaje");
     }
   };
 
@@ -99,16 +139,23 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
             <Center style={{ flex: 1 }}><Loader color="dark" /></Center>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {hasMore && (
+                <Center mb="sm">
+                  <Button variant="subtle" size="xs" onClick={loadMoreMessages} loading={loadingMore} color="dark">
+                    Mostrar mensajes anteriores
+                  </Button>
+                </Center>
+              )}
               {messages.map((msg) => {
-                const isMe = msg.remitente_nombre === 'Desconocido' || false; // Necesitaríamos el ID de usuario local, por ahora todos a la izquierda salvo nosotros si lo sabemos. (Asumiremos todos izq por ahora para simplificar o si sabemos que somos nosotros).
+                const isMe = msg.is_me;
                 
                 const time = new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
                 if (msg.tipo_mensaje === 'TEXTO') {
                   return (
-                    <div key={msg.id} style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
-                      <Text size="xs" c="dimmed" mb={4}>{msg.remitente_nombre} • {time}</Text>
-                      <Box bg="light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6))" p="sm" style={{ borderRadius: '0 12px 12px 12px' }}>
+                    <div key={msg.id} style={{ alignSelf: isMe ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
+                      <Text size="xs" c="dimmed" mb={4} ta={isMe ? 'right' : 'left'}>{msg.remitente_nombre} • {time}</Text>
+                      <Box bg={isMe ? 'dark' : 'light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6))'} c={isMe ? 'white' : undefined} p="sm" style={{ borderRadius: isMe ? '12px 12px 0 12px' : '0 12px 12px 12px' }}>
                         <Text size="sm">{msg.contenido_texto}</Text>
                       </Box>
                     </div>
@@ -117,8 +164,8 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
 
                 if (msg.tipo_mensaje === 'NOTIFICACION_RESERVA') {
                    return (
-                     <div key={msg.id} style={{ alignSelf: 'flex-start', maxWidth: '85%', width: '100%' }}>
-                      <Text size="xs" c="dimmed" mb={4}>{msg.remitente_nombre} • {time}</Text>
+                     <div key={msg.id} style={{ alignSelf: isMe ? 'flex-end' : 'flex-start', maxWidth: '85%', width: '100%' }}>
+                      <Text size="xs" c="dimmed" mb={4} ta={isMe ? 'right' : 'left'}>{msg.remitente_nombre} • {time}</Text>
                       <Card withBorder radius="md" padding="sm" shadow="sm">
                         <Group justify="space-between" mb="xs">
                           <Group gap="xs">
@@ -138,8 +185,8 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
                 if (msg.tipo_mensaje === 'COMPROBANTE_PAGO') {
                    const estado = msg.datos_objeto?.estado || 'EN REVISIÓN';
                    return (
-                     <div key={msg.id} style={{ alignSelf: 'flex-start', maxWidth: '85%', width: '100%' }}>
-                      <Text size="xs" c="dimmed" mb={4}>{msg.remitente_nombre} • {time}</Text>
+                     <div key={msg.id} style={{ alignSelf: isMe ? 'flex-end' : 'flex-start', maxWidth: '85%', width: '100%' }}>
+                      <Text size="xs" c="dimmed" mb={4} ta={isMe ? 'right' : 'left'}>{msg.remitente_nombre} • {time}</Text>
                       <Card withBorder radius="md" padding="sm" shadow="sm">
                         <Group wrap="nowrap" mb="sm">
                           <Avatar color="teal" radius="sm"><IconReceipt size={20} /></Avatar>
@@ -171,8 +218,8 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
                 if (msg.tipo_mensaje === 'INVITACION') {
                   const estado = msg.datos_objeto?.estado || 'PENDIENTE';
                   return (
-                    <div key={msg.id} style={{ alignSelf: 'flex-start', maxWidth: '85%', width: '100%' }}>
-                      <Text size="xs" c="dimmed" mb={4}>{msg.remitente_nombre} • {time}</Text>
+                    <div key={msg.id} style={{ alignSelf: isMe ? 'flex-end' : 'flex-start', maxWidth: '85%', width: '100%' }}>
+                      <Text size="xs" c="dimmed" mb={4} ta={isMe ? 'right' : 'left'}>{msg.remitente_nombre} • {time}</Text>
                       <Card withBorder radius="md" padding="sm" shadow="sm">
                         <Text size="sm" fw={800} mb={4}>Invitación a Equipo</Text>
                         <Text size="xs" c="dimmed" mb="md">{msg.contenido_texto}</Text>
@@ -203,8 +250,15 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
           <TextInput 
             placeholder="Escribe un mensaje..." 
             style={{ flex: 1 }} 
+            value={messageText}
+            onChange={(e) => setMessageText(e.currentTarget.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleSendMessage();
+              }
+            }}
           />
-          <ActionIcon size={36} color="dark" variant="filled">
+          <ActionIcon size={36} color="dark" variant="filled" onClick={handleSendMessage}>
             <IconSend size={18} />
           </ActionIcon>
         </Group>
