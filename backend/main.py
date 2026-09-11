@@ -14,6 +14,7 @@ from app.domains.booking import models as booking_models
 from app.domains.auth.router import router as auth_router, player_router
 from app.domains.b2b_core.router import router as b2b_router
 from app.domains.booking.router import router as booking_router
+from app.domains.social.router import router as social_router
 
 
 
@@ -28,7 +29,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
-app.add_middleware(
+app.add_middleware( 
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
@@ -50,6 +51,7 @@ async def health_check():
 
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth & Identity"])
 app.include_router(player_router, prefix="/api/v1/player", tags=["B2C - Player"])
+app.include_router(social_router, prefix="/api/v1/player/social", tags=["B2C - Social"])
 app.include_router(b2b_router, prefix="/api/v1/b2b", tags=["B2B - Administration"])
 app.include_router(booking_router, prefix="/api/v1", tags=["Booking & Misc"])
 

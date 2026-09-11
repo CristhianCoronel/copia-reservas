@@ -27,7 +27,7 @@ export function AuthView({ onLogin }: AuthViewProps) {
     try {
       const res = await apiCall('/api/v1/auth/login', 'POST', { email, password });
       if (res.status && res.data.token) {
-        localStorage.setItem('token', res.data.token);
+        sessionStorage.setItem('separaaltokeid', res.data.token);
         onLogin();
       }
     } catch (error: any) {

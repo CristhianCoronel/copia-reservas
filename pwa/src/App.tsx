@@ -27,14 +27,14 @@ export default function App() {
   const { colorScheme } = useMantineColorScheme();
   
   const [accountsData, setAccountsData] = useState<any>(null);
-  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(localStorage.getItem('activeCompanyId'));
-  const [activeVenueId, setActiveVenueId] = useState<string | null>(localStorage.getItem('activeVenueId'));
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(sessionStorage.getItem('activeCompanyId'));
+  const [activeVenueId, setActiveVenueId] = useState<string | null>(sessionStorage.getItem('activeVenueId'));
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('separaaltokeid');
     if (token) {
       setIsAuthenticated(true);
-      const savedMode = localStorage.getItem('appMode') as 'jugador' | 'empresa' | 'superadmin';
+      const savedMode = sessionStorage.getItem('appMode') as 'jugador' | 'empresa' | 'superadmin';
       if (savedMode) setAppMode(savedMode);
       
       apiCall('/api/v1/player/profile/me/accounts').then(res => {
@@ -55,34 +55,34 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('appMode');
-    localStorage.removeItem('activeCompanyId');
-    localStorage.removeItem('activeVenueId');
+    sessionStorage.removeItem('separaaltokeid');
+    sessionStorage.removeItem('appMode');
+    sessionStorage.removeItem('activeCompanyId');
+    sessionStorage.removeItem('activeVenueId');
     setIsAuthenticated(false);
   };
 
   const switchToJugador = () => {
     setAppMode('jugador');
-    localStorage.setItem('appMode', 'jugador');
+    sessionStorage.setItem('appMode', 'jugador');
     setActiveTab('canchas');
     closeModal();
   };
 
   const switchToEmpresa = (companyId: string, venueId: string) => {
     setAppMode('empresa');
-    localStorage.setItem('appMode', 'empresa');
+    sessionStorage.setItem('appMode', 'empresa');
     setActiveCompanyId(companyId);
-    localStorage.setItem('activeCompanyId', companyId);
+    sessionStorage.setItem('activeCompanyId', companyId);
     setActiveVenueId(venueId);
-    localStorage.setItem('activeVenueId', venueId);
+    sessionStorage.setItem('activeVenueId', venueId);
     setActiveTab('reservas');
     closeModal();
   };
 
   const switchToSuperAdmin = () => {
     setAppMode('superadmin');
-    localStorage.setItem('appMode', 'superadmin');
+    sessionStorage.setItem('appMode', 'superadmin');
     setActiveTab('admin');
     closeModal();
   };

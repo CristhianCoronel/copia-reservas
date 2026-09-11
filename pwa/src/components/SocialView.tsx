@@ -189,16 +189,35 @@ function EquiposTab() {
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [createTeamOpened, setCreateTeamOpened] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+
+  useEffect(() => {
+    if (selectedTeam) {
+      setLoadingMembers(true);
+      apiCall(`/api/v1/player/social/teams/${selectedTeam.id}/members`)
+        .then(res => {
+          if (res.status && res.data) {
+            setTeamMembers(res.data);
+          }
+        })
+        .finally(() => setLoadingMembers(false));
+    } else {
+      setTeamMembers([]);
+    }
+  }, [selectedTeam]);
 
   useEffect(() => {
     async function loadTeams() {
       try {
-        const res = await apiCall('/api/v1/player/teams');
+        const res = await apiCall('/api/v1/player/social/teams');
         if (res.status && res.data) {
-          setMyTeams(res.data);
+          setMyTeams(res.data.teams || []);
+          setInvitations(res.data.invitations || []);
         } else { throw new Error(); }
       } catch (error) {
         setMyTeams([]);
+        setInvitations([]);
       } finally {
         setLoading(false);
       }
@@ -206,13 +225,23 @@ function EquiposTab() {
     loadTeams();
   }, []);
 
-  const handleAcceptInvite = (id: string, teamName: string) => {
-    setInvitations(invitations.filter(inv => inv.id !== id));
-    setMyTeams([{ id: `new_${id}`, name: teamName, sport: 'Fútbol', members: 1, role: 'MIEMBRO' }, ...myTeams]);
+  const handleAcceptInvite = async (id: string, teamName: string) => {
+    try {
+      await apiCall('/api/v1/player/social/interact', 'POST', { mensaje_id: id, action: 'ACEPTAR' });
+      setInvitations(invitations.filter(inv => inv.id !== id));
+      setMyTeams([{ id: `new_${id}`, name: teamName, sport: 'Fútbol', members: 1, role: 'MIEMBRO' }, ...myTeams]);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const handleRejectInvite = (id: string) => {
-    setInvitations(invitations.filter(inv => inv.id !== id));
+  const handleRejectInvite = async (id: string) => {
+    try {
+      await apiCall('/api/v1/player/social/interact', 'POST', { mensaje_id: id, action: 'RECHAZAR' });
+      setInvitations(invitations.filter(inv => inv.id !== id));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -289,22 +318,27 @@ function EquiposTab() {
           </Card>
         )}
 
-        <Text fw={700} mb="sm">Integrantes ({selectedTeam?.members})</Text>
+        <Text fw={700} mb="sm">Integrantes ({teamMembers.length})</Text>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Group wrap="nowrap">
-            <Avatar color="blue" radius="xl">JP</Avatar>
-            <div style={{ flex: 1 }}>
-              <Text size="sm" fw={700}>Juan Pérez (Tú)</Text>
-              <Text size="xs" c="dimmed">{selectedTeam?.role}</Text>
-            </div>
-          </Group>
-          <Group wrap="nowrap">
-            <Avatar color="gray" radius="xl">MV</Avatar>
-            <div style={{ flex: 1 }}>
-              <Text size="sm" fw={700}>Mario Vargas</Text>
-              <Text size="xs" c="dimmed">MIEMBRO</Text>
-            </div>
-          </Group>
+          {loadingMembers ? (
+            <Center p="sm"><Loader color="dark" size="sm" /></Center>
+          ) : (
+            teamMembers.map((member) => {
+              const initials = member.nombre.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+              return (
+                <Group wrap="nowrap" key={member.id}>
+                  <Avatar color={member.estado === 'PENDIENTE' ? 'gray' : 'blue'} radius="xl">{initials}</Avatar>
+                  <div style={{ flex: 1 }}>
+                    <Text size="sm" fw={700}>{member.nombre} {member.is_me ? '(Tú)' : ''}</Text>
+                    <Group gap="xs">
+                      <Text size="xs" c="dimmed">{member.rol}</Text>
+                      {member.estado === 'PENDIENTE' && <Badge size="xs" color="orange" variant="light">Pendiente</Badge>}
+                    </Group>
+                  </div>
+                </Group>
+              );
+            })
+          )}
         </div>
       </Modal>
 
@@ -318,7 +352,7 @@ function EquiposTab() {
 }
 
 export function SocialView() {
-  const [activeChat, setActiveChat] = useState<string | null>(null);
+  const [activeChat, setActiveChat] = useState<any | null>(null);
 
   if (activeChat) {
     return (

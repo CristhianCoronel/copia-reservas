@@ -85,6 +85,7 @@ class EquipoMiembro(AuditMixin, Base):
     is_active = Column(Boolean, default=True, nullable=False)
 
     equipo = relationship("Equipo", back_populates="miembros")
+    persona = relationship("Persona")
 
 class PagoReserva(AuditMixin, Base):
     __tablename__ = "pago_reserva"

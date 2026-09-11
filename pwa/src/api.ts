@@ -5,7 +5,7 @@ export async function apiCall<T = any>(
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' = 'GET',
   body?: any
 ): Promise<{ message: string; status: boolean; data: T }> {
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('separaaltokeid');
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',

@@ -1,108 +1,199 @@
-import { useState } from 'react';
-import { Box, Title, Text, Group, Avatar, Badge, ActionIcon, ScrollArea, TextInput, Card, Button, Center, Divider } from '@mantine/core';
+import { useState, useEffect } from 'react';
+import { Box, Title, Text, Group, Avatar, Badge, ActionIcon, ScrollArea, TextInput, Card, Button, Center, Divider, Loader } from '@mantine/core';
 import { IconChevronLeft, IconSend, IconPaperclip, IconCheck, IconX, IconReceipt, IconCalendarEvent, IconMessageCircle } from '@tabler/icons-react';
+import { apiCall } from '../api';
 
 interface ChatViewProps {
-  activeChat?: string | null;
-  setActiveChat?: (chat: string | null) => void;
+  activeChat?: any | null;
+  setActiveChat?: (chat: any | null) => void;
 }
 
 export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetActiveChat }: ChatViewProps) {
-  const [localActiveChat, setLocalActiveChat] = useState<string | null>(null);
+  const [localActiveChat, setLocalActiveChat] = useState<any | null>(null);
+  const [chats, setChats] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loadingChats, setLoadingChats] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
 
   const activeChat = propsActiveChat !== undefined ? propsActiveChat : localActiveChat;
   const setActiveChat = propsSetActiveChat !== undefined ? propsSetActiveChat : setLocalActiveChat;
 
+  useEffect(() => {
+    async function loadChats() {
+      try {
+        const res = await apiCall('/api/v1/player/social/chats');
+        if (res.status && res.data) {
+          setChats(res.data);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoadingChats(false);
+      }
+    }
+    if (!activeChat) {
+      loadChats();
+    }
+  }, [activeChat]);
+
+  useEffect(() => {
+    async function loadMessages() {
+      if (!activeChat) return;
+      setLoadingMessages(true);
+      try {
+        const res = await apiCall(`/api/v1/player/social/chats/${activeChat.id}/messages`);
+        if (res.status && res.data) {
+          setMessages(res.data);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoadingMessages(false);
+      }
+    }
+    loadMessages();
+  }, [activeChat]);
+
+  const handleInteract = async (mensajeId: string, action: string) => {
+    try {
+      const res = await apiCall('/api/v1/player/social/interact', 'POST', { mensaje_id: mensajeId, action });
+      if (res.status) {
+        // Actualizar el estado local
+        setMessages(prev => prev.map(m => {
+          if (m.id === mensajeId) {
+            return {
+              ...m,
+              datos_objeto: {
+                ...(m.datos_objeto || {}),
+                estado: action === 'ACEPTAR' || action === 'APROBAR' ? (action === 'ACEPTAR' ? 'ACEPTADA' : 'APROBADO') : (action === 'RECHAZAR' ? 'RECHAZADA' : 'RECHAZADO')
+              }
+            };
+          }
+          return m;
+        }));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   if (activeChat) {
+    const chatTitle = activeChat.referencia_nombre || (activeChat.tipo_canal === 'EQUIPO' ? 'Equipo' : activeChat.tipo_canal === 'PARTIDA_ABIERTA' ? 'Junta' : 'Chat');
+
     return (
       <Box style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)' }}>
         <Group wrap="nowrap" mb={0} align="center" style={{ borderBottom: '1px solid var(--mantine-color-default-border)', padding: '16px 16px 12px 16px' }}>
           <ActionIcon variant="subtle" color="dark" onClick={() => setActiveChat(null)}>
             <IconChevronLeft size={20} />
           </ActionIcon>
-          <Avatar color={activeChat.includes('Sede') ? 'blue' : 'dark'} radius="xl" size="sm">
-            {activeChat.charAt(0)}
+          <Avatar color={activeChat.tipo_canal === 'EQUIPO' ? 'blue' : 'dark'} radius="xl" size="sm">
+            {chatTitle.charAt(0)}
           </Avatar>
           <div style={{ flex: 1 }}>
-            <Text size="sm" fw={800}>{activeChat}</Text>
+            <Text size="sm" fw={800}>{chatTitle}</Text>
           </div>
         </Group>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            
-            <div style={{ alignSelf: 'flex-start', maxWidth: '85%', width: '100%' }}>
-              <Text size="xs" c="dimmed" mb={4}>{activeChat} • 18:29</Text>
-              <Card withBorder radius="md" padding="sm" shadow="sm">
-                <Group justify="space-between" mb="xs">
-                  <Group gap="xs">
-                    <Avatar color="blue" radius="sm"><IconCalendarEvent size={20} /></Avatar>
-                    <div>
-                      <Text size="sm" fw={800}>Reserva Generada</Text>
-                      <Text size="xs" c="dimmed">Cancha 1 (Techada)</Text>
+          {loadingMessages ? (
+            <Center style={{ flex: 1 }}><Loader color="dark" /></Center>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {messages.map((msg) => {
+                const isMe = msg.remitente_nombre === 'Desconocido' || false; // Necesitaríamos el ID de usuario local, por ahora todos a la izquierda salvo nosotros si lo sabemos. (Asumiremos todos izq por ahora para simplificar o si sabemos que somos nosotros).
+                
+                const time = new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                if (msg.tipo_mensaje === 'TEXTO') {
+                  return (
+                    <div key={msg.id} style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
+                      <Text size="xs" c="dimmed" mb={4}>{msg.remitente_nombre} • {time}</Text>
+                      <Box bg="light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6))" p="sm" style={{ borderRadius: '0 12px 12px 12px' }}>
+                        <Text size="sm">{msg.contenido_texto}</Text>
+                      </Box>
                     </div>
-                  </Group>
-                  <Badge color="orange" variant="light">PENDIENTE</Badge>
-                </Group>
-                
-                <Divider my="xs" />
-                
-                <Group justify="space-between" align="center">
-                  <div>
-                    <Text size="xs" fw={700}>Sábado 6 Sep, 18:00</Text>
-                    <Text size="xs" c="dimmed">Total: S/. 120.00</Text>
-                  </div>
-                  <Button size="xs" color="dark" variant="light">Ver Detalle</Button>
-                </Group>
-              </Card>
-            </div>
+                  );
+                }
 
-            <div style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
-              <Text size="xs" c="dimmed" mb={4}>{activeChat} • 18:30</Text>
-              <Box bg="light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6))" p="sm" style={{ borderRadius: '0 12px 12px 12px' }}>
-                <Text size="sm">Hola, por favor envía el comprobante de pago para confirmar tu reserva de hoy a las 8pm.</Text>
-              </Box>
-            </div>
+                if (msg.tipo_mensaje === 'NOTIFICACION_RESERVA') {
+                   return (
+                     <div key={msg.id} style={{ alignSelf: 'flex-start', maxWidth: '85%', width: '100%' }}>
+                      <Text size="xs" c="dimmed" mb={4}>{msg.remitente_nombre} • {time}</Text>
+                      <Card withBorder radius="md" padding="sm" shadow="sm">
+                        <Group justify="space-between" mb="xs">
+                          <Group gap="xs">
+                            <Avatar color="blue" radius="sm"><IconCalendarEvent size={20} /></Avatar>
+                            <div>
+                              <Text size="sm" fw={800}>Reserva Generada</Text>
+                              <Text size="xs" c="dimmed">{msg.contenido_texto}</Text>
+                            </div>
+                          </Group>
+                          <Badge color="orange" variant="light">PENDIENTE</Badge>
+                        </Group>
+                      </Card>
+                    </div>
+                   );
+                }
 
-            <div style={{ alignSelf: 'flex-end', maxWidth: '85%' }}>
-              <Text size="xs" c="dimmed" mb={4} ta="right">Tú • 18:31</Text>
-              <Box bg="dark" c="white" p="sm" style={{ borderRadius: '12px 0 12px 12px' }}>
-                <Text size="sm">¡Claro! Aquí lo tienes.</Text>
-              </Box>
-            </div>
+                if (msg.tipo_mensaje === 'COMPROBANTE_PAGO') {
+                   const estado = msg.datos_objeto?.estado || 'EN REVISIÓN';
+                   return (
+                     <div key={msg.id} style={{ alignSelf: 'flex-start', maxWidth: '85%', width: '100%' }}>
+                      <Text size="xs" c="dimmed" mb={4}>{msg.remitente_nombre} • {time}</Text>
+                      <Card withBorder radius="md" padding="sm" shadow="sm">
+                        <Group wrap="nowrap" mb="sm">
+                          <Avatar color="teal" radius="sm"><IconReceipt size={20} /></Avatar>
+                          <div>
+                            <Text size="sm" fw={800}>Comprobante de Pago</Text>
+                            <Text size="xs" c="dimmed">{msg.contenido_texto}</Text>
+                          </div>
+                        </Group>
+                        <div style={{ height: 100, backgroundColor: 'var(--mantine-color-gray-2)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                          {msg.datos_objeto?.url ? (
+                            <img src={msg.datos_objeto.url} alt="Comprobante" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <Text size="xs" c="dimmed">[Imagen del Comprobante]</Text>
+                          )}
+                        </div>
+                        {estado === 'EN REVISIÓN' || !estado ? (
+                           <Group grow mt="sm">
+                             <Button size="xs" color="gray" variant="light" leftSection={<IconX size={14} />} onClick={() => handleInteract(msg.id, 'RECHAZAR')}>Rechazar</Button>
+                             <Button size="xs" color="dark" leftSection={<IconCheck size={14} />} onClick={() => handleInteract(msg.id, 'APROBAR')}>Aprobar</Button>
+                           </Group>
+                        ) : (
+                           <Badge color={estado === 'APROBADO' ? 'green' : 'red'} variant="light" fullWidth mt="sm">{estado}</Badge>
+                        )}
+                      </Card>
+                    </div>
+                   );
+                }
 
-            <div style={{ alignSelf: 'flex-end', maxWidth: '85%', width: '100%' }}>
-              <Text size="xs" c="dimmed" mb={4} ta="right">Tú • 18:32</Text>
-              <Card withBorder radius="md" padding="sm" shadow="sm">
-                <Group wrap="nowrap" mb="sm">
-                  <Avatar color="teal" radius="sm"><IconReceipt size={20} /></Avatar>
-                  <div>
-                    <Text size="sm" fw={800}>Comprobante de Pago</Text>
-                    <Text size="xs" c="dimmed">Yape • S/. 120.00</Text>
-                  </div>
-                </Group>
-                <div style={{ height: 100, backgroundColor: 'var(--mantine-color-gray-2)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Text size="xs" c="dimmed">[Imagen del Comprobante]</Text>
-                </div>
-                <Badge color="orange" variant="light" fullWidth mt="sm">EN REVISIÓN</Badge>
-              </Card>
-            </div>
-            
-             <Center my="lg">
-                <Text size="xs" c="dimmed">-- Ejemplo de Objeto Interactivo: Invitación --</Text>
-             </Center>
-             <div style={{ alignSelf: 'flex-start', maxWidth: '85%', width: '100%' }}>
-              <Card withBorder radius="md" padding="sm" shadow="sm">
-                <Text size="sm" fw={800} mb={4}>Invitación a Equipo</Text>
-                <Text size="xs" c="dimmed" mb="md">Te he invitado a unirte a mi equipo "Los Galácticos FC". ¡Anímate!</Text>
-                <Group grow>
-                  <Button size="xs" color="gray" variant="light" leftSection={<IconX size={14} />}>Rechazar</Button>
-                  <Button size="xs" color="dark" leftSection={<IconCheck size={14} />}>Aceptar</Button>
-                </Group>
-              </Card>
-            </div>
+                if (msg.tipo_mensaje === 'INVITACION') {
+                  const estado = msg.datos_objeto?.estado || 'PENDIENTE';
+                  return (
+                    <div key={msg.id} style={{ alignSelf: 'flex-start', maxWidth: '85%', width: '100%' }}>
+                      <Text size="xs" c="dimmed" mb={4}>{msg.remitente_nombre} • {time}</Text>
+                      <Card withBorder radius="md" padding="sm" shadow="sm">
+                        <Text size="sm" fw={800} mb={4}>Invitación a Equipo</Text>
+                        <Text size="xs" c="dimmed" mb="md">{msg.contenido_texto}</Text>
+                        
+                        {estado === 'PENDIENTE' ? (
+                          <Group grow>
+                            <Button size="xs" color="gray" variant="light" leftSection={<IconX size={14} />} onClick={() => handleInteract(msg.id, 'RECHAZAR')}>Rechazar</Button>
+                            <Button size="xs" color="dark" leftSection={<IconCheck size={14} />} onClick={() => handleInteract(msg.id, 'ACEPTAR')}>Aceptar</Button>
+                          </Group>
+                        ) : (
+                          <Badge color={estado === 'ACEPTADA' ? 'green' : 'red'} variant="light" fullWidth>{estado}</Badge>
+                        )}
+                      </Card>
+                    </div>
+                  );
+                }
 
-          </div>
+                return null;
+              })}
+            </div>
+          )}
         </div>
 
         <Group wrap="nowrap" align="flex-end" style={{ padding: '0 16px 16px 16px' }}>
@@ -130,41 +221,33 @@ export function ChatView({ activeChat: propsActiveChat, setActiveChat: propsSetA
         </Group>
       )}
 
-      <Group wrap="nowrap" mb="lg" style={{ cursor: 'pointer' }} onClick={() => setActiveChat('Sede Triple Doble')}>
-        <Avatar color="blue" radius="xl">S</Avatar>
-        <div style={{ flex: 1 }}>
-          <Group justify="space-between" mb={2}>
-            <Text size="sm" fw={700}>Sede Triple Doble</Text>
-            <Text size="xs" c="dimmed">18:32</Text>
-          </Group>
-          <Text size="xs" c="dimmed" truncate>Por favor envía el comprobante de pago.</Text>
-        </div>
-      </Group>
-
-      <Group wrap="nowrap" mb="lg" style={{ cursor: 'pointer' }} onClick={() => setActiveChat('Mario Vargas')}>
-        <Avatar color="dark" radius="xl">M</Avatar>
-        <div style={{ flex: 1 }}>
-          <Group justify="space-between" mb={2}>
-            <Text size="sm" fw={800}>Mario Vargas</Text>
-            <Group gap={6}>
-              <Badge color="red" variant="filled" size="xs" circle>1</Badge>
-              <Text size="xs" fw={800} c="dark">Ayer</Text>
+      {loadingChats ? (
+        <Center p="xl"><Loader color="dark" /></Center>
+      ) : chats.length === 0 ? (
+        <Center p="xl"><Text c="dimmed">No tienes mensajes.</Text></Center>
+      ) : (
+        chats.map((chat) => {
+          const title = chat.referencia_nombre || (chat.tipo_canal === 'EQUIPO' ? 'Equipo' : chat.tipo_canal === 'PARTIDA_ABIERTA' ? 'Junta' : 'Chat');
+          const lastMsg = chat.ultimo_mensaje;
+          
+          return (
+            <Group key={chat.id} wrap="nowrap" mb="lg" style={{ cursor: 'pointer' }} onClick={() => setActiveChat(chat)}>
+              <Avatar color="dark" radius="xl">{title.charAt(0)}</Avatar>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Group justify="space-between" mb={2}>
+                  <Text size="sm" fw={800}>{title}</Text>
+                  <Group gap={6}>
+                    {chat.no_leidos > 0 && <Badge color="red" variant="filled" size="xs" circle>{chat.no_leidos}</Badge>}
+                  </Group>
+                </Group>
+                <Text size="xs" fw={chat.no_leidos > 0 ? 700 : 400} c={chat.no_leidos > 0 ? 'dark' : 'dimmed'} truncate>
+                  {lastMsg ? (lastMsg.tipo_mensaje === 'TEXTO' ? lastMsg.contenido_texto : `[${lastMsg.tipo_mensaje}]`) : 'Sin mensajes'}
+                </Text>
+              </div>
             </Group>
-          </Group>
-          <Text size="xs" fw={700} truncate>Te he invitado a unirte a "Los Galácticos FC".</Text>
-        </div>
-      </Group>
-
-      <Group wrap="nowrap" mb="lg" style={{ cursor: 'pointer' }} onClick={() => setActiveChat('Soporte Separa Altoke')}>
-        <Avatar color="orange" radius="xl">SA</Avatar>
-        <div style={{ flex: 1 }}>
-          <Group justify="space-between" mb={2}>
-            <Text size="sm" fw={700}>Soporte Separa Altoke</Text>
-            <Text size="xs" c="dimmed">Lun</Text>
-          </Group>
-          <Text size="xs" c="dimmed" truncate>Tu cuenta ha sido verificada correctamente.</Text>
-        </div>
-      </Group>
+          );
+        })
+      )}
     </Box>
   );
 }
