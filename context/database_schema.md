@@ -214,6 +214,8 @@ Entidad jurídica comercial propietaria de los complejos y canchas deportivas. *
 | `email_contacto`| `VARCHAR(255)` | NO | Email para notificaciones y facturación. |
 | `logo_url` | `VARCHAR(500)` | SÍ | Ruta al logotipo comercial. |
 | `terminos_condiciones` | `TEXT` | SÍ | Términos y condiciones propios de la empresa para reservas. |
+| `politica_cancelacion` | `TEXT` | SÍ | Política general de cancelación y devoluciones. |
+| `es_sede_unica` | `BOOLEAN` | NO | Indica si la empresa maneja un solo local (Default `TRUE`). Simplifica la UI. |
 | `created_at` | `TIMESTAMPTZ` | NO | Fecha de registro corporativo. |
 | `updated_at` | `TIMESTAMPTZ` | NO | Fecha de actualización. |
 
@@ -283,10 +285,9 @@ Complejos deportivos físicos operados por una empresa.
 | `latitud` | `DOUBLE PRECISION` | NO | Coordenada GPS latitud (para motor de cercanía). |
 | `longitud` | `DOUBLE PRECISION` | NO | Coordenada GPS longitud (para motor de cercanía). |
 | `maps_url` | `VARCHAR(500)` | SÍ | Enlace de Google Maps (Beneficio de Cuenta Premium). |
-| `telefono` | `VARCHAR(30)` | NO | Teléfono de recepción o WhatsApp de soporte. |
-| `email` | `VARCHAR(255)` | SÍ | Correo electrónico de la sede. |
-| `politica_cancelacion` | `TEXT` | SÍ | Políticas de penalidad, tolerancia y devoluciones. |
-| `horas_limite_cancelacion` | `INT` | NO | Horas mínimas previas requeridas para cancelar sin penalidad (Default `24`). |
+| `telefono` | `VARCHAR(30)` | NO | Teléfono de contacto de la sede. |
+| `email` | `VARCHAR(255)` | SÍ | Correo propio de la sede (opcional). |
+| `horas_limite_cancelacion` | `INT` | NO | Horas mínimas requeridas para cancelar sin penalidad (Default `24`). |
 | `max_horas_reserva_continua` | `INT` | NO | Límite de horas consecutivas que un cliente puede reservar (Default `2`). |
 | `reserva_minutos_espera` | `INT` | NO | Tiempo límite (minutos) para confirmar pago antes de liberar la reserva en PENDING (ej. `15`, `30`, `1440`). |
 | `tipo_adelanto_requerido`| `VARCHAR(20)`| NO | Regla de cobro: `PORCENTAJE`, `MONTO_FIJO`, `NINGUNO`. |

@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { Card, Text, Group, Button, TextInput, ActionIcon, Tabs, Select, Switch, Alert, Badge, Table, NumberInput, Textarea } from '@mantine/core';
-import { IconPlus, IconTrash, IconBuildingStore, IconSettings, IconUsers, IconLock, IconCheck, IconCrown } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconBuildingStore, IconSettings, IconUsers, IconLock, IconCheck, IconCrown, IconMapPin } from '@tabler/icons-react';
 
 export function CompanyEditView() {
-  const [activeTab, setActiveTab] = useState<string | null>('datos');
+  const [activeTab, setActiveTab] = useState<string | null>('empresa');
   const [activeSede, setActiveSede] = useState<string | null>('sede-1');
+  const [isSingleSede, setIsSingleSede] = useState(true);
+  const [serviciosSede, setServiciosSede] = useState<{id: string, nombre: string}[]>([
+    { id: '1', nombre: 'Estacionamiento' }
+  ]);
+  const [servicioSeleccionado, setServicioSeleccionado] = useState<string | null>(null);
   
   // ::!todo!::Conectar con API real
   const isPremium = false;
@@ -13,41 +18,72 @@ export function CompanyEditView() {
     <div style={{ padding: 16 }}>
       <Group justify="space-between" align="center" mb="md">
         <div>
-          <Text fw={800} size="xl">Gestión de Sede</Text>
+          <Text fw={800} size="xl">Gestión de Empresa y Sede</Text>
           <Text c="dimmed" size="sm">Administra la información, reglas y tu personal.</Text>
         </div>
         {!isPremium && <Badge color="orange" variant="light" leftSection={<IconCrown size={12} />}>Freemium</Badge>}
       </Group>
 
-      <Select
-        label="Sede Activa"
-        value={activeSede}
-        onChange={setActiveSede}
-        data={[
-          { value: 'sede-1', label: 'Triple Doble - Sede Los Olivos' },
-          { value: 'sede-2', label: 'Triple Doble - Sede Surco (Próximamente)' }
-        ]}
-        mb="xl"
-      />
+      {!isSingleSede && (
+        <Select
+          label="Sede Activa"
+          value={activeSede}
+          onChange={setActiveSede}
+          data={[
+            { value: 'sede-1', label: 'Triple Doble - Sede Los Olivos' },
+            { value: 'sede-2', label: 'Triple Doble - Sede Surco (Próximamente)' }
+          ]}
+          mb="xl"
+        />
+      )}
 
       <Tabs value={activeTab} onChange={setActiveTab} variant="outline" radius="md">
         <Tabs.List>
-          <Tabs.Tab value="datos" leftSection={<IconBuildingStore size={16} />}>
-            General
-          </Tabs.Tab>
-          <Tabs.Tab value="reglas" leftSection={<IconSettings size={16} />}>
-            Reglas
-          </Tabs.Tab>
-          <Tabs.Tab value="personal" leftSection={<IconUsers size={16} />}>
-            Personal
-          </Tabs.Tab>
+          <Tabs.Tab value="empresa" leftSection={<IconBuildingStore size={16} />}>Empresa</Tabs.Tab>
+          <Tabs.Tab value="datos" leftSection={<IconMapPin size={16} />}>Sede Local</Tabs.Tab>
+          <Tabs.Tab value="reglas" leftSection={<IconSettings size={16} />}>Reglas</Tabs.Tab>
+          <Tabs.Tab value="personal" leftSection={<IconUsers size={16} />}>Personal</Tabs.Tab>
         </Tabs.List>
+
+        <Tabs.Panel value="empresa" pt="md">
+          <Card withBorder padding="md" radius="md" mb="md">
+            <Group justify="space-between" align="center" mb="md">
+              <div>
+                <Text fw={800}>Modo de Sede Única</Text>
+                <Text size="xs" c="dimmed">Activa esto si tu empresa opera en un único local para simplificar la interfaz.</Text>
+              </div>
+              <Switch checked={isSingleSede} onChange={(e) => setIsSingleSede(e.currentTarget.checked)} size="md" />
+            </Group>
+          </Card>
+          
+          <Card withBorder padding="md" radius="md">
+            <Text fw={800} size="md" mb="xs">Políticas Globales de la Empresa</Text>
+            <Textarea 
+              label="Política de Cancelación y Devoluciones" 
+              defaultValue="Se aceptan cancelaciones sin penalidad hasta 24 horas antes del partido. De lo contrario, se retiene el adelanto."
+              minRows={3}
+              mb="md"
+            />
+            <Textarea 
+              label="Términos y Condiciones" 
+              defaultValue="1. El local no se responsabiliza por pérdida de objetos personales.\n2. Todo jugador acepta el riesgo deportivo al ingresar."
+              minRows={3}
+              mb="md"
+            />
+            <Button fullWidth color="dark">Guardar Políticas</Button>
+          </Card>
+        </Tabs.Panel>
 
         <Tabs.Panel value="datos" pt="md">
           <Card withBorder padding="md" radius="md">
-            <TextInput label="Nombre del Local" defaultValue="Sede Los Olivos" mb="md" />
+            <TextInput label="Nombre del Local (Sede)" defaultValue="Sede Los Olivos" mb="md" />
             <TextInput label="Dirección Física" defaultValue="Av. Palmeras 1234" mb="md" />
-            <TextInput label="Teléfono de Recepción" defaultValue="987654321" mb="md" />
+            <TextInput label="Referencia de Llegada" placeholder="Ej: Frente al parque central..." mb="md" />
+            
+            <Group grow mb="md">
+              <TextInput label="Teléfono de Recepción" defaultValue="987654321" />
+              <TextInput label="Email de Contacto" placeholder="Sede opcional" />
+            </Group>
             
             <TextInput 
               label="URL de Google Maps" 
@@ -57,55 +93,89 @@ export function CompanyEditView() {
               description={!isPremium ? "Beneficio exclusivo de Cuenta Premium" : ""}
             />
 
-            <Text size="sm" fw={700} mt="xl" mb="xs">Servicios Incluidos</Text>
-            <Group gap="sm" mb="xl">
-              <Switch label="Estacionamiento" defaultChecked />
-              <Switch label="Duchas con agua caliente" defaultChecked />
-              <Switch label="Kiosko / Bebidas" defaultChecked />
-              <Switch label="Wi-Fi Gratuito" />
+            <Text size="sm" fw={700} mt="xl" mb="xs">Servicios Incluidos en Sede</Text>
+            
+            <Group align="flex-end" mb="md">
+              <Select 
+                style={{ flex: 1 }}
+                placeholder="Seleccionar servicio para agregar..." 
+                data={[
+                  { value: '2', label: 'Duchas con agua caliente' },
+                  { value: '3', label: 'Kiosko / Bebidas' },
+                  { value: '4', label: 'Wi-Fi Gratuito' }
+                ]}
+                value={servicioSeleccionado}
+                onChange={setServicioSeleccionado}
+              />
+              <Button onClick={() => setServicioSeleccionado(null)} disabled={!servicioSeleccionado}>Añadir</Button>
             </Group>
 
-            <Button fullWidth color="dark">Guardar Cambios</Button>
+            <Table striped withTableBorder mb="xl">
+              <Table.Tbody>
+                {serviciosSede.map(s => (
+                  <Table.Tr key={s.id}>
+                    <Table.Td>{s.nombre}</Table.Td>
+                    <Table.Td w={50}>
+                      <ActionIcon color="red" variant="subtle"><IconTrash size={16}/></ActionIcon>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+                {serviciosSede.length === 0 && (
+                  <Table.Tr><Table.Td colSpan={2}><Text c="dimmed" size="sm" ta="center">No hay servicios agregados</Text></Table.Td></Table.Tr>
+                )}
+              </Table.Tbody>
+            </Table>
+
+            <Button fullWidth color="dark">Guardar Sede</Button>
           </Card>
         </Tabs.Panel>
 
         <Tabs.Panel value="reglas" pt="md">
           <Card withBorder padding="md" radius="md" mb="md">
-            <Text fw={800} size="md" mb="md">Configuración de Pagos en Reservas</Text>
+            <Text fw={800} size="md" mb="md">Configuración Operativa (Por Sede)</Text>
             
             <Group grow align="flex-start" mb="md">
+              <Select 
+                label="Tipo de Adelanto Requerido" 
+                defaultValue="PORCENTAJE"
+                data={[
+                  { value: 'PORCENTAJE', label: 'Porcentaje (%)' },
+                  { value: 'MONTO_FIJO', label: 'Monto Fijo (S/.)' },
+                  { value: 'NINGUNO', label: 'Ninguno (Reserva Directa)' }
+                ]}
+              />
               <NumberInput 
-                label="Adelanto Requerido (%)" 
+                label="Valor del Adelanto" 
                 defaultValue={20} 
                 min={0} 
-                max={100} 
-                description="Porcentaje que el cliente debe pagar para confirmar el turno."
+                description="Monto o % requerido para confirmar el turno."
               />
+            </Group>
+            
+            <Group grow align="flex-start" mb="md">
               <NumberInput 
                 label="Tiempo de Espera (min)" 
                 defaultValue={15} 
                 min={5} 
-                max={1440}
                 description="Minutos antes de liberar la cancha si no se envía voucher."
               />
+              <NumberInput 
+                label="Límite Horas Continuas" 
+                defaultValue={2} 
+                min={1} 
+                description="Máximo de horas seguidas por cliente."
+              />
             </Group>
-          </Card>
-
-          <Card withBorder padding="md" radius="md">
-            <Text fw={800} size="md" mb="xs">Políticas de la Sede</Text>
-            <Textarea 
-              label="Política de Cancelación" 
-              defaultValue="Se aceptan cancelaciones sin penalidad hasta 24 horas antes del partido. De lo contrario, se retiene el adelanto."
-              minRows={3}
+            
+            <NumberInput 
+              label="Límite de Cancelación (hrs)" 
+              defaultValue={24} 
+              min={0} 
               mb="md"
+              description="Horas previas mínimas para cancelar sin penalidad."
             />
-            <Textarea 
-              label="Reglas Internas" 
-              defaultValue="1. Prohibido chimpunes de metal.\n2. No se venden bebidas alcohólicas a menores."
-              minRows={3}
-              mb="md"
-            />
-            <Button fullWidth color="dark">Actualizar Reglas</Button>
+            
+            <Button fullWidth color="dark">Actualizar Reglas de Sede</Button>
           </Card>
         </Tabs.Panel>
 

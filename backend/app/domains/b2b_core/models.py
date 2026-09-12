@@ -19,6 +19,8 @@ class Empresa(AuditMixin, Base):
     email_contacto = Column(String(255), nullable=False)
     logo_url = Column(String(500))
     terminos_condiciones = Column(Text)
+    politica_cancelacion = Column(Text)
+    es_sede_unica = Column(Boolean, default=True, nullable=False)
 
     creador = relationship("Persona", back_populates="empresas_creadas", foreign_keys=[creada_por_persona_id])
     sedes = relationship("Sede", back_populates="empresa")
@@ -38,7 +40,6 @@ class Sede(AuditMixin, Base):
     maps_url = Column(String(500))
     telefono = Column(String(30), nullable=False)
     email = Column(String(255))
-    politica_cancelacion = Column(Text)
     horas_limite_cancelacion = Column(Integer, default=24, nullable=False)
     max_horas_reserva_continua = Column(Integer, default=2, nullable=False)
     reserva_minutos_espera = Column(Integer, default=15, nullable=False)
