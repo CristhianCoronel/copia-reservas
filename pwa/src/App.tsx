@@ -1,4 +1,4 @@
-import { Group, Text, UnstyledButton, Center, ScrollArea, Modal, Avatar, Card, Badge, useMantineColorScheme } from '@mantine/core';
+import { Group, Text, UnstyledButton, Center, ScrollArea, Modal, Avatar, Card, Badge, useMantineColorScheme, Button } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconPlayFootball, IconCompass, IconUsers, IconCalendarEvent, IconUser, IconBusinessplan, IconMapPin, IconBuilding, IconMessageCircle, IconWallet } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
@@ -31,6 +31,13 @@ export default function App() {
   const [activeVenueId, setActiveVenueId] = useState<string | null>(sessionStorage.getItem('activeVenueId'));
 
   useEffect(() => {
+    const handleNavigate = (e: any) => {
+      if (e.detail) {
+        setActiveTab(e.detail);
+      }
+    };
+    window.addEventListener('NAVIGATE_TO', handleNavigate);
+
     const token = sessionStorage.getItem('separaaltokeid');
     if (token) {
       setIsAuthenticated(true);
@@ -43,6 +50,10 @@ export default function App() {
         }
       }).catch(console.error);
     }
+
+    return () => {
+      window.removeEventListener('NAVIGATE_TO', handleNavigate);
+    };
   }, []);
 
   const handleOpenModal = () => {
@@ -69,14 +80,14 @@ export default function App() {
     closeModal();
   };
 
-  const switchToEmpresa = (companyId: string, venueId: string) => {
+  const switchToEmpresa = (companyId: string, venueId?: string) => {
     setAppMode('empresa');
     sessionStorage.setItem('appMode', 'empresa');
     setActiveCompanyId(companyId);
     sessionStorage.setItem('activeCompanyId', companyId);
-    setActiveVenueId(venueId);
-    sessionStorage.setItem('activeVenueId', venueId);
-    setActiveTab('reservas');
+    setActiveVenueId(venueId || '');
+    sessionStorage.setItem('activeVenueId', venueId || '');
+    setActiveTab(venueId ? 'reservas' : 'empresa');
     closeModal();
   };
 
@@ -130,8 +141,8 @@ export default function App() {
             {appMode === 'jugador' && activeTab === 'social' && <SocialView />}
             {appMode === 'jugador' && activeTab === 'billetera' && <WalletView />}
             {appMode === 'jugador' && activeTab === 'reservas' && <PlayerReservationsView />}
-            {appMode === 'jugador' && activeTab === 'perfil' && <ProfileView onLogout={handleLogout} />}
-            {appMode === 'jugador' && activeTab === 'registro_empresa' && <CompanyRegistrationView />}
+            {appMode === 'jugador' && activeTab === 'perfil' && <ProfileView onLogout={handleLogout} onNavigate={(tab) => setActiveTab(tab)} />}
+            {appMode === 'jugador' && activeTab === 'registro_empresa' && <CompanyRegistrationView onNavigate={(tab) => setActiveTab(tab)} />}
 
             {appMode === 'empresa' && activeTab === 'reservas' && <CompanyReservationsView />}
             {appMode === 'empresa' && activeTab === 'canchas' && <CompanyCourtsView />}
@@ -265,7 +276,10 @@ export default function App() {
                     </Card>
                   ))}
                   {company.venues.length === 0 && (
-                    <Text size="xs" c="dimmed" fs="italic">No hay sedes registradas en esta empresa.</Text>
+                    <Group align="center" justify="space-between" bg="var(--mantine-color-gray-0)" p="sm" style={{ borderRadius: 8 }}>
+                      <Text size="xs" c="dimmed" fs="italic">No hay sedes registradas en esta empresa.</Text>
+                      <Button size="xs" variant="light" color="dark" onClick={() => switchToEmpresa(company.id)}>Configurar Empresa</Button>
+                    </Group>
                   )}
                 </div>
               </div>

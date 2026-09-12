@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Text, Group, Badge, Button, Loader, Center, Tabs, Table, ActionIcon, Modal, Stack, TextInput } from '@mantine/core';
+import { Card, Text, Group, Badge, Button, Loader, Center, Tabs, Table, ActionIcon, Modal, Stack, TextInput, Alert } from '@mantine/core';
 import { IconCheck, IconX, IconDatabase, IconBuildingStore, IconListDetails, IconPlus, IconPencil, IconTrash } from '@tabler/icons-react';
 import { apiCall } from '../api';
 
@@ -9,6 +9,8 @@ export function SuperAdminView() {
   const [registeredCompanies, setRegisteredCompanies] = useState<any[]>([]);
   const [catalogs, setCatalogs] = useState<{sports: any[], services: any[]}>({ sports: [], services: [] });
   const [selectedCompanyReservations, setSelectedCompanyReservations] = useState<any | null>(null);
+  const [selectedPendingCompany, setSelectedPendingCompany] = useState<any | null>(null);
+  const [feedbackMsg, setFeedbackMsg] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
 
   // CRUD state for catalogs
   const [editingSport, setEditingSport] = useState<any | null>(null);
@@ -40,10 +42,9 @@ export function SuperAdminView() {
   const handleDeleteSport = async (id: string) => {
     if (!confirm('¿Eliminar este deporte?')) return;
     try {
-      const res = await apiCall(`/api/v1/system/catalogs/deportes/${id}`, 'DELETE');
-      if (res.detail) { alert(res.detail); return; }
+      await apiCall(`/api/v1/system/catalogs/deportes/${id}`, 'DELETE');
       await reloadCatalogs();
-    } catch (e: any) { alert(e.message || 'No se pudo eliminar'); }
+    } catch (e: any) { setFeedbackMsg({ text: e.message || 'No se pudo eliminar', type: 'error' }); }
   };
 
   const handleSaveService = async () => {
@@ -62,10 +63,9 @@ export function SuperAdminView() {
   const handleDeleteService = async (id: string) => {
     if (!confirm('¿Eliminar este servicio?')) return;
     try {
-      const res = await apiCall(`/api/v1/system/catalogs/servicios/${id}`, 'DELETE');
-      if (res.detail) { alert(res.detail); return; }
+      await apiCall(`/api/v1/system/catalogs/servicios/${id}`, 'DELETE');
       await reloadCatalogs();
-    } catch (e: any) { alert(e.message || 'No se pudo eliminar'); }
+    } catch (e: any) { setFeedbackMsg({ text: e.message || 'No se pudo eliminar', type: 'error' }); }
   };
 
   useEffect(() => {
@@ -77,9 +77,14 @@ export function SuperAdminView() {
           apiCall('/api/v1/system/catalogs')
         ]);
         
-        if (compRes.status) setPendingCompanies(compRes.data);
-        if (regRes.status) setRegisteredCompanies(regRes.data);
-        if (catRes.status) setCatalogs(catRes.data);
+        if (compRes.data) setPendingCompanies(compRes.data);
+        else if (Array.isArray(compRes)) setPendingCompanies(compRes);
+
+        if (regRes.data) setRegisteredCompanies(regRes.data);
+        else if (Array.isArray(regRes)) setRegisteredCompanies(regRes);
+
+        if (catRes.status && catRes.data) setCatalogs(catRes.data);
+        else if (catRes.data) setCatalogs(catRes.data);
       } catch (e) {
         console.error("Error al cargar datos del sistema", e);
       } finally {
@@ -91,11 +96,24 @@ export function SuperAdminView() {
 
   const handleApprove = async (id: string) => {
     try {
-      await apiCall(`/system/companies/${id}/status`, 'PUT', { status: 'APROBADA' });
+      await apiCall(`/api/v1/b2b/system/companies/${id}/status`, 'PUT', { status: 'APROBADA' });
       setPendingCompanies(pendingCompanies.filter(c => c.id !== id));
-      alert("Empresa Aprobada Exitosamente");
+      setFeedbackMsg({ text: "Empresa aprobada exitosamente", type: 'success' });
     } catch (e) {
       console.error(e);
+      setFeedbackMsg({ text: "Error al aprobar la empresa", type: 'error' });
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    if (!confirm('¿Estás seguro de rechazar esta empresa?')) return;
+    try {
+      await apiCall(`/api/v1/b2b/system/companies/${id}/status`, 'PUT', { status: 'RECHAZADA' });
+      setPendingCompanies(pendingCompanies.filter(c => c.id !== id));
+      setFeedbackMsg({ text: "Empresa rechazada", type: 'success' });
+    } catch (e) {
+      console.error(e);
+      setFeedbackMsg({ text: "Error al rechazar la empresa", type: 'error' });
     }
   };
 
@@ -107,6 +125,18 @@ export function SuperAdminView() {
     <div style={{ padding: 16 }}>
       <Text fw={800} size="xl" mb="md">Panel de Super Admin</Text>
       
+      {feedbackMsg && (
+        <Alert 
+          color={feedbackMsg.type === 'success' ? 'green' : 'red'} 
+          variant="light" 
+          mb="md" 
+          withCloseButton 
+          onClose={() => setFeedbackMsg(null)}
+        >
+          <Text size="sm" fw={500}>{feedbackMsg.text}</Text>
+        </Alert>
+      )}
+
       <Tabs defaultValue="empresas" color="dark">
         <Tabs.List mb="md">
           <Tabs.Tab value="empresas" leftSection={<IconBuildingStore size={16} />}>Empresas Pendientes</Tabs.Tab>
@@ -122,15 +152,18 @@ export function SuperAdminView() {
               {pendingCompanies.map(c => (
                 <Card key={c.id} withBorder shadow="sm" radius="md" padding="md">
                   <Group justify="space-between" mb="xs">
-                    <Badge color="orange">{c.status}</Badge>
-                    <Text size="xs" c="dimmed">RUC: {c.ruc}</Text>
+                    <Badge color="orange">{c.status || 'PENDIENTE'}</Badge>
+                    <Text size="xs" c="dimmed">RUC: {c.document}</Text>
                   </Group>
-                  <Text fw={700}>{c.commercialName}</Text>
-                  <Text size="sm" c="dimmed" mb="md">{c.name}</Text>
-                  <Group grow>
+                  <Text fw={700}>{c.companyName}</Text>
+                  <Text size="sm" c="dimmed" mb="md">{c.contactName}</Text>
+                  <Group grow mb="xs">
                     <Button color="green" onClick={() => handleApprove(c.id)}>Aprobar</Button>
-                    <Button variant="outline" color="red">Rechazar</Button>
+                    <Button variant="outline" color="red" onClick={() => handleReject(c.id)}>Rechazar</Button>
                   </Group>
+                  <Button variant="subtle" size="xs" fullWidth onClick={() => setSelectedPendingCompany(c)}>
+                    Ver Detalles Completos
+                  </Button>
                 </Card>
               ))}
             </div>
@@ -338,6 +371,35 @@ export function SuperAdminView() {
                 </Table.Tbody>
               </Table>
             )}
+          </Stack>
+        )}
+      </Modal>
+      {/* Modal para ver detalles de empresa pendiente */}
+      <Modal 
+        opened={!!selectedPendingCompany} 
+        onClose={() => setSelectedPendingCompany(null)}
+        title={<Text fw={700}>Detalles de Empresa Pendiente</Text>}
+      >
+        {selectedPendingCompany && (
+          <Stack>
+            <TextInput label="Nombre Comercial" value={selectedPendingCompany.companyName} readOnly />
+            <TextInput label="RUC" value={selectedPendingCompany.document} readOnly />
+            <TextInput label="Representante Legal / Contacto" value={selectedPendingCompany.contactName} readOnly />
+            <TextInput label="Teléfono de Contacto" value={selectedPendingCompany.phone} readOnly />
+            {/* Si el backend envía email y fecha, se podrían mostrar aquí. Por ahora mostraremos lo que esté en selectedPendingCompany */}
+            {selectedPendingCompany.email && <TextInput label="Email de Contacto" value={selectedPendingCompany.email} readOnly />}
+            
+            <Text fw={700} mt="md" size="sm" c="dimmed">DATOS DEL CREADOR (USUARIO REGISTRADO)</Text>
+            <TextInput label="Persona que registró" value={`${selectedPendingCompany.creatorName} (Doc: ${selectedPendingCompany.creatorDocument || 'N/A'})`} readOnly />
+            {selectedPendingCompany.creatorEmail && <TextInput label="Correo de la Cuenta" value={selectedPendingCompany.creatorEmail} readOnly />}
+            {selectedPendingCompany.creatorPhone && <TextInput label="Celular de la Cuenta" value={selectedPendingCompany.creatorPhone} readOnly />}
+            {selectedPendingCompany.creatorCreatedAt && <TextInput label="Fecha y Hora de Creación de Cuenta" value={new Date(selectedPendingCompany.creatorCreatedAt).toLocaleString('es-PE')} readOnly />}
+            {selectedPendingCompany.createdAt && <TextInput label="Fecha y Hora de Solicitud de Empresa" value={new Date(selectedPendingCompany.createdAt).toLocaleString('es-PE')} readOnly />}
+            
+            <Group grow mt="md">
+              <Button color="green" onClick={() => { handleApprove(selectedPendingCompany.id); setSelectedPendingCompany(null); }}>Aprobar</Button>
+              <Button variant="outline" color="red" onClick={() => { handleReject(selectedPendingCompany.id); setSelectedPendingCompany(null); }}>Rechazar</Button>
+            </Group>
           </Stack>
         )}
       </Modal>

@@ -27,7 +27,14 @@ export async function apiCall<T = any>(
   try {
     const response = await fetch(`${API_URL}${endpoint}`, config);
     if (!response.ok) {
-      throw new Error(`Error en la petición HTTP: ${response.status} ${response.statusText}`);
+      let errorMessage = `Error en la petición HTTP: ${response.status} ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.detail || errorData.message || errorMessage;
+      } catch (e) {
+        // Ignorar si no es JSON
+      }
+      throw new Error(errorMessage);
     }
     const data = await response.json();
     return data;

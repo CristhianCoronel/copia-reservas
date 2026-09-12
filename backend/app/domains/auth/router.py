@@ -133,6 +133,7 @@ async def get_my_accounts(current_user: models.Usuario = Depends(get_current_use
     successful_referrals = result_referrals.scalar() or 0
 
     personal_data = {
+        "id": str(persona.id) if persona else str(current_user.id),
         "fullName": f"{persona.nombres} {persona.apellidos}" if persona else current_user.username,
         "document": persona.numero_documento if persona else "",
         "role": current_user.rol,

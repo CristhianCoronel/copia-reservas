@@ -1,11 +1,16 @@
 import { useState } from 'react';
-import { Card, Text, TextInput, Button, Group, Center, Alert } from '@mantine/core';
-import { IconBuildingSkyscraper, IconCheck, IconPhone, IconShieldLock } from '@tabler/icons-react';
+import { Card, Text, TextInput, Button, Group, Center, Alert, ActionIcon } from '@mantine/core';
+import { IconBuildingSkyscraper, IconCheck, IconPhone, IconShieldLock, IconArrowLeft } from '@tabler/icons-react';
 import { apiCall } from '../api';
 
-export function CompanyRegistrationView() {
+interface CompanyRegistrationProps {
+  onNavigate?: (tab: string) => void;
+}
+
+export function CompanyRegistrationView({ onNavigate }: CompanyRegistrationProps) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   
   // ::!todo!::Validar usuario real
   const [isUserPhoneVerified, setIsUserPhoneVerified] = useState(false);
@@ -14,27 +19,43 @@ export function CompanyRegistrationView() {
     ruc: '',
     commercialName: '',
     legalName: '',
-    phone: ''
+    phone: '',
+    email: ''
   });
 
   const handleRegister = async () => {
-    if (!form.ruc || !form.commercialName || !form.phone) {
-      alert("Comienza por llenar los datos obligatorios.");
+    setErrorMsg(null);
+    if (!form.ruc || !form.commercialName || !form.phone || !form.email) {
+      setErrorMsg("Comienza por llenar los datos obligatorios.");
       return;
     }
 
     setLoading(true);
     try {
-      const res = await apiCall('/api/v1/b2b/empresas', 'POST', {
-        ...form,
-        creada_por_persona_id: "pe2a3b5c7-1234-4a5b-6c7d-8e9f0a1b2c3d" // ::!todo!::Usar ID de usuario real
-      });
-      if (res.status) {
-        setSuccess(true);
+      const accRes = await apiCall('/api/v1/player/profile/me/accounts');
+      const userId = accRes?.data?.personal?.id || accRes?.personal?.id;
+
+      if (!userId) {
+        setErrorMsg("Error: No se pudo obtener tu ID de usuario.");
+        setLoading(false);
+        return;
       }
-    } catch (e) {
+
+      const res = await apiCall('/api/v1/b2b/empresas', 'POST', {
+        ruc: form.ruc,
+        razon_social: form.legalName,
+        nombre_comercial: form.commercialName,
+        telefono_contacto: form.phone,
+        email_contacto: form.email,
+        creada_por_persona_id: userId
+      });
+      if (res.status !== undefined) {
+        alert("¡Solicitud enviada! La empresa está en proceso de aceptación.");
+        onNavigate('perfil');
+      }
+    } catch (e: any) {
       console.error(e);
-      alert("Hubo un error al registrar la empresa.");
+      setErrorMsg(e.message || "Hubo un error al registrar la empresa.");
     } finally {
       setLoading(false);
     }
@@ -51,13 +72,25 @@ export function CompanyRegistrationView() {
         <Button variant="light" color="dark" mt="md" onClick={() => setSuccess(false)}>
           Registrar otra empresa
         </Button>
+        {onNavigate && (
+          <Button variant="subtle" color="dark" onClick={() => onNavigate('perfil')}>
+            Volver a mi perfil
+          </Button>
+        )}
       </Center>
     );
   }
 
   return (
     <div style={{ padding: 16 }}>
-      <Text fw={800} size="xl" mb="md">Registra tu Empresa B2B</Text>
+      <Group mb="md" align="center">
+        {onNavigate && (
+          <ActionIcon variant="subtle" color="dark" onClick={() => onNavigate('perfil')}>
+            <IconArrowLeft size={20} />
+          </ActionIcon>
+        )}
+        <Text fw={800} size="xl">Registra tu empresa</Text>
+      </Group>
       <Text c="dimmed" size="sm" mb="xl">
         Únete a Separa Altoke como aliado y comienza a recibir reservas directamente en tu local.
       </Text>
@@ -77,6 +110,12 @@ export function CompanyRegistrationView() {
           <Button color="white" c="red" size="xs" onClick={() => setIsUserPhoneVerified(true)}>
             [Simular Verificación Telefónica]
           </Button>
+        </Alert>
+      )}
+
+      {errorMsg && (
+        <Alert color="red" variant="light" mb="md" withCloseButton onClose={() => setErrorMsg(null)}>
+          <Text size="sm" fw={500}>{errorMsg}</Text>
         </Alert>
       )}
 
@@ -113,11 +152,20 @@ export function CompanyRegistrationView() {
         <TextInput 
           label="Teléfono de Contacto" 
           placeholder="Teléfono comercial de la empresa" 
-          mb="xl"
+          mb="md"
           leftSection={<IconPhone size={16} />}
           required
           value={form.phone}
           onChange={(e) => setForm({...form, phone: e.currentTarget.value})}
+        />
+
+        <TextInput 
+          label="Correo de Contacto" 
+          placeholder="email@empresa.com" 
+          mb="xl"
+          required
+          value={form.email}
+          onChange={(e) => setForm({...form, email: e.currentTarget.value})}
         />
 
         <Alert title="Contrato Administrativo" color="blue" variant="light" mb="xl">

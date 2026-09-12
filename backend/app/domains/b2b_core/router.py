@@ -44,10 +44,17 @@ async def registrar_empresa(empresa_in: schemas.EmpresaCreate, db: AsyncSession 
     return nueva_empresa
 
 
+from sqlalchemy.orm import selectinload
+
+from app.domains.auth.models import Persona, Usuario
+
 @router.get("/system/companies/pending", tags=["System - SuperAdmin"])
 async def get_pending_companies(db: AsyncSession = Depends(get_db)):
     """Obtiene la lista de empresas pendientes de validación/aprobación por sistema."""
-    query = select(models.Empresa).where(models.Empresa.estado_aprobacion == 'PENDIENTE')
+    query = select(models.Empresa).options(
+        selectinload(models.Empresa.creador).selectinload(Persona.usuario)
+    ).where(models.Empresa.estado_aprobacion == 'PENDIENTE')
+    
     result = await db.execute(query)
     empresas = result.scalars().all()
     
@@ -56,12 +63,37 @@ async def get_pending_companies(db: AsyncSession = Depends(get_db)):
         data.append({
             "id": str(e.id),
             "companyName": e.razon_social,
+            "commercialName": e.nombre_comercial,
             "contactName": e.contacto_legal if e.contacto_legal else "Sin Nombre",
             "phone": e.telefono_contacto,
-            "document": e.ruc
+            "email": e.email_contacto,
+            "document": e.ruc,
+            "createdAt": e.created_at.isoformat() if e.created_at else None,
+            "creatorName": f"{e.creador.nombres} {e.creador.apellidos}" if e.creador else "Desconocido",
+            "creatorDocument": e.creador.numero_documento if e.creador else "Desconocido",
+            "creatorEmail": e.creador.usuario.email if e.creador and e.creador.usuario else "Desconocido",
+            "creatorPhone": e.creador.usuario.telefono if e.creador and e.creador.usuario else "Desconocido",
+            "creatorCreatedAt": e.creador.usuario.created_at.isoformat() if e.creador and e.creador.usuario and e.creador.usuario.created_at else None
         })
         
     return {"data": data}
+
+from pydantic import BaseModel
+
+class StatusUpdate(BaseModel):
+    status: str
+
+@router.put("/system/companies/{company_id}/status", tags=["System - SuperAdmin"])
+async def update_company_status(company_id: uuid.UUID, payload: StatusUpdate, db: AsyncSession = Depends(get_db)):
+    """Actualiza el estado de aprobación de una empresa (ej. APROBADA, RECHAZADA)."""
+    result = await db.execute(select(models.Empresa).where(models.Empresa.id == company_id))
+    empresa = result.scalars().first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa no encontrada")
+    
+    empresa.estado_aprobacion = payload.status
+    await db.commit()
+    return {"status": True, "message": f"Estado actualizado a {payload.status}"}
 
 from sqlalchemy.orm import selectinload
 from app.domains.booking.models import Cancha, Reserva

@@ -5,9 +5,10 @@ import { apiCall } from '../api';
 
 interface ProfileProps {
   onLogout?: () => void;
+  onNavigate?: (tab: string) => void;
 }
 
-export function ProfileView({ onLogout }: ProfileProps) {
+export function ProfileView({ onLogout, onNavigate }: ProfileProps) {
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -113,8 +114,12 @@ export function ProfileView({ onLogout }: ProfileProps) {
             <Text fw={800} size="lg" c="white">¿Eres dueño de una cancha?</Text>
             <Text size="xs" c="gray.4" mt={4}>Únete como aliado y gestiona tus reservas.</Text>
           </div>
-          <Button color="white" c="dark" radius="md" size="xs" onClick={() => {
-            window.dispatchEvent(new CustomEvent('NAVIGATE_TO', { detail: 'registro_empresa' }));
+          <Button variant="white" c="dark" radius="md" size="xs" onClick={() => {
+            if (onNavigate) {
+              onNavigate('registro_empresa');
+            } else {
+              window.dispatchEvent(new CustomEvent('NAVIGATE_TO', { detail: 'registro_empresa' }));
+            }
           }}>
             Registrar
           </Button>
