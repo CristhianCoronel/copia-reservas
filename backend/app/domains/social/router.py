@@ -109,23 +109,33 @@ async def get_my_teams(current_user: auth_models.Usuario = Depends(get_current_u
     from app.domains.booking.models import EquipoMiembro, Equipo
     persona_id = current_user.persona.id
     
+    from sqlalchemy.orm import aliased
+    EM = aliased(EquipoMiembro)
+    member_count_subq = (
+        select(func.count(EM.id))
+        .where(EM.equipo_id == Equipo.id)
+        .where(EM.is_active == True)
+        .correlate(Equipo)
+        .scalar_subquery()
+    )
+
     query = (
-        select(EquipoMiembro)
+        select(EquipoMiembro, member_count_subq.label("member_count"))
         .join(Equipo, EquipoMiembro.equipo_id == Equipo.id)
         .options(selectinload(EquipoMiembro.equipo))
         .where(EquipoMiembro.persona_id == persona_id)
         .where(EquipoMiembro.is_active == True)
     )
     result = await db.execute(query)
-    miembros = result.scalars().all()
+    rows = result.all()
     
     teams_data = []
-    for m in miembros:
+    for m, member_count in rows:
         teams_data.append({
             "id": str(m.equipo.id),
             "name": m.equipo.nombre,
             "sport": "Fútbol",
-            "members": 1, # Simplificación
+            "members": member_count or 0,
             "role": m.rol
         })
         
