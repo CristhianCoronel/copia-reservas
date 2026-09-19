@@ -146,9 +146,9 @@ export default function App() {
             {appMode === 'jugador' && activeTab === 'registro_empresa' && <CompanyRegistrationView onNavigate={(tab) => setActiveTab(tab)} />}
 
             {appMode === 'empresa' && activeTab === 'reservas' && <CompanyReservationsView />}
-            {appMode === 'empresa' && activeTab === 'canchas' && <CompanyCourtsView />}
+            {appMode === 'empresa' && activeTab === 'canchas' && <CompanyCourtsView activeVenueId={activeVenueId} company={accountsData?.companies?.find((c: any) => c.id === activeCompanyId)} />}
             {appMode === 'empresa' && activeTab === 'chat' && <ChatView />}
-            {appMode === 'empresa' && activeTab === 'empresa' && <CompanyEditView />}
+            {appMode === 'empresa' && activeTab === 'empresa' && <CompanyEditView company={accountsData?.companies?.find((c: any) => c.id === activeCompanyId)} />}
             
             {appMode === 'superadmin' && activeTab === 'admin' && <SuperAdminView />}
 

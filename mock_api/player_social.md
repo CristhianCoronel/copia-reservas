@@ -15,7 +15,7 @@ Agrupa los partidos abiertos (juntas) donde los jugadores se pueden sumar para d
   "data": [
     {
       "id": "g1",
-      "title": "🔥 Pichanga Viernes Nocturna (Nivel Medio)",
+      "title": "Pichanga Viernes Nocturna (Nivel Medio)",
       "organizer": "Carlos Mendoza",
       "organizerRating": 4.9,
       "courtName": "Cancha 1 - Sintético Pro 5v5",

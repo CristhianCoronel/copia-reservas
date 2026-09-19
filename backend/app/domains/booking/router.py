@@ -4,6 +4,7 @@ from sqlalchemy.future import select
 from sqlalchemy import and_, or_
 from app.core.database import get_db
 from app.domains.booking import models, schemas
+from app.domains.auth.router import get_current_user
 import uuid
 
 router = APIRouter()
@@ -65,7 +66,7 @@ async def crear_reserva(res_in: schemas.ReservaCreate, db: AsyncSession = Depend
 
 from sqlalchemy.orm import selectinload
 from sqlalchemy import func
-from datetime import datetime
+from datetime import datetime, time
 
 @router.get("/b2c/canchas", tags=["B2C - Booking"])
 async def listar_canchas(date: str = None, db: AsyncSession = Depends(get_db)):
@@ -149,8 +150,202 @@ async def get_court_availability(court_id: str, date: str, db: AsyncSession = De
             "price": peak_price if is_peak else regular_price,
             "available": available
         })
-        
     return {"data": slots}
+
+from pydantic import BaseModel
+from typing import List
+
+class CourtPayload(BaseModel):
+    name: str
+    sport: str
+    modalities: List[str]
+
+class SolapamientosPayload(BaseModel):
+    blocked_court_ids: List[str]
+
+@router.get("/business/venues/{venue_id}/courts", tags=["B2B - Business"])
+async def get_venue_courts(venue_id: str, db: AsyncSession = Depends(get_db)):
+    query = select(models.Cancha).options(
+        selectinload(models.Cancha.solapamientos_principales)
+    ).where(and_(models.Cancha.sede_id == venue_id, models.Cancha.is_active == True))
+    
+    result = await db.execute(query)
+    canchas = result.scalars().all()
+    
+    data = []
+    for c in canchas:
+        data.append({
+            "id": str(c.id),
+            "name": c.nombre,
+            "sport": "Fútbol", # Mock, real name needs join
+            "modalities": c.modalidades if c.modalidades else ["Fútbol 5"],
+            "basePrice": 60.0, # Mock
+            "blocked_court_ids": [str(s.cancha_bloqueada_id) for s in c.solapamientos_principales]
+        })
+    return {"data": data}
+
+@router.post("/business/venues/{venue_id}/courts", tags=["B2B - Business"])
+async def create_venue_court(venue_id: str, payload: CourtPayload, db: AsyncSession = Depends(get_db)):
+    # Mock hardcoded sport ID
+    nueva_cancha = models.Cancha(
+        sede_id=venue_id,
+        nombre=payload.name,
+        _deporte_id="00000000-0000-0000-0000-000000000000",
+        modalidades=payload.modalities,
+        is_active=True
+    )
+    db.add(nueva_cancha)
+    await db.commit()
+    await db.refresh(nueva_cancha)
+    return {
+        "id": str(nueva_cancha.id),
+        "name": nueva_cancha.nombre,
+        "sport": payload.sport,
+        "modalities": nueva_cancha.modalidades,
+        "basePrice": 60.0,
+        "blocked_court_ids": []
+    }
+
+@router.put("/business/courts/{court_id}/solapamientos", tags=["B2B - Business"])
+async def update_court_solapamientos(court_id: str, payload: SolapamientosPayload, db: AsyncSession = Depends(get_db)):
+    # Delete existing
+    await db.execute(models.CanchaSolapamiento.__table__.delete().where(
+        models.CanchaSolapamiento.cancha_principal_id == court_id
+    ))
+    
+    # Insert new
+    for b_id in payload.blocked_court_ids:
+        solap = models.CanchaSolapamiento(
+            cancha_principal_id=court_id,
+            cancha_bloqueada_id=b_id
+        )
+        db.add(solap)
+        
+    await db.commit()
+    return {"status": True}
+
+from typing import Optional
+
+class IntervalPayload(BaseModel):
+    hora_inicio: str # "16:00"
+    hora_fin: str # "17:00"
+    precio: float
+
+class SchedulePayload(BaseModel):
+    date: str
+    intervals: List[IntervalPayload]
+
+class BlockPayload(BaseModel):
+    fecha_hora_inicio: datetime
+    fecha_hora_fin: datetime
+    motivo: str
+    descripcion: Optional[str] = None
+
+@router.get("/business/courts/{court_id}/schedule", tags=["B2B - Business"])
+async def get_court_schedule(court_id: str, date: str, db: AsyncSession = Depends(get_db)):
+    """Retorna horarios, tarifas base, bloqueos y reservas de la fecha especificada."""
+    try:
+        fecha_obj = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de fecha inválido")
+    
+    dia_semana = fecha_obj.weekday() # Lunes=0, Domingo=6
+    
+    cancha = await db.execute(select(models.Cancha).options(selectinload(models.Cancha.sede)).where(models.Cancha.id == court_id))
+    cancha = cancha.scalars().first()
+    if not cancha:
+        raise HTTPException(status_code=404, detail="Cancha no encontrada")
+        
+    from app.domains.b2b_core.models import SedeHorarioAtencion
+    horario_sede = await db.execute(select(SedeHorarioAtencion).where(
+        SedeHorarioAtencion.sede_id == cancha.sede_id,
+        SedeHorarioAtencion.dia_semana == dia_semana
+    ))
+    horario_sede = horario_sede.scalars().first()
+    
+    hora_apertura = horario_sede.hora_apertura if horario_sede else time(16, 0)
+    hora_cierre = horario_sede.hora_cierre if horario_sede else time(23, 0)
+    
+    tarifas_base = await db.execute(select(models.CanchaHorario).where(
+        models.CanchaHorario.cancha_id == court_id,
+        models.CanchaHorario.dia_semana == dia_semana,
+        models.CanchaHorario.is_active == True
+    ))
+    tarifas_base = tarifas_base.scalars().all()
+    
+    
+    fecha_inicio_dia = datetime.combine(fecha_obj, time.min)
+    fecha_fin_dia = datetime.combine(fecha_obj, time.max)
+    
+    bloqueos = await db.execute(select(models.CanchaBloqueo).where(
+        models.CanchaBloqueo.cancha_id == court_id,
+        models.CanchaBloqueo.fecha_hora_inicio >= fecha_inicio_dia,
+        models.CanchaBloqueo.fecha_hora_fin <= fecha_fin_dia
+    ))
+    bloqueos = bloqueos.scalars().all()
+    
+    reservas = await db.execute(select(models.Reserva).where(
+        models.Reserva.cancha_id == court_id,
+        models.Reserva.fecha_reserva == fecha_obj,
+        models.Reserva.estado.in_(['PENDIENTE_PAGO', 'CONFIRMADA'])
+    ))
+    reservas = reservas.scalars().all()
+
+    return {
+        "status": True,
+        "data": {
+            "openingTime": hora_apertura.strftime("%H:%M"),
+            "closingTime": hora_cierre.strftime("%H:%M"),
+            "tariffs": [{"start": t.hora_inicio.strftime("%H:%M"), "end": t.hora_fin.strftime("%H:%M"), "price": float(t.precio_por_hora)} for t in tarifas_base],
+            "blocks": [{"id": str(b.id), "start": b.fecha_hora_inicio.strftime("%H:%M"), "end": b.fecha_hora_fin.strftime("%H:%M"), "reason": b.motivo} for b in bloqueos],
+            "reservations": [{"id": str(r.id), "start": r.hora_inicio.strftime("%H:%M"), "end": r.hora_fin.strftime("%H:%M"), "status": r.estado} for r in reservas]
+        }
+    }
+
+@router.post("/business/courts/{court_id}/schedule", tags=["B2B - Business"])
+async def save_court_schedule(court_id: str, payload: SchedulePayload, db: AsyncSession = Depends(get_db)):
+    try:
+        fecha_obj = datetime.strptime(payload.date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de fecha inválido")
+        
+    dia_semana = fecha_obj.weekday()
+    
+    await db.execute(models.CanchaHorario.__table__.delete().where(
+        models.CanchaHorario.cancha_id == court_id,
+        models.CanchaHorario.dia_semana == dia_semana
+    ))
+    
+    for interval in payload.intervals:
+        h_ini = datetime.strptime(interval.hora_inicio, "%H:%M").time()
+        h_fin = datetime.strptime(interval.hora_fin, "%H:%M").time()
+        ch = models.CanchaHorario(
+            cancha_id=court_id,
+            dia_semana=dia_semana,
+            hora_inicio=h_ini,
+            hora_fin=h_fin,
+            precio_por_hora=interval.precio
+        )
+        db.add(ch)
+        
+    await db.commit()
+    return {"status": True}
+
+@router.post("/business/courts/{court_id}/blocks", tags=["B2B - Business"])
+async def create_court_block(court_id: str, payload: BlockPayload, current_user = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    persona_id = current_user.persona.id if current_user.persona else current_user.id
+    
+    b = models.CanchaBloqueo(
+        cancha_id=court_id,
+        fecha_hora_inicio=payload.fecha_hora_inicio,
+        fecha_hora_fin=payload.fecha_hora_fin,
+        motivo=payload.motivo,
+        descripcion=payload.descripcion,
+        registrado_por=persona_id
+    )
+    db.add(b)
+    await db.commit()
+    return {"status": True, "data": {"id": str(b.id)}}
 
 @router.get("/social/groups", tags=["B2C - Social"])
 async def get_social_groups():

@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Card, Text, Group, Button, TextInput, ActionIcon, Tabs, Select, Switch, Alert, Badge, Table, NumberInput, Textarea } from '@mantine/core';
 import { IconPlus, IconTrash, IconBuildingStore, IconSettings, IconUsers, IconLock, IconCheck, IconCrown, IconMapPin } from '@tabler/icons-react';
 
-export function CompanyEditView() {
+export function CompanyEditView({ company }: { company?: any }) {
   const [activeTab, setActiveTab] = useState<string | null>('empresa');
-  const [activeSede, setActiveSede] = useState<string | null>('sede-1');
-  const [isSingleSede, setIsSingleSede] = useState(true);
+  const [activeSede, setActiveSede] = useState<string | null>(company?.venues?.[0]?.id || 'sede-1');
+  const [isSingleSede, setIsSingleSede] = useState(company?.isSingleVenue ?? true);
   const [serviciosSede, setServiciosSede] = useState<{id: string, nombre: string}[]>([
     { id: '1', nombre: 'Estacionamiento' }
   ]);
@@ -29,9 +29,8 @@ export function CompanyEditView() {
           label="Sede Activa"
           value={activeSede}
           onChange={setActiveSede}
-          data={[
-            { value: 'sede-1', label: 'Triple Doble - Sede Los Olivos' },
-            { value: 'sede-2', label: 'Triple Doble - Sede Surco (Próximamente)' }
+          data={company?.venues?.map((v: any) => ({ value: v.id, label: v.name })) || [
+            { value: 'sede-1', label: 'Sede Principal' }
           ]}
           mb="xl"
         />

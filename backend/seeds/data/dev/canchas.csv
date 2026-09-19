@@ -1,0 +1,4 @@
+id,sede_id,nombre,_deporte_id,modalidades,caracteristicas,is_active
+${UUID:cancha_chiclayo_1},${UUID:sede_1},Cancha 1 - F5,${UUID:deporte_futbol5},"[""Fútbol 5""]","{""superficie"": ""Sintético""}",true
+${UUID:cancha_chiclayo_2},${UUID:sede_1},Cancha 2 - F5,${UUID:deporte_futbol5},"[""Fútbol 5""]","{""superficie"": ""Sintético""}",true
+${UUID:cancha_chiclayo_3},${UUID:sede_1},Cancha 3 - F7,${UUID:deporte_futbol7},"[""Fútbol 7""]","{""superficie"": ""Sintético""}",true

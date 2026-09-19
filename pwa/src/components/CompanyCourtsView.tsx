@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Card, Text, Group, Button, Divider, Badge, Modal, TextInput, Select, MultiSelect, NumberInput, Textarea, ActionIcon } from '@mantine/core';
-import { IconPlus, IconTag, IconCalendarTime, IconLock, IconCheck, IconTrash } from '@tabler/icons-react';
+import { Card, Text, Group, Button, Badge, Modal, TextInput, Select, MultiSelect, ActionIcon, UnstyledButton, Grid, Box } from '@mantine/core';
+import { IconPlus, IconTrash, IconCalendarTime, IconLock, IconSettings, IconAffiliate, IconArrowLeft } from '@tabler/icons-react';
 import { apiCall } from '../api';
 
 interface CompanyCourt {
@@ -9,22 +9,48 @@ interface CompanyCourt {
   sport: string;
   modalities: string[];
   basePrice: number;
+  blocked_court_ids?: string[];
 }
 
-const mockCourts: CompanyCourt[] = [
-  { id: '1', name: 'Cancha 1 - Sintético Pro', sport: 'Fútbol', modalities: ['Fútbol 5', 'Fútbol 7'], basePrice: 60.00 },
-  { id: '2', name: 'Cancha 2 - Principal', sport: 'Fútbol', modalities: ['Fútbol 7'], basePrice: 80.00 }
-];
+export function CompanyCourtsView({ activeVenueId, company }: { activeVenueId: string | null, company?: any }) {
+  const [localVenueId, setLocalVenueId] = useState<string | null>(
+    company?.venues?.[0]?.id || null
+  );
 
-export function CompanyCourtsView() {
-  const [courts, setCourts] = useState<CompanyCourt[]>(mockCourts);
+  useEffect(() => {
+    if (company?.venues?.length > 0 && !localVenueId) {
+      setLocalVenueId(company.venues[0].id);
+    }
+  }, [company]);
+
+  // View state: null = menu, 'canchas' | 'solapamientos' | 'horarios' = specific setting
+  const [activeSetting, setActiveSetting] = useState<string | null>(null);
   
+  const [courts, setCourts] = useState<CompanyCourt[]>([]);
+  
+  // Canchas state
   const [isNewCourtOpen, setIsNewCourtOpen] = useState(false);
-  const [isTarifaOpen, setIsTarifaOpen] = useState(false);
-  const [isBloqueoOpen, setIsBloqueoOpen] = useState(false);
-
-  const [selectedCourt, setSelectedCourt] = useState<CompanyCourt | null>(null);
   const [sportsOptions, setSportsOptions] = useState<string[]>([]);
+  const [newCourtName, setNewCourtName] = useState('');
+  const [newCourtSport, setNewCourtSport] = useState<string | null>(null);
+  const [newCourtModalities, setNewCourtModalities] = useState<string[]>([]);
+
+  // Horario State
+  const [selectedCourtId, setSelectedCourtId] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [scheduleData, setScheduleData] = useState<any>(null);
+
+  const loadCourts = async () => {
+    if (!localVenueId) return;
+    try {
+      const res = await apiCall(`/api/v1/business/venues/${localVenueId}/courts`);
+      if (res.data) setCourts(res.data);
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => {
+    loadCourts();
+  }, [localVenueId]);
 
   useEffect(() => {
     async function loadSports() {
@@ -38,63 +64,344 @@ export function CompanyCourtsView() {
     loadSports();
   }, []);
 
-  const openTarifa = (court: CompanyCourt) => {
-    setSelectedCourt(court);
-    setIsTarifaOpen(true);
+  const handleSaveCourt = async () => {
+    if (!localVenueId) return;
+    await apiCall(`/api/v1/business/venues/${localVenueId}/courts`, 'POST', {
+      name: newCourtName,
+      sport: newCourtSport || 'Fútbol',
+      modalities: newCourtModalities
+    });
+    setIsNewCourtOpen(false);
+    loadCourts();
   };
 
-  const openBloqueo = (court: CompanyCourt) => {
-    setSelectedCourt(court);
-    setIsBloqueoOpen(true);
+  const handleSaveSolapamientos = async (courtId: string, blockedIds: string[]) => {
+    await apiCall(`/api/v1/business/courts/${courtId}/solapamientos`, 'PUT', {
+      blocked_court_ids: blockedIds
+    });
+    loadCourts();
+  };
+
+  const loadSchedule = async () => {
+    if (!selectedCourtId || !selectedDate) return;
+    try {
+      const res = await apiCall(`/api/v1/business/courts/${selectedCourtId}/schedule?date=${selectedDate}`);
+      if (res.status) {
+        setScheduleData(res.data);
+      }
+    } catch(e) { console.error(e); }
+  };
+
+  useEffect(() => {
+    if (activeSetting === 'horarios') {
+      loadSchedule();
+    }
+  }, [activeSetting, selectedCourtId, selectedDate]);
+
+  // Calendar Day View Helpers
+  const parseTime = (timeStr: string) => {
+    const [h, m] = timeStr.split(':').map(Number);
+    return { h, m, totalMinutes: h * 60 + m };
+  };
+
+  const renderCalendarView = () => {
+    if (!scheduleData || !scheduleData.openingTime || !scheduleData.closingTime) return null;
+
+    const opening = parseTime(scheduleData.openingTime);
+    const closing = parseTime(scheduleData.closingTime);
+    
+    const startHour = opening.h;
+    let endHour = closing.h;
+    if (closing.m > 0) endHour += 1;
+
+    const hours = [];
+    for (let i = startHour; i <= endHour; i++) {
+      hours.push(i);
+    }
+
+    const PIXELS_PER_MINUTE = 1.5;
+    const PIXELS_PER_HOUR = 60 * PIXELS_PER_MINUTE;
+
+    const getBlockStyle = (startStr: string, endStr: string) => {
+      const start = parseTime(startStr);
+      const end = parseTime(endStr);
+      const startOffsetMinutes = (start.totalMinutes - (startHour * 60));
+      const durationMinutes = end.totalMinutes - start.totalMinutes;
+      
+      return {
+        top: `${startOffsetMinutes * PIXELS_PER_MINUTE}px`,
+        height: `${durationMinutes * PIXELS_PER_MINUTE}px`,
+      };
+    };
+
+    return (
+      <Box style={{ position: 'relative', marginTop: 20, paddingBottom: 20 }}>
+        {/* Hours Column */}
+        {hours.map(h => (
+          <Group key={`hour-${h}`} wrap="nowrap" align="flex-start" gap="sm" style={{ height: PIXELS_PER_HOUR, borderTop: '1px solid var(--mantine-color-default-border)' }}>
+            <Text size="xs" c="dimmed" w={45} ta="right" mt={-8}>
+              {h.toString().padStart(2, '0')}:00
+            </Text>
+            <div style={{ flex: 1, height: '100%' }} />
+          </Group>
+        ))}
+
+        {/* Absolute Container for Blocks */}
+        <div style={{ position: 'absolute', top: 0, left: 60, right: 0, bottom: 0 }}>
+          
+          {/* Tariffs (Background Layer) */}
+          {scheduleData.tariffs?.map((t: any, i: number) => (
+            <div key={`t-${i}`} style={{
+              position: 'absolute',
+              left: 0, right: 0,
+              backgroundColor: 'rgba(132, 141, 150, 0.05)',
+              borderLeft: '4px solid var(--mantine-color-green-5)',
+              borderRadius: '0 8px 8px 0',
+              padding: '4px 8px',
+              overflow: 'hidden',
+              ...getBlockStyle(t.start, t.end)
+            }}>
+              <Group justify="space-between" align="flex-start">
+                <Text size="xs" fw={700} c="dimmed">Tarifa Configurada</Text>
+                <Badge color="green" variant="light" size="sm">S/. {t.price}</Badge>
+              </Group>
+            </div>
+          ))}
+
+          {/* Reservations */}
+          {scheduleData.reservations?.map((r: any, i: number) => (
+            <div key={`r-${i}`} style={{
+              position: 'absolute',
+              left: '5%', right: '5%',
+              backgroundColor: r.status === 'CONFIRMADA' ? 'var(--mantine-color-blue-filled)' : 'var(--mantine-color-orange-filled)',
+              color: '#fff',
+              borderRadius: 8,
+              padding: '6px 12px',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+              overflow: 'hidden',
+              zIndex: 10,
+              ...getBlockStyle(r.start, r.end)
+            }}>
+              <Text size="sm" fw={800}>Reserva {r.status}</Text>
+              <Text size="xs" opacity={0.8}>{r.start} - {r.end}</Text>
+            </div>
+          ))}
+
+          {/* Blocks */}
+          {scheduleData.blocks?.map((b: any, i: number) => (
+            <div key={`b-${i}`} style={{
+              position: 'absolute',
+              left: '10%', right: '10%',
+              backgroundColor: 'var(--mantine-color-red-filled)',
+              color: '#fff',
+              borderRadius: 8,
+              padding: '6px 12px',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+              overflow: 'hidden',
+              zIndex: 20,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              ...getBlockStyle(b.start, b.end)
+            }}>
+              <IconLock size={20} opacity={0.8} />
+              <Text size="sm" fw={800} ta="center" mt={4}>Bloqueo Excepcional</Text>
+              <Text size="xs" opacity={0.8} ta="center">{b.reason}</Text>
+            </div>
+          ))}
+        </div>
+      </Box>
+    );
   };
 
   return (
     <div style={{ padding: 16 }}>
-      <Text fw={800} size="xl">Gestión de Canchas</Text>
-      <Text c="dimmed" size="sm" mb="xl">
-        Administra tus espacios físicos, tarifas dinámicas y mantenimientos.
-      </Text>
+      {/* Header Area */}
+      {!activeSetting ? (
+        <Group justify="space-between" mb="xl">
+          <div>
+            <Text fw={800} size="xl">Gestión de Canchas</Text>
+            <Text c="dimmed" size="sm">Administra espacios, solapamientos, tarifas y reservas por fecha.</Text>
+          </div>
+        </Group>
+      ) : (
+        <Group mb="xl">
+          <ActionIcon variant="subtle" color="gray" onClick={() => setActiveSetting(null)}>
+            <IconArrowLeft size={20} />
+          </ActionIcon>
+          <Text fw={800} size="lg">
+            {activeSetting === 'canchas' && 'Canchas Base'}
+            {activeSetting === 'solapamientos' && 'Solapamientos'}
+            {activeSetting === 'horarios' && 'Horario y Tarifas'}
+          </Text>
+        </Group>
+      )}
 
-      <Button fullWidth leftSection={<IconPlus size={20} />} color="dark" size="md" mb="xl" onClick={() => setIsNewCourtOpen(true)}>
-        NUEVA CANCHA
-      </Button>
+      {/* Sede Selector */}
+      {company && !company.isSingleVenue && !activeSetting && (
+        <Select
+          label="Sede Activa"
+          value={localVenueId}
+          onChange={(val) => { if (val) setLocalVenueId(val) }}
+          allowDeselect={false}
+          data={company.venues?.map((v: any) => ({ value: v.id, label: v.name })) || []}
+          mb="xl"
+          style={{ maxWidth: 400 }}
+        />
+      )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {courts.map(court => (
-          <Card key={court.id} padding="md" radius="md" withBorder>
-            <Group justify="space-between" align="flex-start" mb="xs">
-              <div>
-                <Text fw={800} size="lg">{court.name}</Text>
-                <Text size="sm" c="dimmed">{court.sport}</Text>
+      {/* Main Content */}
+      {localVenueId ? (
+        <>
+          {/* Menu Options */}
+          {!activeSetting && (
+            <Grid>
+              <Grid.Col span={12}>
+                <UnstyledButton
+                  onClick={() => setActiveSetting('canchas')}
+                  style={{ width: '100%', padding: '16px', borderRadius: '8px', backgroundColor: 'light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8))' }}
+                >
+                  <Group wrap="nowrap">
+                    <IconSettings size={32} color="var(--mantine-color-text)" />
+                    <div>
+                      <Text fw={800}>Canchas Base</Text>
+                      <Text size="sm" c="dimmed">Gestiona las canchas físicas y sus características de deporte.</Text>
+                    </div>
+                  </Group>
+                </UnstyledButton>
+              </Grid.Col>
+              
+              <Grid.Col span={12}>
+                <UnstyledButton
+                  onClick={() => setActiveSetting('solapamientos')}
+                  style={{ width: '100%', padding: '16px', borderRadius: '8px', backgroundColor: 'light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8))' }}
+                >
+                  <Group wrap="nowrap">
+                    <IconAffiliate size={32} color="var(--mantine-color-text)" />
+                    <div>
+                      <Text fw={800}>Solapamientos</Text>
+                      <Text size="sm" c="dimmed">Configura bloqueos cruzados automáticos entre canchas compartidas.</Text>
+                    </div>
+                  </Group>
+                </UnstyledButton>
+              </Grid.Col>
+              
+              <Grid.Col span={12}>
+                <UnstyledButton
+                  onClick={() => setActiveSetting('horarios')}
+                  style={{ width: '100%', padding: '16px', borderRadius: '8px', backgroundColor: 'light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8))' }}
+                >
+                  <Group wrap="nowrap">
+                    <IconCalendarTime size={32} color="var(--mantine-color-text)" />
+                    <div>
+                      <Text fw={800}>Horarios y Tarifas</Text>
+                      <Text size="sm" c="dimmed">Define precios, disponibilidad y bloqueos excepcionales por día.</Text>
+                    </div>
+                  </Group>
+                </UnstyledButton>
+              </Grid.Col>
+            </Grid>
+          )}
+
+          {/* Config Views */}
+          {activeSetting === 'canchas' && (
+            <Box>
+              <Button leftSection={<IconPlus size={20} />} color="dark" size="md" mb="xl" onClick={() => setIsNewCourtOpen(true)}>
+                NUEVA CANCHA
+              </Button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {courts.map(court => (
+                  <Card key={court.id} padding="md" radius="md" withBorder>
+                    <Group justify="space-between" align="flex-start" mb="xs">
+                      <div>
+                        <Text fw={800} size="lg">{court.name}</Text>
+                        <Text size="sm" c="dimmed">{court.sport}</Text>
+                      </div>
+                      <ActionIcon color="red" variant="subtle"><IconTrash size={18} /></ActionIcon>
+                    </Group>
+                    <Group gap="xs">
+                      {court.modalities.map(mod => (
+                        <Badge key={mod} color="gray" variant="light" size="sm">{mod}</Badge>
+                      ))}
+                    </Group>
+                  </Card>
+                ))}
               </div>
-              <ActionIcon color="red" variant="subtle"><IconTrash size={18} /></ActionIcon>
-            </Group>
+            </Box>
+          )}
 
-            <Group gap="xs" mb="md">
-              {court.modalities.map(mod => (
-                <Badge key={mod} color="gray" variant="light" size="sm">{mod}</Badge>
-              ))}
-            </Group>
+          {activeSetting === 'solapamientos' && (
+            <Box>
+              <Text size="sm" c="dimmed" mb="xl">Configura qué canchas se bloquean automáticamente cuando se reserva otra (por ej. una cancha de Fútbol 7 que usa dos de Fútbol 5).</Text>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {courts.map(court => (
+                  <Card key={court.id} padding="md" radius="md" withBorder>
+                    <Text fw={800} mb="xs">{court.name}</Text>
+                    <MultiSelect
+                      placeholder="Selecciona canchas bloqueadas por esta"
+                      data={courts.filter(c => c.id !== court.id).map(c => ({ value: c.id, label: c.name }))}
+                      value={court.blocked_court_ids || []}
+                      onChange={(val) => handleSaveSolapamientos(court.id, val)}
+                      searchable
+                    />
+                  </Card>
+                ))}
+              </div>
+            </Box>
+          )}
 
-            <Divider my="sm" />
+          {activeSetting === 'horarios' && (
+            <Box>
+              <Group grow mb="md" align="flex-end">
+                <Select
+                  label="Seleccionar Cancha"
+                  placeholder="Elige una cancha"
+                  data={courts.map(c => ({ value: c.id, label: c.name }))}
+                  value={selectedCourtId}
+                  onChange={(val) => setSelectedCourtId(val)}
+                />
+                <TextInput
+                  type="date"
+                  label="Seleccionar Fecha"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.currentTarget.value)}
+                />
+              </Group>
 
-            <Group grow gap="xs">
-              <Button variant="light" color="dark" leftSection={<IconTag size={16} />} onClick={() => openTarifa(court)}>
-                TARIFA
-              </Button>
-              <Button variant="filled" color="red" leftSection={<IconLock size={16} />} onClick={() => openBloqueo(court)}>
-                BLOQUEAR
-              </Button>
-            </Group>
-          </Card>
-        ))}
-      </div>
+              {selectedCourtId && scheduleData ? (
+                <Card withBorder radius="md" padding="md" mt="xl">
+                  <Group justify="space-between" mb="md">
+                    <div>
+                      <Text fw={800}>Vista Diaria: {selectedDate}</Text>
+                      <Text size="sm" c="dimmed">Horario de atención: {scheduleData.openingTime} - {scheduleData.closingTime}</Text>
+                    </div>
+                    {scheduleData.tariffs?.length === 0 && (
+                      <Button color="blue" variant="light">Replicar configuración</Button>
+                    )}
+                    <Button color="red" variant="light" leftSection={<IconLock size={16} />}>
+                      Añadir Bloqueo
+                    </Button>
+                  </Group>
+                  
+                  {renderCalendarView()}
+                </Card>
+              ) : (
+                <Text c="dimmed" ta="center" mt="xl">Selecciona una cancha y una fecha para configurar su horario y visualizar el calendario.</Text>
+              )}
+            </Box>
+          )}
+        </>
+      ) : (
+        <Text c="dimmed">Seleccione una sede para continuar.</Text>
+      )}
 
       <Modal opened={isNewCourtOpen} onClose={() => setIsNewCourtOpen(false)} title={<Text fw={800}>Crear Nueva Cancha</Text>} centered>
-        <TextInput label="Nombre Identificador" placeholder="Ej. Cancha 3 - Loza Sur" required mb="md" />
+        <TextInput label="Nombre Identificador" placeholder="Ej. Cancha 3 - Loza Sur" value={newCourtName} onChange={(e) => setNewCourtName(e.currentTarget.value)} required mb="md" />
         <Select 
           label="Deporte (Catálogo Oficial)" 
           placeholder="Selecciona el deporte" 
+          value={newCourtSport} onChange={(val) => setNewCourtSport(val)}
           data={sportsOptions} 
           required 
           mb="md" 
@@ -102,62 +409,12 @@ export function CompanyCourtsView() {
         <MultiSelect 
           label="Modalidades / Formatos" 
           placeholder="Añade formatos" 
+          value={newCourtModalities} onChange={(val) => setNewCourtModalities(val)}
           data={['Fútbol 5', 'Fútbol 6', 'Fútbol 7', 'Fútbol 11']} 
           searchable 
           mb="md" 
         />
-        <Button fullWidth color="dark" mt="md" onClick={() => setIsNewCourtOpen(false)}>Guardar Cancha</Button>
-      </Modal>
-
-      <Modal opened={isTarifaOpen} onClose={() => setIsTarifaOpen(false)} title={<Text fw={800}>Configurar Tarifas: {selectedCourt?.name}</Text>} centered size="lg">
-        <Text size="sm" c="dimmed" mb="md">Define el costo por hora según el momento del día.</Text>
-        
-        <Card withBorder mb="md" bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8))">
-          <Text fw={700} mb="xs">Tarifa Diurna (Lunes a Viernes)</Text>
-          <Group grow>
-            <NumberInput label="Precio (S/.)" defaultValue={60} prefix="S/. " />
-            <Group grow align="flex-end">
-              <TextInput label="Inicio" defaultValue="08:00" type="time" />
-              <TextInput label="Fin" defaultValue="18:00" type="time" />
-            </Group>
-          </Group>
-        </Card>
-
-        <Card withBorder mb="md" bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8))">
-          <Text fw={700} mb="xs">Tarifa Nocturna (Lunes a Viernes)</Text>
-          <Group grow>
-            <NumberInput label="Precio (S/.)" defaultValue={80} prefix="S/. " />
-            <Group grow align="flex-end">
-              <TextInput label="Inicio" defaultValue="18:00" type="time" />
-              <TextInput label="Fin" defaultValue="23:00" type="time" />
-            </Group>
-          </Group>
-        </Card>
-        
-        <Button fullWidth color="dark" mt="xl" onClick={() => setIsTarifaOpen(false)}>Actualizar Tarifario</Button>
-      </Modal>
-
-      <Modal opened={isBloqueoOpen} onClose={() => setIsBloqueoOpen(false)} title={<Text fw={800}>Bloquear Cancha: {selectedCourt?.name}</Text>} centered>
-        <Text size="sm" c="dimmed" mb="md">Impide que los clientes reserven esta cancha durante un rango de tiempo específico.</Text>
-        
-        <Select 
-          label="Motivo del Bloqueo" 
-          placeholder="Selecciona el motivo" 
-          data={['MANTENIMIENTO', 'MAL_CLIMA', 'REPARACION', 'EVENTO_INTERNO']} 
-          required 
-          mb="md" 
-        />
-        
-        <Group grow mb="md">
-          <TextInput label="Inicio" type="datetime-local" required />
-          <TextInput label="Fin" type="datetime-local" required />
-        </Group>
-
-        <Textarea label="Descripción detallada (Interna)" placeholder="Ej. Cambio de césped en área norte..." minRows={2} mb="xl" />
-
-        <Button fullWidth color="red" leftSection={<IconLock size={16} />} onClick={() => setIsBloqueoOpen(false)}>
-          Aplicar Bloqueo
-        </Button>
+        <Button fullWidth color="dark" mt="md" onClick={handleSaveCourt}>Guardar Cancha</Button>
       </Modal>
     </div>
   );

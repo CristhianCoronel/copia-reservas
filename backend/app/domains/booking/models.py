@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, Date, Time, ForeignKey, Integer, Numeric, Text, ARRAY
+from sqlalchemy import Column, String, Boolean, Date, Time, DateTime, ForeignKey, Integer, Numeric, Text, ARRAY
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -31,6 +31,46 @@ class Cancha(AuditMixin, Base):
     sede = relationship("Sede", back_populates="canchas")
     reservas = relationship("Reserva", back_populates="cancha")
     fotos = relationship("CanchaFoto", back_populates="cancha")
+    solapamientos_principales = relationship("CanchaSolapamiento", back_populates="cancha_principal", foreign_keys="[CanchaSolapamiento.cancha_principal_id]")
+    solapamientos_bloqueadas = relationship("CanchaSolapamiento", back_populates="cancha_bloqueada", foreign_keys="[CanchaSolapamiento.cancha_bloqueada_id]")
+
+class CanchaSolapamiento(AuditMixin, Base):
+    __tablename__ = "cancha_solapamiento"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    cancha_principal_id = Column(UUID(as_uuid=True), ForeignKey('cancha.id'), nullable=False)
+    cancha_bloqueada_id = Column(UUID(as_uuid=True), ForeignKey('cancha.id'), nullable=False)
+    
+    cancha_principal = relationship("Cancha", back_populates="solapamientos_principales", foreign_keys=[cancha_principal_id])
+    cancha_bloqueada = relationship("Cancha", back_populates="solapamientos_bloqueadas", foreign_keys=[cancha_bloqueada_id])
+
+
+class CanchaHorario(AuditMixin, Base):
+    __tablename__ = "cancha_horario"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    cancha_id = Column(UUID(as_uuid=True), ForeignKey('cancha.id'), nullable=False)
+    dia_semana = Column(Integer, nullable=False)
+    hora_inicio = Column(Time, nullable=False)
+    hora_fin = Column(Time, nullable=False)
+    precio_por_hora = Column(Numeric(10,2), nullable=False)
+    recargo_luz = Column(Numeric(10,2), default=0.00, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    
+    cancha = relationship("Cancha")
+
+
+class CanchaBloqueo(AuditMixin, Base):
+    __tablename__ = "cancha_bloqueo"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    cancha_id = Column(UUID(as_uuid=True), ForeignKey('cancha.id'), nullable=False)
+    fecha_hora_inicio = Column(DateTime(timezone=True), nullable=False)
+    fecha_hora_fin = Column(DateTime(timezone=True), nullable=False)
+    motivo = Column(String(50), nullable=False)
+    descripcion = Column(Text)
+    registrado_por = Column(UUID(as_uuid=True), ForeignKey('persona.id'), nullable=False)
+
+    cancha = relationship("Cancha")
+    registrador = relationship("Persona")
+
 
 class CanchaFoto(AuditMixin, Base):
     __tablename__ = "cancha_foto"

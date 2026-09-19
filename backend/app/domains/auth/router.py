@@ -180,6 +180,7 @@ async def get_my_accounts(current_user: models.Usuario = Depends(get_current_use
                 "id": str(emp.id),
                 "name": emp.razon_social,
                 "commercialName": emp.nombre_comercial,
+                "isSingleVenue": emp.es_sede_unica,
                 "venues": [
                     {
                         "id": str(sede.id),

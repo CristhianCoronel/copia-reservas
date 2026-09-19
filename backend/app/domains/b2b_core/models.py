@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, Date, ForeignKey, Integer, Float, Numeric, Text
+from sqlalchemy import Column, String, Boolean, Date, ForeignKey, Integer, Float, Numeric, Text, Time
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -49,6 +49,17 @@ class Sede(AuditMixin, Base):
 
     empresa = relationship("Empresa", back_populates="sedes")
     canchas = relationship("Cancha", back_populates="sede")
+
+
+class SedeHorarioAtencion(AuditMixin, Base):
+    __tablename__ = "sede_horario_atencion"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sede_id = Column(UUID(as_uuid=True), ForeignKey('sede.id'), nullable=False)
+    dia_semana = Column(Integer, nullable=False)
+    hora_apertura = Column(Time, nullable=False)
+    hora_cierre = Column(Time, nullable=False)
+
+    sede = relationship("Sede")
 
 
 class Contrato(AuditMixin, Base):

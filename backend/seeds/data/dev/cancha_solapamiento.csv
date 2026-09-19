@@ -1,0 +1,5 @@
+cancha_principal_id,cancha_bloqueada_id
+${UUID:cancha_chiclayo_3},${UUID:cancha_chiclayo_1}
+${UUID:cancha_chiclayo_3},${UUID:cancha_chiclayo_2}
+${UUID:cancha_chiclayo_1},${UUID:cancha_chiclayo_3}
+${UUID:cancha_chiclayo_2},${UUID:cancha_chiclayo_3}

@@ -1,0 +1,8 @@
+id,sede_id,dia_semana,hora_apertura,hora_cierre
+${UUID:sh_1},${UUID:sede_1},0,08:00:00,23:00:00
+${UUID:sh_2},${UUID:sede_1},1,08:00:00,23:00:00
+${UUID:sh_3},${UUID:sede_1},2,08:00:00,23:00:00
+${UUID:sh_4},${UUID:sede_1},3,08:00:00,23:00:00
+${UUID:sh_5},${UUID:sede_1},4,08:00:00,23:00:00
+${UUID:sh_6},${UUID:sede_1},5,08:00:00,23:00:00
+${UUID:sh_7},${UUID:sede_1},6,08:00:00,23:00:00
