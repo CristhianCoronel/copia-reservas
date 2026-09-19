@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Card, Text, Group, Button, Badge, Modal, TextInput, Select, MultiSelect, ActionIcon, UnstyledButton, Grid, Box } from '@mantine/core';
-import { IconPlus, IconTrash, IconCalendarTime, IconLock, IconSettings, IconAffiliate, IconArrowLeft } from '@tabler/icons-react';
+import { Card, Text, Group, Button, Badge, Modal, TextInput, Select, MultiSelect, ActionIcon, UnstyledButton, Grid, Box, NumberInput } from '@mantine/core';
+import { IconPlus, IconTrash, IconCalendarTime, IconLock, IconSettings, IconAffiliate, IconArrowLeft, IconCopy, IconCurrencyDollar } from '@tabler/icons-react';
 import { apiCall } from '../api';
 
 interface CompanyCourt {
@@ -39,6 +39,20 @@ export function CompanyCourtsView({ activeVenueId, company }: { activeVenueId: s
   const [selectedCourtId, setSelectedCourtId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [scheduleData, setScheduleData] = useState<any>(null);
+
+  // Modals State
+  const [isTariffModalOpen, setIsTariffModalOpen] = useState(false);
+  const [tariffStart, setTariffStart] = useState('16:00');
+  const [tariffEnd, setTariffEnd] = useState('17:00');
+  const [tariffPrice, setTariffPrice] = useState<number | string>(60);
+
+  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [blockStart, setBlockStart] = useState('08:00');
+  const [blockEnd, setBlockEnd] = useState('12:00');
+  const [blockReason, setBlockReason] = useState('MANTENIMIENTO');
+
+  const [isReplicateModalOpen, setIsReplicateModalOpen] = useState(false);
+  const [replicateSourceDate, setReplicateSourceDate] = useState('');
 
   const loadCourts = async () => {
     if (!localVenueId) return;
@@ -98,11 +112,100 @@ export function CompanyCourtsView({ activeVenueId, company }: { activeVenueId: s
     }
   }, [activeSetting, selectedCourtId, selectedDate]);
 
-  // Calendar Day View Helpers
+  // Helpers
   const parseTime = (timeStr: string) => {
     const [h, m] = timeStr.split(':').map(Number);
     return { h, m, totalMinutes: h * 60 + m };
   };
+
+  const handleSaveTariff = async () => {
+    if (!selectedCourtId || !selectedDate) return;
+    
+    const newStart = parseTime(tariffStart).totalMinutes;
+    const newEnd = parseTime(tariffEnd).totalMinutes;
+
+    if (newStart >= newEnd) {
+      alert("La hora de inicio debe ser anterior a la hora de fin.");
+      return;
+    }
+
+    const hasOverlap = scheduleData?.tariffs?.some((t: any) => {
+      const existingStart = parseTime(t.start).totalMinutes;
+      const existingEnd = parseTime(t.end).totalMinutes;
+      return (newStart < existingEnd && newEnd > existingStart);
+    });
+
+    if (hasOverlap) {
+      alert("El rango de horas se solapa con una tarifa ya existente.");
+      return;
+    }
+    
+    // Create new intervals list appending the new tariff
+    const currentIntervals = scheduleData?.tariffs?.map((t: any) => ({
+      hora_inicio: t.start,
+      hora_fin: t.end,
+      precio: t.price
+    })) || [];
+    
+    currentIntervals.push({
+      hora_inicio: tariffStart,
+      hora_fin: tariffEnd,
+      precio: Number(tariffPrice)
+    });
+
+    const res = await apiCall(`/api/v1/business/courts/${selectedCourtId}/schedule`, 'POST', {
+      date: selectedDate,
+      intervals: currentIntervals
+    });
+
+    if (res.status) {
+      setIsTariffModalOpen(false);
+      loadSchedule();
+    }
+  };
+
+  const handleSaveBlock = async () => {
+    if (!selectedCourtId || !selectedDate) return;
+    
+    const res = await apiCall(`/api/v1/business/courts/${selectedCourtId}/blocks`, 'POST', {
+      fecha_hora_inicio: `${selectedDate}T${blockStart}:00Z`,
+      fecha_hora_fin: `${selectedDate}T${blockEnd}:00Z`,
+      motivo: blockReason,
+      descripcion: `Bloqueo ingresado manualmente`
+    });
+
+    if (res.status) {
+      setIsBlockModalOpen(false);
+      loadSchedule();
+    }
+  };
+
+  const handleReplicate = async () => {
+    if (!selectedCourtId || !selectedDate || !replicateSourceDate) return;
+    
+    // 1. Fetch source schedule
+    const sourceRes = await apiCall(`/api/v1/business/courts/${selectedCourtId}/schedule?date=${replicateSourceDate}`);
+    if (sourceRes.status && sourceRes.data?.tariffs) {
+      const sourceIntervals = sourceRes.data.tariffs.map((t: any) => ({
+        hora_inicio: t.start,
+        hora_fin: t.end,
+        precio: t.price
+      }));
+      
+      // 2. Post to current date
+      const saveRes = await apiCall(`/api/v1/business/courts/${selectedCourtId}/schedule`, 'POST', {
+        date: selectedDate,
+        intervals: sourceIntervals
+      });
+      
+      if (saveRes.status) {
+        setIsReplicateModalOpen(false);
+        loadSchedule();
+      }
+    }
+  };
+
+
 
   const renderCalendarView = () => {
     if (!scheduleData || !scheduleData.openingTime || !scheduleData.closingTime) return null;
@@ -153,18 +256,24 @@ export function CompanyCourtsView({ activeVenueId, company }: { activeVenueId: s
           {scheduleData.tariffs?.map((t: any, i: number) => (
             <div key={`t-${i}`} style={{
               position: 'absolute',
-              left: 0, right: 0,
-              backgroundColor: 'rgba(132, 141, 150, 0.05)',
-              borderLeft: '4px solid var(--mantine-color-green-5)',
-              borderRadius: '0 8px 8px 0',
-              padding: '4px 8px',
+              left: '2%', right: '2%',
+              backgroundColor: 'var(--mantine-color-green-light)',
+              color: 'var(--mantine-color-green-dark)',
+              borderLeft: '4px solid var(--mantine-color-green-filled)',
+              borderRadius: '4px 8px 8px 4px',
+              padding: '6px 12px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
               overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'flex-start',
               ...getBlockStyle(t.start, t.end)
             }}>
-              <Group justify="space-between" align="flex-start">
-                <Text size="xs" fw={700} c="dimmed">Tarifa Configurada</Text>
-                <Badge color="green" variant="light" size="sm">S/. {t.price}</Badge>
+              <Group justify="space-between" align="flex-start" wrap="nowrap">
+                <Text size="sm" fw={700}>Tarifa Activa</Text>
+                <Badge color="green" variant="filled" size="sm">S/. {t.price}</Badge>
               </Group>
+              <Text size="xs" mt={4} fw={600} opacity={0.8}>{t.start} - {t.end}</Text>
             </div>
           ))}
 
@@ -376,12 +485,17 @@ export function CompanyCourtsView({ activeVenueId, company }: { activeVenueId: s
                       <Text fw={800}>Vista Diaria: {selectedDate}</Text>
                       <Text size="sm" c="dimmed">Horario de atención: {scheduleData.openingTime} - {scheduleData.closingTime}</Text>
                     </div>
-                    {scheduleData.tariffs?.length === 0 && (
-                      <Button color="blue" variant="light">Replicar configuración</Button>
-                    )}
-                    <Button color="red" variant="light" leftSection={<IconLock size={16} />}>
-                      Añadir Bloqueo
-                    </Button>
+                    <Group>
+                      {scheduleData.tariffs?.length === 0 && (
+                        <Button color="blue" variant="light" leftSection={<IconCopy size={16} />} onClick={() => setIsReplicateModalOpen(true)}>Replicar de otro día</Button>
+                      )}
+                      <Button color="green" variant="light" leftSection={<IconCurrencyDollar size={16} />} onClick={() => setIsTariffModalOpen(true)}>
+                        Añadir Tarifa
+                      </Button>
+                      <Button color="red" variant="light" leftSection={<IconLock size={16} />} onClick={() => setIsBlockModalOpen(true)}>
+                        Añadir Bloqueo
+                      </Button>
+                    </Group>
                   </Group>
                   
                   {renderCalendarView()}
@@ -415,6 +529,38 @@ export function CompanyCourtsView({ activeVenueId, company }: { activeVenueId: s
           mb="md" 
         />
         <Button fullWidth color="dark" mt="md" onClick={handleSaveCourt}>Guardar Cancha</Button>
+      </Modal>
+
+      {/* Modals for Schedule config */}
+      <Modal opened={isTariffModalOpen} onClose={() => setIsTariffModalOpen(false)} title={<Text fw={800}>Configurar Tarifa por Hora</Text>} centered>
+        <Group grow mb="md">
+          <TextInput type="time" label="Hora de Inicio" value={tariffStart} onChange={(e) => setTariffStart(e.currentTarget.value)} required />
+          <TextInput type="time" label="Hora de Fin" value={tariffEnd} onChange={(e) => setTariffEnd(e.currentTarget.value)} required />
+        </Group>
+        <NumberInput label="Precio (S/.)" placeholder="Ej. 60" value={tariffPrice} onChange={setTariffPrice} min={0} required mb="md" />
+        <Button fullWidth color="green" mt="md" onClick={handleSaveTariff}>Añadir Tarifa al Horario</Button>
+      </Modal>
+
+      <Modal opened={isBlockModalOpen} onClose={() => setIsBlockModalOpen(false)} title={<Text fw={800}>Añadir Bloqueo Excepcional</Text>} centered>
+        <Group grow mb="md">
+          <TextInput type="time" label="Hora de Inicio" value={blockStart} onChange={(e) => setBlockStart(e.currentTarget.value)} required />
+          <TextInput type="time" label="Hora de Fin" value={blockEnd} onChange={(e) => setBlockEnd(e.currentTarget.value)} required />
+        </Group>
+        <Select 
+          label="Motivo" 
+          value={blockReason} 
+          onChange={(v) => v && setBlockReason(v)} 
+          data={['MANTENIMIENTO', 'EVENTO_PRIVADO', 'FERIADO']} 
+          required 
+          mb="md" 
+        />
+        <Button fullWidth color="red" mt="md" onClick={handleSaveBlock}>Bloquear Cancha</Button>
+      </Modal>
+
+      <Modal opened={isReplicateModalOpen} onClose={() => setIsReplicateModalOpen(false)} title={<Text fw={800}>Copiar Configuración de Otro Día</Text>} centered>
+        <Text size="sm" c="dimmed" mb="md">Selecciona un día en el calendario que ya tenga las tarifas configuradas. Estas tarifas se copiarán al día actual ({selectedDate}).</Text>
+        <TextInput type="date" label="Día de origen" value={replicateSourceDate} onChange={(e) => setReplicateSourceDate(e.currentTarget.value)} required mb="md" />
+        <Button fullWidth color="blue" mt="md" onClick={handleReplicate}>Copiar Tarifas</Button>
       </Modal>
     </div>
   );

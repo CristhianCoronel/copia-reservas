@@ -32,7 +32,7 @@ export function CompanyVenuesView({ company, onVenuesChanged }: { company: any, 
 
   const loadSchedules = async () => {
     try {
-      const res = await apiCall(`/api/v1/business/venues/${activeVenueId}/schedules`);
+      const res = await apiCall(`/api/v1/b2b/business/venues/${activeVenueId}/schedules`);
       if (res.status && res.data) {
         // Initialize 7 days if empty
         const defaultWeek = [0, 1, 2, 3, 4, 5, 6].map(d => ({
@@ -62,7 +62,7 @@ export function CompanyVenuesView({ company, onVenuesChanged }: { company: any, 
 
   const handleCreateVenue = async () => {
     // TODO: Ubigeo is currently hardcoded in backend, it should be fetched from the system later
-    await apiCall(`/api/v1/business/companies/${company.id}/venues`, 'POST', {
+    await apiCall(`/api/v1/b2b/business/companies/${company.id}/venues`, 'POST', {
       nombre, direccion, telefono
     });
     setIsCreateModalOpen(false);
@@ -71,7 +71,7 @@ export function CompanyVenuesView({ company, onVenuesChanged }: { company: any, 
 
   const handleDeleteVenue = async (venueId: string) => {
     if (confirm('¿Estás seguro de que deseas inhabilitar esta sede?')) {
-      await apiCall(`/api/v1/business/venues/${venueId}`, 'DELETE');
+      await apiCall(`/api/v1/b2b/business/venues/${venueId}`, 'DELETE');
       if (activeVenueId === venueId) {
         setActiveVenueId(null);
         setActiveSection(null);
@@ -82,7 +82,7 @@ export function CompanyVenuesView({ company, onVenuesChanged }: { company: any, 
 
   const handleSaveDatosGenerales = async () => {
     if (!activeVenueId) return;
-    await apiCall(`/api/v1/business/venues/${activeVenueId}`, 'PUT', {
+    await apiCall(`/api/v1/b2b/business/venues/${activeVenueId}`, 'PUT', {
       nombre, direccion, telefono
     });
     onVenuesChanged();
@@ -96,7 +96,7 @@ export function CompanyVenuesView({ company, onVenuesChanged }: { company: any, 
       hora_apertura: s.hora_apertura,
       hora_cierre: s.hora_cierre
     }));
-    await apiCall(`/api/v1/business/venues/${activeVenueId}/schedules`, 'POST', payload);
+    await apiCall(`/api/v1/b2b/business/venues/${activeVenueId}/schedules`, 'POST', payload);
     alert('Horario regular guardado.');
   };
 
@@ -122,7 +122,7 @@ export function CompanyVenuesView({ company, onVenuesChanged }: { company: any, 
       cierre = newExcCierre;
     }
     
-    await apiCall(`/api/v1/business/venues/${activeVenueId}/exceptions`, 'POST', {
+    await apiCall(`/api/v1/b2b/business/venues/${activeVenueId}/exceptions`, 'POST', {
       fecha_excepcion: newExcFecha,
       estado_operativo: newExcEstado,
       hora_apertura: apertura,
@@ -139,7 +139,7 @@ export function CompanyVenuesView({ company, onVenuesChanged }: { company: any, 
 
   const handleDeleteException = async (id: string) => {
     if (!activeVenueId) return;
-    await apiCall(`/api/v1/business/venues/${activeVenueId}/exceptions/${id}`, 'DELETE');
+    await apiCall(`/api/v1/b2b/business/venues/${activeVenueId}/exceptions/${id}`, 'DELETE');
     loadSchedules();
   };
 
