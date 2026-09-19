@@ -88,7 +88,9 @@ async def seed(env: str, reset: bool, fake_count: int):
                 ("canchas.csv", "cancha"),
                 ("cancha_solapamiento.csv", "cancha_solapamiento"),
                 ("sede_horario_atencion.csv", "sede_horario_atencion"),
-                ("cancha_horario.csv", "cancha_horario")
+                ("sede_excepcion_horario.csv", "sede_excepcion_horario"),
+                ("cancha_horario.csv", "cancha_horario"),
+                ("cancha_bloqueo.csv", "cancha_bloqueo")
             ]
             for file_name, table in dev_files:
                 file_path = os.path.join(dev_dir, file_name)

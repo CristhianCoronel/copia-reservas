@@ -162,3 +162,133 @@ async def get_registered_companies(db: AsyncSession = Depends(get_db)):
         })
         
     return {"status": True, "data": data}
+
+@router.post("/business/companies/{company_id}/venues", tags=["B2B - Business"])
+async def create_venue(company_id: str, payload: schemas.SedeCreate, db: AsyncSession = Depends(get_db)):
+    nueva_sede = models.Sede(
+        empresa_id=company_id,
+        nombre=payload.nombre,
+        direccion=payload.direccion,
+        telefono=payload.telefono,
+        ubigeo_distrito_id="140101", # TODO: Get from system later
+        latitud=0.0,
+        longitud=0.0,
+        tipo_adelanto_requerido="PORCENTAJE",
+        valor_adelanto_requerido=50.0
+    )
+    db.add(nueva_sede)
+    
+    # Check if company had es_sede_unica = True and set to False if it's the second venue
+    # For now we'll just set it to False
+    emp = await db.execute(select(models.Empresa).where(models.Empresa.id == company_id))
+    emp_obj = emp.scalars().first()
+    if emp_obj:
+        emp_obj.es_sede_unica = False
+        
+    await db.commit()
+    await db.refresh(nueva_sede)
+    return {"status": True, "data": {"id": str(nueva_sede.id), "name": nueva_sede.nombre}}
+
+@router.put("/business/venues/{venue_id}", tags=["B2B - Business"])
+async def update_venue(venue_id: str, payload: schemas.SedeUpdate, db: AsyncSession = Depends(get_db)):
+    sede = await db.execute(select(models.Sede).where(models.Sede.id == venue_id))
+    sede_obj = sede.scalars().first()
+    if not sede_obj:
+        raise HTTPException(status_code=404, detail="Sede no encontrada")
+    
+    if payload.nombre is not None: sede_obj.nombre = payload.nombre
+    if payload.direccion is not None: sede_obj.direccion = payload.direccion
+    if payload.telefono is not None: sede_obj.telefono = payload.telefono
+    
+    await db.commit()
+    return {"status": True}
+
+@router.delete("/business/venues/{venue_id}", tags=["B2B - Business"])
+async def delete_venue(venue_id: str, db: AsyncSession = Depends(get_db)):
+    sede = await db.execute(select(models.Sede).where(models.Sede.id == venue_id))
+    sede_obj = sede.scalars().first()
+    if not sede_obj:
+        raise HTTPException(status_code=404, detail="Sede no encontrada")
+    
+    sede_obj.estado = "INACTIVA"
+    await db.commit()
+    return {"status": True}
+
+from typing import List
+
+@router.get("/business/venues/{venue_id}/schedules", tags=["B2B - Business"])
+async def get_venue_schedules(venue_id: str, db: AsyncSession = Depends(get_db)):
+    # Regular schedules
+    sched = await db.execute(select(models.SedeHorarioAtencion).where(models.SedeHorarioAtencion.sede_id == venue_id))
+    regular = sched.scalars().all()
+    
+    # Exceptions
+    exc = await db.execute(select(models.SedeExcepcionHorario).where(models.SedeExcepcionHorario.sede_id == venue_id))
+    exceptions = exc.scalars().all()
+    
+    return {
+        "status": True,
+        "data": {
+            "regular": [
+                {
+                    "id": str(r.id),
+                    "dia_semana": r.dia_semana,
+                    "hora_apertura": r.hora_apertura.strftime("%H:%M") if r.hora_apertura else None,
+                    "hora_cierre": r.hora_cierre.strftime("%H:%M") if r.hora_cierre else None
+                } for r in regular
+            ],
+            "exceptions": [
+                {
+                    "id": str(e.id),
+                    "fecha_excepcion": e.fecha_excepcion.isoformat(),
+                    "estado_operativo": e.estado_operativo,
+                    "hora_apertura": e.hora_apertura.strftime("%H:%M") if e.hora_apertura else None,
+                    "hora_cierre": e.hora_cierre.strftime("%H:%M") if e.hora_cierre else None,
+                    "descripcion": e.descripcion
+                } for e in exceptions
+            ]
+        }
+    }
+
+@router.post("/business/venues/{venue_id}/schedules", tags=["B2B - Business"])
+async def set_venue_schedules(venue_id: str, payload: List[schemas.SedeHorarioAtencionCreate], db: AsyncSession = Depends(get_db)):
+    # Delete existing regular schedule for this venue
+    await db.execute(models.SedeHorarioAtencion.__table__.delete().where(models.SedeHorarioAtencion.sede_id == venue_id))
+    
+    # Insert new ones
+    for item in payload:
+        new_sched = models.SedeHorarioAtencion(
+            sede_id=venue_id,
+            dia_semana=item.dia_semana,
+            hora_apertura=item.hora_apertura,
+            hora_cierre=item.hora_cierre
+        )
+        db.add(new_sched)
+    
+    await db.commit()
+    return {"status": True}
+
+@router.post("/business/venues/{venue_id}/exceptions", tags=["B2B - Business"])
+async def create_venue_exception(venue_id: str, payload: schemas.SedeExcepcionCreate, db: AsyncSession = Depends(get_db)):
+    new_exc = models.SedeExcepcionHorario(
+        sede_id=venue_id,
+        fecha_excepcion=payload.fecha_excepcion,
+        estado_operativo=payload.estado_operativo,
+        hora_apertura=payload.hora_apertura,
+        hora_cierre=payload.hora_cierre,
+        descripcion=payload.descripcion
+    )
+    db.add(new_exc)
+    await db.commit()
+    await db.refresh(new_exc)
+    return {"status": True, "data": {"id": str(new_exc.id)}}
+
+@router.delete("/business/venues/{venue_id}/exceptions/{exception_id}", tags=["B2B - Business"])
+async def delete_venue_exception(venue_id: str, exception_id: str, db: AsyncSession = Depends(get_db)):
+    exc = await db.execute(select(models.SedeExcepcionHorario).where(models.SedeExcepcionHorario.id == exception_id, models.SedeExcepcionHorario.sede_id == venue_id))
+    exc_obj = exc.scalars().first()
+    if exc_obj:
+        await db.execute(models.SedeExcepcionHorario.__table__.delete().where(models.SedeExcepcionHorario.id == exception_id))
+        await db.commit()
+    return {"status": True}
+

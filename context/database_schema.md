@@ -291,8 +291,8 @@ Complejos deportivos físicos operados por una empresa.
 | `max_horas_reserva_continua` | `INT` | NO | Límite de horas consecutivas que un cliente puede reservar (Default `2`). |
 | `reserva_minutos_espera` | `INT` | NO | Tiempo límite (minutos) para confirmar pago antes de liberar la reserva en PENDING (ej. `15`, `30`, `1440`). |
 | `tipo_adelanto_requerido`| `VARCHAR(20)`| NO | Regla de cobro: `PORCENTAJE`, `MONTO_FIJO`, `NINGUNO`. |
-| `valor_adelanto_requerido`| `NUMERIC(10,2)`| NO | Valor del adelanto. Si el tipo es `NINGUNO`, debe ser `0.00`. |
-| `estado` | `VARCHAR(20)` | NO | `ACTIVA`, `INACTIVA` (Default `ACTIVA`). |
+| `valor_adelanto_requerido` | `NUMERIC(10,2)` | NO | Monto explícito exigido si el tipo es porcentual o fijo. |
+| `estado` | `VARCHAR(20)` | NO | `ACTIVA` o `INACTIVA`. **Nota:** La eliminación de sedes es estrictamente lógica (Soft Delete) cambiando el estado a `INACTIVA` para no corromper el historial de contratos, reservas y saldos. |
 | `created_at` | `TIMESTAMPTZ` | NO | Fecha de registro del complejo. |
 | `updated_at` | `TIMESTAMPTZ` | NO | Fecha de modificación. |
 

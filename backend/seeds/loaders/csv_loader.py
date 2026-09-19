@@ -34,6 +34,21 @@ class MacroProcessor:
             import secrets
             return secrets.token_hex(length)[:length].upper()
             
+        if value.startswith("${DATE_OFFSET:") and value.endswith("}"):
+            import datetime
+            days = int(value[14:-1])
+            return (datetime.date.today() + datetime.timedelta(days=days)).isoformat()
+            
+        if value.startswith("${DATETIME_OFFSET:") and value.endswith("}"):
+            import datetime
+            inner = value[18:-1]
+            days_str, time_str = inner.split(",")
+            days = int(days_str)
+            d = datetime.date.today() + datetime.timedelta(days=days)
+            # return aware UTC-like or naive depending on what python expects.
+            # cli.py expects ISO string, it will parse it:
+            return f"{d.isoformat()}T{time_str}+00:00"
+
         return value
 
 def load_csv(file_path: str, macro_processor: MacroProcessor):

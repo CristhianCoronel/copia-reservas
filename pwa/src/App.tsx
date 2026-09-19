@@ -15,6 +15,7 @@ import { WalletView } from './components/WalletView';
 
 import { CompanyReservationsView } from './components/CompanyReservationsView';
 import { CompanyCourtsView } from './components/CompanyCourtsView';
+import { CompanyVenuesView } from './components/CompanyVenuesView';
 import { CompanyEditView } from './components/CompanyEditView';
 import { AuthView } from './components/AuthView';
 import { SuperAdminView } from './components/SuperAdminView';
@@ -56,6 +57,15 @@ export default function App() {
       window.removeEventListener('NAVIGATE_TO', handleNavigate);
     };
   }, []);
+
+  const reloadAccounts = () => {
+    apiCall('/api/v1/player/profile/me/accounts').then(res => {
+      if (res.status === undefined || res.data) {
+        setAccountsData(res.data);
+      }
+    }).catch(console.error);
+  };
+
 
   const handleOpenModal = () => {
     apiCall('/api/v1/player/profile/me/accounts').then(res => {
@@ -153,10 +163,7 @@ export default function App() {
             {appMode === 'superadmin' && activeTab === 'admin' && <SuperAdminView />}
 
             {appMode === 'empresa' && activeTab === 'sedes' && (
-              <div style={{ padding: 16 }}>
-                <Text fw={800} size="xl">Gestión de Sedes</Text>
-                <Text c="dimmed" mt="sm">Aquí irá la gestión de horarios, tarifas y bloqueos de horario de las sedes.</Text>
-              </div>
+              <CompanyVenuesView company={accountsData?.companies?.find((c: any) => c.id === activeCompanyId)} onVenuesChanged={reloadAccounts} />
             )}
             {appMode === 'empresa' && !['reservas', 'canchas', 'chat', 'empresa', 'sedes'].includes(activeTab) && (
               <div style={{ padding: 16 }}>

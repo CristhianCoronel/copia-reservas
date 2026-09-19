@@ -1,0 +1,2 @@
+id,sede_id,fecha_excepcion,estado_operativo,hora_apertura,hora_cierre,descripcion
+${UUID:sede_excepcion_1},${UUID:sede_1},${DATE_OFFSET:2},ABIERTO_ESPECIAL,14:00:00,16:00:00,"Atención especial de 2 horas"

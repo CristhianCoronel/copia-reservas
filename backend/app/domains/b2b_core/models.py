@@ -62,6 +62,20 @@ class SedeHorarioAtencion(AuditMixin, Base):
     sede = relationship("Sede")
 
 
+class SedeExcepcionHorario(AuditMixin, Base):
+    __tablename__ = "sede_excepcion_horario"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sede_id = Column(UUID(as_uuid=True), ForeignKey('sede.id'), nullable=False)
+    fecha_excepcion = Column(Date, nullable=False)
+    estado_operativo = Column(String(20), nullable=False)
+    hora_apertura = Column(Time)
+    hora_cierre = Column(Time)
+    descripcion = Column(String(255))
+
+    sede = relationship("Sede")
+
+
+
 class Contrato(AuditMixin, Base):
     __tablename__ = "contrato"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

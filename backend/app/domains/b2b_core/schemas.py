@@ -20,3 +20,29 @@ class EmpresaResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class SedeCreate(BaseModel):
+    nombre: str
+    direccion: str
+    telefono: str
+
+class SedeUpdate(BaseModel):
+    nombre: Optional[str] = None
+    direccion: Optional[str] = None
+    telefono: Optional[str] = None
+
+from datetime import time, date
+
+class SedeHorarioAtencionCreate(BaseModel):
+    dia_semana: int
+    hora_apertura: time
+    hora_cierre: time
+
+class SedeExcepcionCreate(BaseModel):
+    fecha_excepcion: date
+    estado_operativo: str # 'CERRADO' or 'ABIERTO_ESPECIAL'
+    hora_apertura: Optional[time] = None
+    hora_cierre: Optional[time] = None
+    descripcion: Optional[str] = None
+
+
