@@ -1,11 +1,13 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4261/api';
 
+import { storage } from './storage';
+
 export async function apiCall<T = any>(
   endpoint: string,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' = 'GET',
   body?: any
 ): Promise<{ message: string; status: boolean; data: T }> {
-  const token = sessionStorage.getItem('separaaltokeid');
+  const token = storage.getItem('separaaltokeid');
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',

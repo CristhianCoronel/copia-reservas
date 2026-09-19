@@ -4,9 +4,9 @@ SESSION="reservas"
 MACHINE_ID=$(cat /etc/machine-id 2>/dev/null)
 
 if [ "$MACHINE_ID" = "4e481538ea3d48369c467986c50121e5" ]; then
-    BASE_DIR="$HOME/h/repos/f_resdep"
+    BASE_DIR="$HOME/h/repos/f_resdep" # SQUARE
 elif [ "$MACHINE_ID" = "6b7a2caba27e4fc78d77492859f3ec76" ]; then
-    BASE_DIR="$HOME/h/pdu/reservas-deportivas"
+    BASE_DIR="$HOME/h/pdu/reservas-deportivas"  # WSL
 else
     echo "Unknown machine-id: $MACHINE_ID. Using default directory."
     BASE_DIR="$HOME/h/pdu/reservas-deportivas"

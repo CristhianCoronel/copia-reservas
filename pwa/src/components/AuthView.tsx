@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { TextInput, PasswordInput, Button, Text, Group, Divider, Anchor } from '@mantine/core';
 import { IconMail, IconLock, IconUser, IconBrandGoogle } from '@tabler/icons-react';
 import { apiCall } from '../api';
+import { storage } from '../storage';
 
 interface AuthViewProps {
   onLogin: () => void;
@@ -27,7 +28,7 @@ export function AuthView({ onLogin }: AuthViewProps) {
     try {
       const res = await apiCall('/api/v1/auth/login', 'POST', { email, password });
       if (res.status && res.data.token) {
-        sessionStorage.setItem('separaaltokeid', res.data.token);
+        storage.setItem('separaaltokeid', res.data.token);
         onLogin();
       }
     } catch (error: any) {

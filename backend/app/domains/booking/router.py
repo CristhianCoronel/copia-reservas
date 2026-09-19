@@ -98,7 +98,7 @@ async def listar_canchas(date: str = None, db: AsyncSession = Depends(get_db)):
             "regularPrice": 50.0, # TODO: Agregar a modelo
             "peakPrice": 80.0,
             "services": ["Estacionamiento", "Baños"] if c.caracteristicas else [],
-            "rules": c.sede.politica_cancelacion if c.sede else "",
+            "rules": (c.sede.empresa.politica_cancelacion or "") if (c.sede and c.sede.empresa) else "",
             "images": [f.foto_url for f in sorted(c.fotos, key=lambda x: x.orden)] if c.fotos else []
         })
         

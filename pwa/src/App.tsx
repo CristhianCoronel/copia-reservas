@@ -4,6 +4,7 @@ import { IconPlayFootball, IconCompass, IconUsers, IconCalendarEvent, IconUser, 
 import { useState, useEffect } from 'react';
 import classes from './App.module.css';
 import { apiCall } from './api';
+import { storage } from './storage';
 
 import { CourtsView } from './components/CourtsView';
 import { SocialView } from './components/SocialView';
@@ -27,8 +28,8 @@ export default function App() {
   const { colorScheme } = useMantineColorScheme();
   
   const [accountsData, setAccountsData] = useState<any>(null);
-  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(sessionStorage.getItem('activeCompanyId'));
-  const [activeVenueId, setActiveVenueId] = useState<string | null>(sessionStorage.getItem('activeVenueId'));
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(storage.getItem('activeCompanyId'));
+  const [activeVenueId, setActiveVenueId] = useState<string | null>(storage.getItem('activeVenueId'));
 
   useEffect(() => {
     const handleNavigate = (e: any) => {
@@ -38,10 +39,10 @@ export default function App() {
     };
     window.addEventListener('NAVIGATE_TO', handleNavigate);
 
-    const token = sessionStorage.getItem('separaaltokeid');
+    const token = storage.getItem('separaaltokeid');
     if (token) {
       setIsAuthenticated(true);
-      const savedMode = sessionStorage.getItem('appMode') as 'jugador' | 'empresa' | 'superadmin';
+      const savedMode = storage.getItem('appMode') as 'jugador' | 'empresa' | 'superadmin';
       if (savedMode) setAppMode(savedMode);
       
       apiCall('/api/v1/player/profile/me/accounts').then(res => {
@@ -66,34 +67,34 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem('separaaltokeid');
-    sessionStorage.removeItem('appMode');
-    sessionStorage.removeItem('activeCompanyId');
-    sessionStorage.removeItem('activeVenueId');
+    storage.removeItem('separaaltokeid');
+    storage.removeItem('appMode');
+    storage.removeItem('activeCompanyId');
+    storage.removeItem('activeVenueId');
     setIsAuthenticated(false);
   };
 
   const switchToJugador = () => {
     setAppMode('jugador');
-    sessionStorage.setItem('appMode', 'jugador');
+    storage.setItem('appMode', 'jugador');
     setActiveTab('canchas');
     closeModal();
   };
 
   const switchToEmpresa = (companyId: string, venueId?: string) => {
     setAppMode('empresa');
-    sessionStorage.setItem('appMode', 'empresa');
+    storage.setItem('appMode', 'empresa');
     setActiveCompanyId(companyId);
-    sessionStorage.setItem('activeCompanyId', companyId);
+    storage.setItem('activeCompanyId', companyId);
     setActiveVenueId(venueId || '');
-    sessionStorage.setItem('activeVenueId', venueId || '');
+    storage.setItem('activeVenueId', venueId || '');
     setActiveTab(venueId ? 'reservas' : 'empresa');
     closeModal();
   };
 
   const switchToSuperAdmin = () => {
     setAppMode('superadmin');
-    sessionStorage.setItem('appMode', 'superadmin');
+    storage.setItem('appMode', 'superadmin');
     setActiveTab('admin');
     closeModal();
   };
