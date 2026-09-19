@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Card, Text, Group, Badge, Button, Center, Loader, Tabs, Select, Modal, TextInput, Switch, Alert, ActionIcon } from '@mantine/core';
-import { IconCheck, IconPhone, IconMapPin, IconCreditCard, IconCalendarEvent, IconReceipt2, IconWallet, IconTrash } from '@tabler/icons-react';
+import { Card, Text, Group, Badge, Button, Center, Loader, Tabs, Modal, TextInput, Switch, Alert, ScrollArea } from '@mantine/core';
+import { IconCheck, IconPhone, IconMapPin, IconCreditCard, IconCalendarEvent, IconReceipt2, IconWallet, IconTrash, IconBuilding } from '@tabler/icons-react';
 import { apiCall } from '../api';
 
 interface PendingBooking {
@@ -14,11 +14,14 @@ interface PendingBooking {
   paymentMethod: string;
 }
 
-export function CompanyReservationsView({ localVenueId }: { localVenueId?: string | null }) {
+export function CompanyReservationsView({ activeCompanyId }: { activeCompanyId?: string | null }) {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>('agenda');
   const [selectedCourt, setSelectedCourt] = useState<string | null>(null);
-  const [courts, setCourts] = useState<{value: string, label: string}[]>([]);
+  const [selectedCourtName, setSelectedCourtName] = useState<string | null>(null);
+  
+  const [courtSelectModal, setCourtSelectModal] = useState(false);
+  const [venuesSummary, setVenuesSummary] = useState<any[]>([]);
   
   // Format date to YYYY-MM-DD
   const today = new Date().toISOString().split('T')[0];
@@ -39,19 +42,19 @@ export function CompanyReservationsView({ localVenueId }: { localVenueId?: strin
   const [pendingList, setPendingList] = useState<PendingBooking[]>([]);
 
   useEffect(() => {
-    if (!localVenueId) return;
+    if (!activeCompanyId) return;
     
-    // Load courts for venue
-    apiCall(`/api/v1/business/venues/${localVenueId}/courts`).then(res => {
+    // Load courts summary for company
+    apiCall(`/api/v1/business/companies/${activeCompanyId}/courts-summary`).then(res => {
       if (res && res.data) {
-        const mapped = res.data.map((c: any) => ({ value: c.id, label: c.name }));
-        setCourts(mapped);
-        if (mapped.length > 0 && !selectedCourt) {
-          setSelectedCourt(mapped[0].value);
+        setVenuesSummary(res.data);
+        if (res.data.length > 0 && res.data[0].courts.length > 0 && !selectedCourt) {
+          setSelectedCourt(res.data[0].courts[0].id);
+          setSelectedCourtName(`${res.data[0].courts[0].name} (${res.data[0].venueName})`);
         }
       }
     });
-  }, [localVenueId]);
+  }, [activeCompanyId]);
 
   const loadSchedule = async () => {
     if (!selectedCourt || !selectedDate) return;
@@ -116,9 +119,9 @@ export function CompanyReservationsView({ localVenueId }: { localVenueId?: strin
   }, [selectedCourt, selectedDate, activeTab]);
 
   const loadPending = async () => {
-    if (!localVenueId) return;
+    if (!activeCompanyId) return;
     try {
-      const res = await apiCall(`/api/v1/business/venues/${localVenueId}/reservations/pending`);
+      const res = await apiCall(`/api/v1/business/companies/${activeCompanyId}/reservations/pending`);
       if (res && res.data) {
         setPendingList(res.data);
       }
@@ -131,7 +134,7 @@ export function CompanyReservationsView({ localVenueId }: { localVenueId?: strin
     if (activeTab === 'pagos') {
       loadPending();
     }
-  }, [activeTab, localVenueId]);
+  }, [activeTab, activeCompanyId]);
 
   const handleApproveBooking = async (id: string) => {
     await apiCall(`/api/v1/business/reservations/${id}/approve`, 'PUT');
@@ -197,15 +200,18 @@ export function CompanyReservationsView({ localVenueId }: { localVenueId?: strin
 
         <Tabs.Panel value="agenda" pt="md">
           <Group mb="xl" grow>
-            <Select 
-              label="Cancha"
-              value={selectedCourt}
-              onChange={(val) => setSelectedCourt(val)}
-              data={courts}
-            />
+            <Button 
+              variant="default"
+              size="md"
+              onClick={() => setCourtSelectModal(true)}
+              rightSection={<IconMapPin size={18} color="#94A3B8" />}
+              style={{ justifyContent: 'space-between', fontWeight: selectedCourtName ? 700 : 400, color: selectedCourtName ? 'var(--mantine-color-text)' : '#94A3B8' }}
+            >
+              {selectedCourtName || 'Seleccionar Cancha...'}
+            </Button>
             <TextInput 
-              label="Fecha"
               type="date"
+              size="md"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.currentTarget.value)}
             />
@@ -323,6 +329,55 @@ export function CompanyReservationsView({ localVenueId }: { localVenueId?: strin
           <Button variant="default" onClick={() => setCancelModal(false)}>Atrás</Button>
           <Button color="red" onClick={handleCancelReservation}>Confirmar Cancelación</Button>
         </Group>
+      </Modal>
+
+      <Modal 
+        opened={courtSelectModal} 
+        onClose={() => setCourtSelectModal(false)} 
+        title={<Text fw={800} size="lg">Seleccionar Cancha</Text>}
+        centered
+        scrollAreaComponent={ScrollArea.Autosize}
+      >
+        {venuesSummary.map(venue => (
+          <div key={venue.venueId} style={{ marginBottom: 20 }}>
+            <Group gap={6} mb="sm">
+              <IconBuilding size={16} color="var(--mantine-color-cancha-5)" />
+              <Text fw={800} size="sm">{venue.venueName}</Text>
+            </Group>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {venue.courts.map((court: any) => (
+                <Card 
+                  key={court.id}
+                  padding="md" 
+                  radius="md" 
+                  withBorder 
+                  style={{ cursor: 'pointer', borderColor: selectedCourt === court.id ? 'var(--mantine-color-cancha-5)' : undefined }}
+                  onClick={() => {
+                    setSelectedCourt(court.id);
+                    setSelectedCourtName(`${court.name} (${venue.venueName})`);
+                    setCourtSelectModal(false);
+                  }}
+                >
+                  <Group justify="space-between" align="center">
+                    <Text fw={700} size="sm">{court.name}</Text>
+                    {court.pendingCount > 0 && (
+                      <Badge color="red" variant="filled" size="sm">
+                        {court.pendingCount} por validar
+                      </Badge>
+                    )}
+                  </Group>
+                </Card>
+              ))}
+              {venue.courts.length === 0 && (
+                <Text size="xs" c="dimmed" fs="italic" pl={22}>No hay canchas registradas en esta sede.</Text>
+              )}
+            </div>
+          </div>
+        ))}
+        {venuesSummary.length === 0 && (
+           <Text c="dimmed" ta="center">No se encontraron sedes para esta empresa.</Text>
+        )}
       </Modal>
     </div>
   );

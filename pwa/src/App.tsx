@@ -155,7 +155,7 @@ export default function App() {
             {appMode === 'jugador' && activeTab === 'perfil' && <ProfileView onLogout={handleLogout} onNavigate={(tab) => setActiveTab(tab)} />}
             {appMode === 'jugador' && activeTab === 'registro_empresa' && <CompanyRegistrationView onNavigate={(tab) => setActiveTab(tab)} />}
 
-            {appMode === 'empresa' && activeTab === 'reservas' && <CompanyReservationsView localVenueId={activeVenueId} />}
+            {appMode === 'empresa' && activeTab === 'reservas' && <CompanyReservationsView activeCompanyId={activeCompanyId} />}
             {appMode === 'empresa' && activeTab === 'canchas' && <CompanyCourtsView activeVenueId={activeVenueId} company={accountsData?.companies?.find((c: any) => c.id === activeCompanyId)} />}
             {appMode === 'empresa' && activeTab === 'chat' && <ChatView />}
             {appMode === 'empresa' && activeTab === 'empresa' && <CompanyEditView company={accountsData?.companies?.find((c: any) => c.id === activeCompanyId)} />}
@@ -269,38 +269,25 @@ export default function App() {
           <>
             <Text fw={700} size="sm" c="dimmed" mb="xs">EMPRESAS Y SEDES</Text>
             {accountsData.companies.map((company: any) => (
-              <div key={company.id}>
-                <Group gap={6} mt="md" mb="xs">
-                  <IconBuilding size={16}/>
-                  <Text size="xs" fw={800}>{company.commercialName}</Text>
+              <Card
+                key={company.id}
+                padding="md"
+                radius="md"
+                withBorder
+                mb="md"
+                style={{ cursor: 'pointer', borderColor: (appMode === 'empresa' && activeCompanyId === company.id) ? 'var(--mantine-color-text)' : undefined }}
+                onClick={() => switchToEmpresa(company.id)}
+              >
+                <Group wrap="nowrap">
+                  <IconBuilding size={32} color="var(--mantine-color-text)" />
+                  <div style={{ flex: 1 }}>
+                    <Text fw={800}>{company.commercialName}</Text>
+                    <Text size="xs" c="dimmed">
+                      {company.venues.length} {company.venues.length === 1 ? 'sede registrada' : 'sedes registradas'}
+                    </Text>
+                  </div>
                 </Group>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {company.venues.map((venue: any) => (
-                    <Card 
-                      key={venue.id}
-                      padding="sm" 
-                      radius="md" 
-                      withBorder 
-                      style={{ cursor: 'pointer', borderColor: (appMode === 'empresa' && activeVenueId === venue.id) ? 'var(--mantine-color-text)' : undefined }}
-                      onClick={() => switchToEmpresa(company.id, venue.id)}
-                    >
-                      <Group wrap="nowrap">
-                        <Avatar src={`https://ui-avatars.com/api/?name=${encodeURIComponent(venue.name)}&background=random`} radius="md" size="md" />
-                        <div style={{ flex: 1 }}>
-                          <Text fw={800} size="sm">{venue.name}</Text>
-                          <Text size="xs" c="dimmed"><IconMapPin size={10} /> {venue.address}</Text>
-                        </div>
-                      </Group>
-                    </Card>
-                  ))}
-                  {company.venues.length === 0 && (
-                    <Group align="center" justify="space-between" bg="var(--mantine-color-gray-0)" p="sm" style={{ borderRadius: 8 }}>
-                      <Text size="xs" c="dimmed" fs="italic">No hay sedes registradas en esta empresa.</Text>
-                      <Button size="xs" variant="light" color="dark" onClick={() => switchToEmpresa(company.id)}>Configurar Empresa</Button>
-                    </Group>
-                  )}
-                </div>
-              </div>
+              </Card>
             ))}
           </>
         )}

@@ -410,6 +410,96 @@ async def get_pending_reservations(venue_id: str, db: AsyncSession = Depends(get
             
     return {"data": list(res_dict.values())}
 
+@router.get("/business/companies/{company_id}/reservations/pending", tags=["B2B - Business"])
+async def get_company_pending_reservations(company_id: str, db: AsyncSession = Depends(get_db)):
+    from app.domains.auth.models import Persona, Usuario
+    from app.domains.b2b_core.models import Sede
+    
+    query = (
+        select(
+            models.Reserva, 
+            Persona.nombres, 
+            Persona.apellidos, 
+            Usuario.telefono, 
+            models.Cancha.nombre.label('cancha_nombre'),
+            Sede.nombre.label('sede_nombre'),
+            models.PagoReserva.monto,
+            models.PagoReserva.metodo_pago
+        )
+        .join(models.Cancha, models.Reserva.cancha_id == models.Cancha.id)
+        .join(Sede, models.Cancha.sede_id == Sede.id)
+        .join(Persona, models.Reserva.persona_organizadora_id == Persona.id)
+        .join(Usuario, Persona.usuario_id == Usuario.id)
+        .outerjoin(models.PagoReserva, and_(models.PagoReserva.reserva_id == models.Reserva.id, models.PagoReserva.estado == 'PENDIENTE'))
+        .where(
+            Sede.empresa_id == company_id,
+            models.Reserva.estado == 'PENDIENTE_PAGO'
+        )
+    )
+    result = await db.execute(query)
+    rows = result.all()
+    
+    data = []
+    res_dict = {}
+    for r, nombres, apellidos, telefono, cancha_nombre, sede_nombre, monto, metodo_pago in rows:
+        if str(r.id) not in res_dict:
+            res_dict[str(r.id)] = {
+                "id": str(r.id),
+                "userName": f"{nombres} {apellidos}",
+                "phone": telefono or "",
+                "courtName": f"{cancha_nombre} ({sede_nombre})",
+                "date": "Hoy",
+                "time": r.hora_inicio.strftime("%H:%M"),
+                "amount": float(monto) if monto else float(r._saldo_pendiente),
+                "paymentMethod": metodo_pago or "Desconocido"
+            }
+            
+    return {"data": list(res_dict.values())}
+
+@router.get("/business/companies/{company_id}/courts-summary", tags=["B2B - Business"])
+async def get_company_courts_summary(company_id: str, db: AsyncSession = Depends(get_db)):
+    from app.domains.b2b_core.models import Sede
+    from sqlalchemy import func
+    
+    query_canchas = (
+        select(models.Cancha, Sede)
+        .join(Sede, models.Cancha.sede_id == Sede.id)
+        .where(Sede.empresa_id == company_id, models.Cancha.is_active == True)
+    )
+    result = await db.execute(query_canchas)
+    canchas_sedes = result.all()
+    
+    query_pendientes = (
+        select(models.Reserva.cancha_id, func.count(models.Reserva.id))
+        .join(models.Cancha, models.Reserva.cancha_id == models.Cancha.id)
+        .join(Sede, models.Cancha.sede_id == Sede.id)
+        .where(
+            Sede.empresa_id == company_id,
+            models.Reserva.estado == 'PENDIENTE_PAGO'
+        )
+        .group_by(models.Reserva.cancha_id)
+    )
+    res_pendientes = await db.execute(query_pendientes)
+    pendientes_dict = {str(row[0]): row[1] for row in res_pendientes.all()}
+    
+    sedes_dict = {}
+    for cancha, sede in canchas_sedes:
+        s_id = str(sede.id)
+        if s_id not in sedes_dict:
+            sedes_dict[s_id] = {
+                "venueId": s_id,
+                "venueName": sede.nombre,
+                "courts": []
+            }
+        
+        sedes_dict[s_id]["courts"].append({
+            "id": str(cancha.id),
+            "name": cancha.nombre,
+            "pendingCount": pendientes_dict.get(str(cancha.id), 0)
+        })
+        
+    return {"status": True, "data": list(sedes_dict.values())}
+
 @router.put("/business/reservations/{reserva_id}/approve", tags=["B2B - Business"])
 async def approve_reservation(reserva_id: str, db: AsyncSession = Depends(get_db)):
     reserva = await db.execute(select(models.Reserva).where(models.Reserva.id == reserva_id))
