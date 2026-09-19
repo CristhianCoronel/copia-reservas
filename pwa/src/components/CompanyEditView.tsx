@@ -46,6 +46,12 @@ export function CompanyEditView() {
         </Tabs.List>
 
         <Tabs.Panel value="empresa" pt="md">
+          <Alert icon={<IconBuildingStore size={20} />} title="Configuración a Nivel Empresa" color="indigo" mb="md" variant="light">
+            <Text size="sm">
+              Estos ajustes afectan a <strong>todas las sedes</strong> de tu empresa de manera global.
+            </Text>
+          </Alert>
+
           <Card withBorder padding="md" radius="md" mb="md">
             <Group justify="space-between" align="center" mb="md">
               <div>
@@ -75,6 +81,11 @@ export function CompanyEditView() {
         </Tabs.Panel>
 
         <Tabs.Panel value="datos" pt="md">
+          <Alert icon={<IconMapPin size={20} />} title="Configuración de Sede" color="blue" mb="md" variant="light">
+            <Text size="sm">
+              Estos datos de ubicación y servicios aplican <strong>únicamente a la sede {activeSede}</strong>.
+            </Text>
+          </Alert>
           <Card withBorder padding="md" radius="md">
             <TextInput label="Nombre del Local (Sede)" defaultValue="Sede Los Olivos" mb="md" />
             <TextInput label="Dirección Física" defaultValue="Av. Palmeras 1234" mb="md" />
@@ -131,6 +142,11 @@ export function CompanyEditView() {
         </Tabs.Panel>
 
         <Tabs.Panel value="reglas" pt="md">
+          <Alert icon={<IconSettings size={20} />} title="Reglas por Sede" color="blue" mb="md" variant="light">
+            <Text size="sm">
+              Estas reglas de negocio aplican <strong>únicamente a la sede {activeSede}</strong>.
+            </Text>
+          </Alert>
           <Card withBorder padding="md" radius="md" mb="md">
             <Text fw={800} size="md" mb="md">Configuración Operativa (Por Sede)</Text>
             
@@ -180,6 +196,11 @@ export function CompanyEditView() {
         </Tabs.Panel>
 
         <Tabs.Panel value="personal" pt="md">
+          <Alert icon={<IconUsers size={20} />} title="Personal de Sede" color="blue" mb="md" variant="light">
+            <Text size="sm">
+              El personal configurado aquí tendrá acceso <strong>únicamente a la sede {activeSede}</strong>.
+            </Text>
+          </Alert>
           {!isPremium ? (
             <Alert icon={<IconLock size={20} />} title="Plan Freemium" color="orange" mb="md">
               <Text size="sm">

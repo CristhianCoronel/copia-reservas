@@ -152,7 +152,13 @@ export default function App() {
             
             {appMode === 'superadmin' && activeTab === 'admin' && <SuperAdminView />}
 
-            {appMode === 'empresa' && !['reservas', 'canchas', 'chat', 'empresa'].includes(activeTab) && (
+            {appMode === 'empresa' && activeTab === 'sedes' && (
+              <div style={{ padding: 16 }}>
+                <Text fw={800} size="xl">Gestión de Sedes</Text>
+                <Text c="dimmed" mt="sm">Aquí irá la gestión de horarios, tarifas y bloqueos de horario de las sedes.</Text>
+              </div>
+            )}
+            {appMode === 'empresa' && !['reservas', 'canchas', 'chat', 'empresa', 'sedes'].includes(activeTab) && (
               <div style={{ padding: 16 }}>
                 <Text c="dimmed">Selecciona una pestaña válida en el menú inferior.</Text>
               </div>
@@ -191,9 +197,13 @@ export default function App() {
                   <IconCalendarEvent size={24} color={activeTab === 'reservas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
                   <Text fz={11} fw={activeTab === 'reservas' ? 800 : 600} c={activeTab === 'reservas' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Reservas</Text>
                 </UnstyledButton>
+                <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('sedes')}>
+                  <IconMapPin size={24} color={activeTab === 'sedes' ? 'var(--mantine-color-text)' : '#94A3B8'} />
+                  <Text fz={11} fw={activeTab === 'sedes' ? 800 : 600} c={activeTab === 'sedes' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Sedes</Text>
+                </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('canchas')}>
-                  <IconCompass size={24} color={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
-                  <Text fz={11} fw={activeTab === 'canchas' ? 800 : 600} c={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Explorar</Text>
+                  <IconPlayFootball size={24} color={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} />
+                  <Text fz={11} fw={activeTab === 'canchas' ? 800 : 600} c={activeTab === 'canchas' ? 'var(--mantine-color-text)' : '#94A3B8'} mt={4}>Canchas</Text>
                 </UnstyledButton>
                 <UnstyledButton className={classes.navItem} onClick={() => setActiveTab('chat')}>
                   <IconMessageCircle size={24} color={activeTab === 'chat' ? 'var(--mantine-color-text)' : '#94A3B8'} />
@@ -220,7 +230,7 @@ export default function App() {
       <Modal 
         opened={modalOpened} 
         onClose={closeModal} 
-        title={<Text fw={800} size="lg">Cambiar de Cuenta</Text>}
+        title={<Text fw={800} size="lg">Cambiar de cuenta</Text>}
         centered
         overlayProps={{ backgroundOpacity: 0.5, blur: 3 }}
       >

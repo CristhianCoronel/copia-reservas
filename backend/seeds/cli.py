@@ -128,6 +128,16 @@ async def seed(env: str, reset: bool, fake_count: int):
     engine.sync_engine.echo = False
     
     async with engine.begin() as conn:
+        print("Actualizando estado de sede única en empresas...")
+        await conn.execute(text("""
+            UPDATE empresa
+            SET es_sede_unica = (
+                SELECT COUNT(*) <= 1 
+                FROM sede 
+                WHERE sede.empresa_id = empresa.id
+            )
+        """))
+        
         print("\n--- Final Table Counts ---")
         for table in all_tables:
             result = await conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
