@@ -284,12 +284,20 @@ async def get_court_schedule(court_id: str, date: str, db: AsyncSession = Depend
     ))
     bloqueos = bloqueos.scalars().all()
     
-    reservas = await db.execute(select(models.Reserva).where(
-        models.Reserva.cancha_id == court_id,
-        models.Reserva.fecha_reserva == fecha_obj,
-        models.Reserva.estado.in_(['PENDIENTE_PAGO', 'CONFIRMADA'])
-    ))
-    reservas = reservas.scalars().all()
+    from app.domains.auth.models import Persona, Usuario
+    
+    query = (
+        select(models.Reserva, Persona.nombres, Persona.apellidos, Usuario.telefono)
+        .join(Persona, models.Reserva.persona_organizadora_id == Persona.id)
+        .join(Usuario, Persona.usuario_id == Usuario.id)
+        .where(
+            models.Reserva.cancha_id == court_id,
+            models.Reserva.fecha_reserva == fecha_obj,
+            models.Reserva.estado.in_(['PENDIENTE_PAGO', 'CONFIRMADA', 'OCUPADO'])
+        )
+    )
+    result = await db.execute(query)
+    reservas_data = result.all()
 
     return {
         "status": True,
@@ -298,7 +306,15 @@ async def get_court_schedule(court_id: str, date: str, db: AsyncSession = Depend
             "closingTime": hora_cierre.strftime("%H:%M"),
             "tariffs": [{"start": t.hora_inicio.strftime("%H:%M"), "end": t.hora_fin.strftime("%H:%M"), "price": float(t.precio_por_hora)} for t in tarifas_base],
             "blocks": [{"id": str(b.id), "start": b.fecha_hora_inicio.strftime("%H:%M"), "end": b.fecha_hora_fin.strftime("%H:%M"), "reason": b.motivo} for b in bloqueos],
-            "reservations": [{"id": str(r.id), "start": r.hora_inicio.strftime("%H:%M"), "end": r.hora_fin.strftime("%H:%M"), "status": r.estado} for r in reservas]
+            "reservations": [{
+                "id": str(r.id), 
+                "start": r.hora_inicio.strftime("%H:%M"), 
+                "end": r.hora_fin.strftime("%H:%M"), 
+                "status": "OCUPADO" if r.estado in ["CONFIRMADA", "PENDIENTE_PAGO"] else r.estado,
+                "userName": f"{nombres} {apellidos}",
+                "phone": telefono,
+                "paymentStatus": "CONFIRMADO" if r.estado == "CONFIRMADA" else "PENDIENTE"
+            } for r, nombres, apellidos, telefono in reservas_data]
         }
     }
 
@@ -350,6 +366,133 @@ async def create_court_block(court_id: str, payload: BlockPayload, current_user 
 @router.get("/social/groups", tags=["B2C - Social"])
 async def get_social_groups():
     return {"data": []}
+
+@router.get("/business/venues/{venue_id}/reservations/pending", tags=["B2B - Business"])
+async def get_pending_reservations(venue_id: str, db: AsyncSession = Depends(get_db)):
+    from app.domains.auth.models import Persona, Usuario
+    
+    query = (
+        select(
+            models.Reserva, 
+            Persona.nombres, 
+            Persona.apellidos, 
+            Usuario.telefono, 
+            models.Cancha.nombre.label('cancha_nombre'),
+            models.PagoReserva.monto,
+            models.PagoReserva.metodo_pago
+        )
+        .join(models.Cancha, models.Reserva.cancha_id == models.Cancha.id)
+        .join(Persona, models.Reserva.persona_organizadora_id == Persona.id)
+        .join(Usuario, Persona.usuario_id == Usuario.id)
+        .outerjoin(models.PagoReserva, and_(models.PagoReserva.reserva_id == models.Reserva.id, models.PagoReserva.estado == 'PENDIENTE'))
+        .where(
+            models.Cancha.sede_id == venue_id,
+            models.Reserva.estado == 'PENDIENTE_PAGO'
+        )
+    )
+    result = await db.execute(query)
+    rows = result.all()
+    
+    data = []
+    res_dict = {}
+    for r, nombres, apellidos, telefono, cancha_nombre, monto, metodo_pago in rows:
+        if str(r.id) not in res_dict:
+            res_dict[str(r.id)] = {
+                "id": str(r.id),
+                "userName": f"{nombres} {apellidos}",
+                "phone": telefono or "",
+                "courtName": cancha_nombre,
+                "date": "Hoy",
+                "time": r.hora_inicio.strftime("%H:%M"),
+                "amount": float(monto) if monto else float(r._saldo_pendiente),
+                "paymentMethod": metodo_pago or "Desconocido"
+            }
+            
+    return {"data": list(res_dict.values())}
+
+@router.put("/business/reservations/{reserva_id}/approve", tags=["B2B - Business"])
+async def approve_reservation(reserva_id: str, db: AsyncSession = Depends(get_db)):
+    reserva = await db.execute(select(models.Reserva).where(models.Reserva.id == reserva_id))
+    reserva = reserva.scalars().first()
+    if not reserva:
+        raise HTTPException(status_code=404, detail="Reserva no encontrada")
+        
+    reserva.estado = "CONFIRMADA"
+    reserva._saldo_pendiente = 0
+    
+    pagos = await db.execute(select(models.PagoReserva).where(models.PagoReserva.reserva_id == reserva_id))
+    for pago in pagos.scalars().all():
+        if pago.estado == "PENDIENTE":
+            pago.estado = "APROBADO"
+            
+    await db.commit()
+    return {"status": True}
+
+@router.put("/business/reservations/{reserva_id}/cancel", tags=["B2B - Business"])
+async def cancel_reservation(reserva_id: str, db: AsyncSession = Depends(get_db)):
+    reserva = await db.execute(select(models.Reserva).where(models.Reserva.id == reserva_id))
+    reserva = reserva.scalars().first()
+    if not reserva:
+        raise HTTPException(status_code=404, detail="Reserva no encontrada")
+        
+    reserva.estado = "CANCELADA"
+    
+    pagos = await db.execute(select(models.PagoReserva).where(models.PagoReserva.reserva_id == reserva_id))
+    for pago in pagos.scalars().all():
+        if pago.estado == "PENDIENTE":
+            pago.estado = "RECHAZADO"
+            
+    await db.commit()
+    return {"status": True}
+
+class ManualReservaPayload(BaseModel):
+    userName: str
+    phone: Optional[str] = None
+    alreadyPaid: bool
+    time: str
+
+@router.post("/business/courts/{court_id}/reservations", tags=["B2B - Business"])
+async def create_manual_reservation(
+    court_id: str, 
+    payload: ManualReservaPayload, 
+    date: str,
+    current_user = Depends(get_current_user), 
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        fecha_obj = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de fecha inválido")
+
+    hora_inicio_sol = datetime.strptime(payload.time, "%H:%M").time()
+    # Asumimos 1 hora para reservas manuales
+    hora_fin_sol = time((hora_inicio_sol.hour + 1) % 24, hora_inicio_sol.minute)
+
+    persona_id = current_user.persona.id if current_user.persona else current_user.id
+    
+    # Check if a Persona exists, otherwise use a placeholder
+    # For manual, we will just associate with the receptionist persona
+    
+    nueva_reserva = models.Reserva(
+        share_token=generate_reserva_token(),
+        cancha_id=court_id,
+        tipo_origen="MANUAL",
+        persona_organizadora_id=persona_id, # Recepcionista
+        fecha_reserva=fecha_obj,
+        hora_inicio_solicitada=hora_inicio_sol,
+        hora_fin_solicitada=hora_fin_sol,
+        hora_inicio=hora_inicio_sol,
+        hora_fin=hora_fin_sol,
+        duracion_horas=1.0,
+        precio_hora_historico=0.0, # Puede llenarse con tarifa
+        precio_total_cancha=0.0,
+        monto_total_final=0.0,
+        _saldo_pendiente=0.0 if payload.alreadyPaid else 0.0, 
+        estado="CONFIRMADA" if payload.alreadyPaid else "PENDIENTE_PAGO"
+    )
+    db.add(nueva_reserva)
+    await db.commit()
+    return {"status": True}
 
 @router.get("/system/catalogs", tags=["System - SuperAdmin"])
 async def get_system_catalogs(db: AsyncSession = Depends(get_db)):
