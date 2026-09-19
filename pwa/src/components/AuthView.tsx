@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TextInput, PasswordInput, Button, Text, Group, Divider, Anchor } from '@mantine/core';
+import { TextInput, PasswordInput, Button, Text, Group, Divider, Anchor, Select } from '@mantine/core';
 import { IconMail, IconLock, IconUser, IconBrandGoogle } from '@tabler/icons-react';
 import { apiCall } from '../api';
 import { storage } from '../storage';
@@ -14,6 +14,14 @@ export function AuthView({ onLogin }: AuthViewProps) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  
+  // Register fields
+  const [nombres, setNombres] = useState('');
+  const [apellidos, setApellidos] = useState('');
+  const [tipoDoc, setTipoDoc] = useState('DNI');
+  const [numDoc, setNumDoc] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
 
   const handleAuth = async () => {
     setLoading(true);
@@ -39,6 +47,53 @@ export function AuthView({ onLogin }: AuthViewProps) {
     }
   };
 
+  const handleRegister = async () => {
+    setLoading(true);
+    setErrorMsg('');
+
+    if (!regEmail.startsWith('sauser_')) {
+      setErrorMsg("El registro no está habilitado para este correo.");
+      setLoading(false);
+      return;
+    }
+    
+    if (!nombres || !apellidos || !numDoc || !regEmail || !regPassword) {
+      setErrorMsg("Completa todos los campos obligatorios.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const payload = {
+        email: regEmail,
+        password: regPassword,
+        username: regEmail.split('@')[0],
+        persona: {
+          nombres,
+          apellidos,
+          tipo_documento: tipoDoc,
+          numero_documento: numDoc
+        }
+      };
+      
+      const res = await apiCall('/api/v1/auth/register', 'POST', payload);
+      
+      // Auto-login after register
+      if (res.id) {
+        const loginRes = await apiCall('/api/v1/auth/login', 'POST', { email: regEmail, password: regPassword });
+        if (loginRes.status && loginRes.data.token) {
+          storage.setItem('separaaltokeid', loginRes.data.token);
+          onLogin();
+        }
+      }
+    } catch (error: any) {
+      console.error(error);
+      setErrorMsg(error.message || "Error al registrar la cuenta.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={{ padding: 24, display: 'flex', flexDirection: 'column', minHeight: '100vh', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', marginBottom: 40 }}>
@@ -53,12 +108,61 @@ export function AuthView({ onLogin }: AuthViewProps) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {isRegister ? (
-          <div style={{ textAlign: 'center' }}>
-            <Text mb="xl" c="dimmed">El registro desde la aplicación está deshabilitado por ahora. Consulta en recepción.</Text>
-            <Button fullWidth variant="outline" color="dark" onClick={() => setIsRegister(false)}>
+          <>
+            <Group grow mb="sm">
+              <TextInput
+                placeholder="Nombres"
+                size="md"
+                value={nombres}
+                onChange={(e) => setNombres(e.currentTarget.value)}
+              />
+              <TextInput
+                placeholder="Apellidos"
+                size="md"
+                value={apellidos}
+                onChange={(e) => setApellidos(e.currentTarget.value)}
+              />
+            </Group>
+            <Group grow mb="sm">
+              <Select
+                data={['DNI', 'CE', 'PASAPORTE']}
+                value={tipoDoc}
+                onChange={(val) => setTipoDoc(val || 'DNI')}
+                size="md"
+              />
+              <TextInput
+                placeholder="Nº Documento"
+                size="md"
+                value={numDoc}
+                onChange={(e) => setNumDoc(e.currentTarget.value)}
+              />
+            </Group>
+            <TextInput
+              placeholder="Correo electrónico"
+              size="md"
+              leftSection={<IconMail size={18} color="#94A3B8" />}
+              value={regEmail}
+              onChange={(e) => setRegEmail(e.currentTarget.value)}
+            />
+            <PasswordInput
+              placeholder="Contraseña (mín 8 car.)"
+              size="md"
+              leftSection={<IconLock size={18} color="#94A3B8" />}
+              value={regPassword}
+              onChange={(e) => setRegPassword(e.currentTarget.value)}
+            />
+            {errorMsg && (
+              <Text c="red" size="sm" ta="center">
+                {errorMsg}
+              </Text>
+            )}
+            <Button fullWidth size="md" color="dark" mt="sm" onClick={handleRegister} loading={loading}>
+              CREAR CUENTA
+            </Button>
+            <Button fullWidth variant="subtle" color="gray" onClick={() => { setIsRegister(false); setErrorMsg(''); }}>
               Volver al Login
             </Button>
-          </div>
+          </>
         ) : (
           <>
             <TextInput

@@ -11,6 +11,8 @@ import string
 router = APIRouter()
 player_router = APIRouter()
 
+from app.core.security import get_password_hash
+
 def generate_codigo_referido(length=6):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
@@ -29,8 +31,7 @@ async def registrar_usuario(user_in: schemas.UsuarioCreate, db: AsyncSession = D
     nuevo_usuario = models.Usuario(
         email=user_in.email,
         username=user_in.username,
-        # ::!todo!::Implementar hash de contraseña (Argon2/Bcrypt)
-        password_hash=user_in.password,
+        password_hash=get_password_hash(user_in.password),
         proveedor_auth=user_in.proveedor_auth,
         rol=user_in.rol,
         codigo_referido=generate_codigo_referido(),
