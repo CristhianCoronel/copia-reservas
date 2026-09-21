@@ -301,8 +301,8 @@ CREATE TABLE sede (
     nombre VARCHAR(150) NOT NULL,
     direccion VARCHAR(255) NOT NULL,
     referencia VARCHAR(255),
-    latitud DOUBLE PRECISION NOT NULL,
-    longitud DOUBLE PRECISION NOT NULL,
+    latitud DOUBLE PRECISION,
+    longitud DOUBLE PRECISION,
     maps_url VARCHAR(500),
     telefono VARCHAR(30) NOT NULL,
     email VARCHAR(255),
@@ -466,7 +466,6 @@ CREATE TABLE cancha_horario (
     hora_inicio TIME NOT NULL,
     hora_fin TIME NOT NULL,
     precio_por_hora NUMERIC(10,2) NOT NULL,
-    recargo_luz NUMERIC(10,2) NOT NULL DEFAULT 0.00,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -653,7 +652,7 @@ CREATE TABLE partida_abierta (
     organizador_id UUID NOT NULL REFERENCES persona(id),
     _deporte_id UUID NOT NULL REFERENCES _deporte(id),
     presupuesto_meta NUMERIC(10,2) NOT NULL,
-    cupos_totales INT NOT NULL,
+    cupo_maximo_jugadores INT NOT NULL,
     cupos_disponibles INT NOT NULL,
     estado VARCHAR(30) NOT NULL CHECK (estado IN ('RECAUDANDO', 'CONFIRMADA', 'CANCELADA', 'COMPLETADA')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -726,7 +725,7 @@ CREATE TABLE mensaje (
 -- ÍNDICES DE RENDIMIENTO OBLIGATORIOS
 -- ==========================================
 
-CREATE INDEX idx_sede_coordenadas ON sede (latitud, longitud) WHERE estado = 'ACTIVA';
+CREATE INDEX idx_sede_coordenadas ON sede (latitud, longitud) WHERE estado = 'ACTIVA' AND latitud IS NOT NULL AND longitud IS NOT NULL;
 CREATE INDEX idx_reserva_cancha_fecha ON reserva (cancha_id, fecha_reserva, estado);
 CREATE INDEX idx_reserva_purga_expiracion ON reserva (expira_en) WHERE estado = 'PENDIENTE_PAGO';
 CREATE INDEX idx_partida_abierta_disponible ON partida_abierta (_deporte_id, estado) WHERE estado = 'RECAUDANDO';

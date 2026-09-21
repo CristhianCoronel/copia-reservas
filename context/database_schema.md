@@ -68,9 +68,6 @@ erDiagram
     _CODIGOS_REFERIDOS ||--o{ _REFERIDOS_REGISTRO : trajo_a
     _DESCUENTOS ||--o{ _DESCUENTO_USO : redime
     RESERVA ||--o{ _DESCUENTO_USO : aplica_en
-
-    %% Auditoria
-    USUARIO ||--o{ AUDITORIA_LOG : realiza_accion
 ```
 
 ---
@@ -145,7 +142,7 @@ Cuenta de autenticación global del sistema. Todo usuario es, indefectiblemente,
 | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | NO (PK) | Identificador único de autenticación. |
 | `username` | `VARCHAR(50)` | NO (UQ) | Nombre de usuario público (handle) para invitaciones rápidas sin revelar el teléfono. |
-| `codigo_referido` | `VARCHAR(6)` | NO (UQ) | Código hex único de 6 dígitos generado automáticamente para que el usuario invite amigos. |
+| `codigo_referido` | `VARCHAR(6)` | NO (UQ) | Código hex único de 6 dígitos autogenerado para invitaciones directas P2P ('jugador invita jugador') permanente del usuario. (Diferenciado de la tabla `_codigos_referidos`, que gestiona campañas de marketing, eventos y B2B). |
 | `referido_por_usuario_id`| `UUID` | SÍ (FK) | UUID de la persona (`usuario.id`) que invitó a este usuario. |
 | `referido_por_empresa_id`| `UUID` | SÍ (FK) | UUID de la empresa (`empresa.id`) si el usuario se registró mediante un enlace de campaña B2B. |
 | `email` | `VARCHAR(255)` | NO (UQ) | Correo electrónico validado (proveniente del proveedor de identidad). |
@@ -282,8 +279,8 @@ Complejos deportivos físicos operados por una empresa.
 | `nombre` | `VARCHAR(150)` | NO | Nombre del local (ej. `Sede Los Olivos - Triple Doble`). |
 | `direccion` | `VARCHAR(255)` | NO | Dirección física completa. |
 | `referencia` | `VARCHAR(255)` | SÍ | Indicaciones para llegar al local. |
-| `latitud` | `DOUBLE PRECISION` | NO | Coordenada GPS latitud (para motor de cercanía). |
-| `longitud` | `DOUBLE PRECISION` | NO | Coordenada GPS longitud (para motor de cercanía). |
+| `latitud` | `DOUBLE PRECISION` | SÍ | Coordenada GPS latitud (opcional, requerida para planes de pago con motor de cercanía). |
+| `longitud` | `DOUBLE PRECISION` | SÍ | Coordenada GPS longitud (opcional, requerida para planes de pago con motor de cercanía). |
 | `maps_url` | `VARCHAR(500)` | SÍ | Enlace de Google Maps (Beneficio de Cuenta Premium). |
 | `telefono` | `VARCHAR(30)` | NO | Teléfono de contacto de la sede. |
 | `email` | `VARCHAR(255)` | SÍ | Correo propio de la sede (opcional). |
@@ -522,7 +519,7 @@ Entidad transaccional central para el bloqueo y uso de una cancha deportiva.
 | `id` | `UUID` | NO (PK) | Identificador de la reserva. |
 | `share_token` | `VARCHAR(100)` | NO (UQ) | Token aleatorio para compartir la vista de solo lectura de la reserva vía URL pública. |
 | `cancha_id` | `UUID` | NO (FK) | Cancha reservada (`cancha.id`). |
-| `tipo_origen` | `VARCHAR(20)` | NO | Origen: `INDIVIDUAL` (persona), `EQUIPO`. |
+| `tipo_origen` | `VARCHAR(20)` | NO | Origen: `INDIVIDUAL` (persona), `EQUIPO`, `PARTIDA_ABIERTA`. |
 | `persona_organizadora_id` | `UUID` | NO (FK) | Persona física titular de la transacción (`persona.id`). |
 | `equipo_id` | `UUID` | SÍ (FK) | Si el origen es `EQUIPO`, referencia al `equipo.id`. |
 | `fecha_reserva` | `DATE` | NO | Fecha del turno de juego. |
@@ -612,9 +609,9 @@ Partido abierto gestionado por la plataforma. Agrupa a múltiples jugadores desc
 | `reserva_id` | `UUID` | NO (FK, UQ)| Reserva bloqueada en estado `PENDIENTE_PAGO` (`reserva.id`). |
 | `organizador_id` | `UUID` | NO (FK) | Jugador que creó la partida abierta (`persona.id`). |
 | `presupuesto_meta` | `NUMERIC(10,2)` | NO | Monto total a recaudar (costo de la cancha). |
-| `cupos_totales` | `INT` | NO | Cantidad máxima de jugadores permitidos. |
+| `cupo_maximo_jugadores` | `INT` | NO | Cantidad máxima de jugadores permitidos. |
 | `cupos_disponibles`| `INT` | NO | Cupos libres actualmente. |
-| `estado` | `VARCHAR(30)` | NO | `RECAUDANDO`, `CONFIRMADA` (meta lograda, paga a sede), `CANCELADA` (fracasó, reembolsa a monederos). |
+| `estado` | `VARCHAR(30)` | NO | `RECAUDANDO`, `CONFIRMADA` (meta lograda, paga a sede), `CANCELADA` (fracasó, reembolsa a monederos), `COMPLETADA`. |
 | `created_at` | `TIMESTAMPTZ` | NO | Fecha de creación. |
 | `updated_at` | `TIMESTAMPTZ` | NO | Fecha de actualización. |
 
@@ -791,12 +788,12 @@ Campañas activas del programa "Jugador invita Jugador" (Sección 1.C de busines
 | `created_at` | `TIMESTAMPTZ` | NO | Fecha de registro. |
 
 #### `_codigos_referidos`
-Códigos personales autogenerados en el perfil de cada jugador (ej. `ALTOKE-JUAN77`).
+Catálogo de códigos administrados para campañas especiales de marketing de la plataforma, eventos y enlaces promocionales B2B de empresas (ej. `VERANO2026`, `CANCHACENTRAL50`). Permite trazar conversiones y asociar recompensas específicas de `_programas_referidos`. Se diferencia de `usuario.codigo_referido`, que es el código permanente de 6 caracteres asignado automáticamente a cada usuario para invitaciones directas P2P.
 
 | Columna | Tipo de Dato | Nulo | Descripción / Regla |
 | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | NO (PK) | Identificador del código. |
-| `persona_id` | `UUID` | NO (FK) | Dueño del código promotor (`persona.id`). |
+| `persona_id` | `UUID` | NO (FK) | Dueño o gestor del código promotor (`persona.id`). |
 | `programa_referido_id` | `UUID` | NO (FK) | Programa al que pertenece (`_programas_referidos.id`). |
 | `codigo_unico` | `VARCHAR(50)` | NO (UQ) | Cadena única visible para compartir. |
 | `_total_usos` | `INT` | NO | Total de jugadores que se han registrado con este código (Default `0`). |
@@ -832,25 +829,19 @@ Notificaciones push, SMS o correos masivos dirigidos para incentivar franjas de 
 
 ---
 
-### Dominio 8: Auditoría, Trazabilidad y Seguridad Multi-tenant
+### Dominio 8: Auditoría y Trazabilidad (Inline Mixin)
 
-#### `auditoria_log`
-Bitácora inmutable de eventos críticos para cumplimiento y resolución de disputas (Regla D.12 de business rules).
+En la etapa actual del sistema, la trazabilidad se implementa mediante un **Mixin de Auditoría uniforme** incorporado en todas las tablas del esquema:
 
 | Columna | Tipo de Dato | Nulo | Descripción / Regla |
 | :--- | :--- | :--- | :--- |
-| `id` | `UUID` | NO (PK) | Identificador del evento de auditoría. |
-| `usuario_id` | `UUID` | SÍ (FK) | Usuario (persona) responsable (`usuario.id`). Nulo si fue una tarea automática del worker/cron. |
-| `contrato_id` | `UUID` | SÍ (FK) | Si la acción se ejecutó operando una empresa/sede, contrato vigente bajo el cual se actuó (`contrato.id`). Base de la trazabilidad "persona actuando en nombre de empresa". |
-| `sede_id` | `UUID` | SÍ (FK) | Sede deportiva donde ocurrió la acción (para aislamiento multi-tenant). |
-| `accion` | `VARCHAR(50)` | NO | Acción: `CANCELACION_RESERVA`, `APROBACION_PAGO`, `RECHAZO_PAGO`, `MODIFICACION_TARIFA`, `BLOQUEO_CANCHA`, `ACCESO_SISTEMA`. |
-| `tabla_afectada` | `VARCHAR(60)` | NO | Nombre físico de la tabla (ej. `reserva`, `cancha_horario`). |
-| `registro_id` | `UUID` | NO | UUID del registro intervenido. |
-| `datos_previos` | `JSONB` | SÍ | Snapshot del estado antes de la mutación. |
-| `datos_nuevos` | `JSONB` | SÍ | Snapshot del estado resultante tras la mutación. |
-| `ip_address` | `VARCHAR(45)` | SÍ | Dirección IPv4 o IPv6 del cliente. |
-| `user_agent` | `TEXT` | SÍ | Identificador del dispositivo / versión de la app móvil. |
-| `created_at` | `TIMESTAMPTZ` | NO | Marca temporal UTC inmutable (`now()`). |
+| `created_at` | `TIMESTAMPTZ` | NO | Marca temporal UTC de creación del registro (`now()`). |
+| `updated_at` | `TIMESTAMPTZ` | NO | Marca temporal UTC de última modificación (`now()`). |
+| `created_by` | `UUID` | SÍ | Identificador del usuario/persona que originó el registro. |
+| `updated_by` | `UUID` | SÍ | Identificador del último usuario/persona que modificó el registro. |
+| `last_action` | `VARCHAR(20)` | NO | Acción ejecutada: `CREATE`, `UPDATE`, `SOFT_DELETE` (Default `CREATE`). |
+
+> **Nota de Arquitectura (Auditoría por Eventos):** La implementación de una tabla centralizada de bitácora basada en eventos y snapshots JSONB (`auditoria_log` con `datos_previos`/`datos_nuevos`) se difiere para una fase posterior de madurez de la plataforma.
 
 ---
 
@@ -866,7 +857,7 @@ Esto permite a la aplicación manejar solapamientos forzados (ej. un administrad
 
 ```sql
 -- 1. Geoposicionamiento de sedes para búsqueda por cercanía
-CREATE INDEX idx_sede_coordenadas ON sede (latitud, longitud) WHERE estado = 'ACTIVA';
+CREATE INDEX idx_sede_coordenadas ON sede (latitud, longitud) WHERE estado = 'ACTIVA' AND latitud IS NOT NULL AND longitud IS NOT NULL;
 
 -- 2. Búsqueda de disponibilidad horaria por cancha y fecha
 CREATE INDEX idx_reserva_cancha_fecha ON reserva (cancha_id, fecha_reserva, estado);
@@ -875,31 +866,32 @@ CREATE INDEX idx_reserva_cancha_fecha ON reserva (cancha_id, fecha_reserva, esta
 CREATE INDEX idx_reserva_purga_expiracion ON reserva (expira_en) WHERE estado = 'PENDIENTE_PAGO';
 
 -- 4. Búsqueda de partidos abiertos disponibles
-CREATE INDEX idx_partida_abierta_disponible ON partida_abierta (deporte, estado) WHERE estado = 'ABIERTA';
+CREATE INDEX idx_partida_abierta_disponible ON partida_abierta (_deporte_id, estado) WHERE estado = 'RECAUDANDO';
 
 -- 5. Chats activos ordenados por actividad reciente
 CREATE INDEX idx_chat_updated_at ON chat (updated_at DESC);
 CREATE INDEX idx_mensaje_chat_cronologico ON mensaje (chat_id, created_at ASC);
 
--- 6. Auditoría filtrada por sede y fecha
-CREATE INDEX idx_auditoria_sede_fecha ON auditoria_log (sede_id, created_at DESC);
-
--- 7. Validación RBAC por contrato vigente (toda acción B2B pasa por aquí:
+-- 6. Validación RBAC por contrato vigente (toda acción B2B pasa por aquí:
 --    el middleware busca el contrato activo de la persona sobre la empresa/sede)
 CREATE INDEX idx_contrato_persona_activa ON contrato (persona_id, empresa_id, sede_id) WHERE is_active = TRUE;
 
--- 8. Login por identidad de Google
+-- 7. Login por identidad de Google
 CREATE UNIQUE INDEX idx_usuario_google_sub ON usuario (google_sub) WHERE google_sub IS NOT NULL;
 ```
 
 ---
 
-## 5. Resumen de Estados Clave del Sistema
+## 5. Resumen y Catálogo de Estados por Entidad
+
+A continuación se detalla la semántica, ciclo de vida y significado operativo de los estados en todas las entidades del modelo que implementan flujos mediante restricciones `CHECK`:
+
+### 5.1. `reserva` (Entidad Transaccional Central)
 
 ```mermaid
 stateDiagram-v2
     [*] --> PENDIENTE_PAGO : Usuario crea reserva en App
-    PENDIENTE_PAGO --> CONFIRMADA : Staff aprueba voucher en Chat/Web
+    PENDIENTE_PAGO --> CONFIRMADA : Staff aprueba voucher en Chat/Web o se cubre adelanto con monedero
     PENDIENTE_PAGO --> CANCELADA : Vence temporizador expira_en (Worker)
     PENDIENTE_PAGO --> CANCELADA : Usuario o Admin cancela
     CONFIRMADA --> CANCELADA : Cancelación dentro de política de sede
@@ -907,4 +899,104 @@ stateDiagram-v2
     COMPLETADA --> [*]
     CANCELADA --> [*] : Se libera cupo inmediatamente
 ```
+
+| Estado | Significado Operativo |
+| :--- | :--- |
+| `PENDIENTE_PAGO` | Turno bloqueado temporalmente a la espera de alcanzar el adelanto o pago total exigido por la sede. Sujeto al temporizador `expira_en`. Si expira sin validación, el worker cancela la reserva y libera la cancha. |
+| `CONFIRMADA` | El adelanto o costo total configurado por la sede ha sido cubierto (mediante vouchers validados por recepción o abono con monedero). El turno queda formalmente asegurado. |
+| `CANCELADA` | La reserva fue anulada (por el cliente dentro del plazo permitido, por la administración ante contingencias o automáticamente por expiración). Libera inmediatamente el espacio en el calendario. |
+| `COMPLETADA` | El partido culminó en la fecha/hora pactada con la cuenta saldada. La reserva pasa a ser un registro histórico inmutable. |
+
 ---
+
+### 5.2. `partida_abierta` (Juntas / Pichangas Públicas)
+
+| Estado | Significado Operativo |
+| :--- | :--- |
+| `RECAUDANDO` | Convocatoria pública abierta en la app; jugadores libres pueden unirse y aportar desde su monedero virtual hasta completar el `presupuesto_meta` o `cupo_maximo_jugadores`. |
+| `CONFIRMADA` | Se reunió el monto necesario para asegurar la cancha. La `reserva` vinculada pasa automáticamente a `CONFIRMADA` y se garantiza el turno. |
+| `CANCELADA` | No se alcanzó el quórum o presupuesto antes del plazo límite (o el organizador canceló). El sistema reembolsa de inmediato y en su totalidad los saldos retenidos a los monederos de cada participante. |
+| `COMPLETADA` | La partida abierta se llevó a cabo y el horario concluyó con éxito. |
+
+---
+
+### 5.3. `pago_reserva` (Abonos y Liquidaciones)
+
+| Estado | Significado Operativo |
+| :--- | :--- |
+| `PENDIENTE` | Comprobante externo subido por el cliente (vía chat o flujo de reserva), pendiente de revisión y cotejo visual por el recepcionista. |
+| `APROBADO` | Pago validado por el personal de la sede. Descuenta el monto del `_saldo_pendiente` de la reserva y contribuye al umbral de confirmación. |
+| `RECHAZADO` | Voucher ilegible, fraudulento o con importe discordante. No computa en el saldo y notifica al usuario para subsanar el pago. |
+| `REEMBOLSADO` | Monto reintegrado al cliente tras una cancelación de reserva conforme a la política de devoluciones de la sede. |
+
+---
+
+### 5.4. `transaccion_monedero` (Billetera Virtual Interna)
+
+| Estado | Significado Operativo |
+| :--- | :--- |
+| `PENDIENTE` | Transacción de recarga o solicitud de retiro iniciada, en espera de liquidación o confirmación administrativa. |
+| `APROBADA` | Operación financiera procesada con éxito. Actualiza el `saldo_disponible` o `saldo_retenido` del usuario en `monedero`. |
+| `RECHAZADA` | Operación denegada (fondos insuficientes, datos bancarios inválidos o rechazo administrativo). |
+
+---
+
+### 5.5. `empresa` (Validación Comercial B2B)
+
+Columna: `estado_aprobacion`
+
+| Estado | Significado Operativo |
+| :--- | :--- |
+| `PENDIENTE` | Empresa recién registrada por un usuario. Permite configurar locales y canchas de manera privada, pero sus sedes permanecen ocultas en el buscador público hasta su validación. |
+| `APROBADA` | Verificada por los administradores de Separa Altoke (revisión de RUC y legitimidad comercial). Las sedes se hacen visibles públicamente en la plataforma. |
+| `RECHAZADA` | Solicitud desestimada por inconsistencias legales o tributarias. Se notifica el motivo a la persona solicitante. |
+
+---
+
+### 5.6. `suscripcion_empresa` (Membresías SaaS B2B)
+
+| Estado | Significado Operativo |
+| :--- | :--- |
+| `PENDIENTE_PAGO` | Suscripción o renovación creada a la espera de confirmación del pago del plan B2B. |
+| `ACTIVA` | Membresía pagada y vigente. La empresa accede a los beneficios del plan contratado (fotos por cancha, geolocalización, contratos de colaboradores múltiples, etc.). |
+| `VENCIDA` | Se superó la `fecha_fin` sin renovación. El complejo degrada operativamente sus capacidades al perfil gratuito (sin coordenadas de cercanía, límite de días de agenda, etc.). |
+| `CANCELADA` | Membresía anulada anticipadamente por la empresa o por la administración de la plataforma. |
+
+---
+
+### 5.7. `sede` y `sede_excepcion_horario` (Operatividad de Locales)
+
+* **`sede.estado`**:
+  * `ACTIVA`: Complejo deportivo en operación regular, visible para búsquedas y apto para recibir reservas.
+  * `INACTIVA`: Baja lógica (Soft Delete) del local. Oculta la sede en búsquedas y bloquea nuevas reservas, preservando la integridad referencial de contratos históricos, pagos y auditoría.
+
+* **`sede_excepcion_horario.estado_operativo`**:
+  * `CERRADO`: El complejo no abrirá en la `fecha_excepcion` indicada (ej. feriado nacional, mantenimiento de instalaciones).
+  * `ABIERTO_ESPECIAL`: La sede operará con una franja atípica delimitada por sus campos `hora_apertura` y `hora_cierre`.
+
+---
+
+### 5.8. `reserva_asistencia_equipo` (Coordinación Interna de Asistencia)
+
+Columna: `estado_asistencia`
+
+| Estado | Significado Operativo |
+| :--- | :--- |
+| `SIN_RESPUESTA` | Estado por defecto al compartir la reserva en el chat del equipo; el integrante no ha respondido a la convocatoria. |
+| `ASISTIRA` | El jugador confirmó su presencia en el partido convocado por su equipo (RSVP afirmativo). |
+| `NO_ASISTIRA` | El jugador notificó que no acudirá al turno convocado. |
+
+---
+
+### 5.9. `_referidos_registro` y `_campanas_marketing` (Crecimiento y Marketing)
+
+* **`_referidos_registro.estado`**:
+  * `REGISTRADO`: El usuario invitado se creó una cuenta ingresando un código de campaña.
+  * `PRIMER_PARTIDO_COMPLETADO`: El nuevo usuario jugó y concretó su primera reserva confirmada en la plataforma.
+  * `RECOMPENSA_ENTREGADA`: Los incentivos o cupones de `_programas_referidos` fueron acreditados con éxito a los involucrados.
+
+* **`_campanas_marketing.estado`**:
+  * `BORRADOR`: Mensaje y segmentación en edición; no despachado.
+  * `PROGRAMADA`: Agendada para envío automático por worker en la marca temporal `programada_para`.
+  * `ENVIADA`: Notificación push, SMS o correo emitido a la audiencia objetivo.
+  * `CANCELADA`: Campaña descartada antes de su ejecución.

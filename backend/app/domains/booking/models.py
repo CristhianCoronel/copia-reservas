@@ -52,7 +52,6 @@ class CanchaHorario(AuditMixin, Base):
     hora_inicio = Column(Time, nullable=False)
     hora_fin = Column(Time, nullable=False)
     precio_por_hora = Column(Numeric(10,2), nullable=False)
-    recargo_luz = Column(Numeric(10,2), default=0.00, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     
     cancha = relationship("Cancha")
@@ -148,7 +147,7 @@ class PartidaAbierta(AuditMixin, Base):
     organizador_id = Column(UUID(as_uuid=True), ForeignKey('persona.id'), nullable=False)
     _deporte_id = Column(UUID(as_uuid=True), ForeignKey('_deporte.id'), nullable=False)
     presupuesto_meta = Column(Numeric(10,2), nullable=False)
-    cupos_totales = Column(Integer, nullable=False)
+    cupo_maximo_jugadores = Column(Integer, nullable=False)
     cupos_disponibles = Column(Integer, nullable=False)
     estado = Column(String(30), nullable=False)
 

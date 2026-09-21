@@ -55,7 +55,7 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
    - Almacena parámetros globales de la plataforma "Separa Altoke" (estado operativo del sistema, versiones de la app, comisiones globales si aplican, banderas de mantenimiento).
 
 2. **Geografía y Localización**:
-   - **`_geografia_peru`**: Tablas maestras de Ubigeo que contienen Departamento, Provincia y Distrito para la ubicación exacta de sedes y segmentación de jugadores.
+   - **`_ubigeo_departamento`, `_ubigeo_provincia`, `_ubigeo_distrito`**: Tablas maestras de Ubigeo que contienen Departamento, Provincia y Distrito para la ubicación exacta de sedes y segmentación de jugadores.
    - **`_pais`**: Tabla maestra para gestionar los países disponibles, que incluye el código de país y la longitud esperada del celular. Esto es necesario para validar números y estandarizar contactos.
 
 3. **Usuarios, personas, empresas y suscripciones**:
@@ -75,7 +75,7 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
      - *Regla de Multideporte:* Si una misma cancha física se usa para más de un deporte (ej. loza deportiva para Básquet y Fútbol), la sede debe registrarla varias veces (una por cada deporte) y configurarla para que se solape a sí misma, bloqueando las demás opciones cuando se reserve.
      - *Modalidades:* Valores como "Fútbol 5", "Fútbol 7" o "Fútbol 11" **no son deportes**, sino etiquetas de modalidades. La sede asigna libremente las modalidades a la cancha a través de un arreglo.
      - *Características físicas:* Se mantienen como un texto u objeto libre para darle mayor libertad descriptiva a la empresa.
-   - **`servicio_sede`**: Vincula a la sede con un **catálogo de servicios maestro**. Este catálogo de comodidades está gestionado exclusivamente por la administración de la plataforma "Separa Altoke" para mantener la estandarización. Las sedes solo eligen de la lista.
+   - **`sede_servicio`**: Vincula a la sede con un **catálogo de servicios maestro**. Este catálogo de comodidades está gestionado exclusivamente por la administración de la plataforma "Separa Altoke" para mantener la estandarización. Las sedes solo eligen de la lista.
      - *Ejemplos*: estacionamiento privado, duchas/vestuarios con agua caliente, quiosco/bar/snack, WiFi gratis, iluminación LED, alquiler de balones y petos, zona de parrilla/barbacoa, cajas de seguridad, vigilancia 24/7.
    - **`detalle_particular_sede`**: Reglas, políticas y cualidades en texto definidas libremente por la empresa para su local.
      - *Ejemplos*: "Se prohíbe el uso de choperas o toperoles de metal", "Es obligatorio presentar DNI físico o digital en recepción antes de ingresar a la cancha", "Prohibido el ingreso de bebidas alcohólicas externas", "Tolerancia de espera máxima: 10 minutos post inicio de hora", "Se permiten mascotas únicamente en áreas abiertas circundantes".
@@ -98,9 +98,8 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
      - **Reserva por persona**: Una `persona` individual efectúa la reserva para uso privado.
      - **Reserva por equipo**: Un `equipo` (grupo constituido de personas con nombre/escudo) hace la reserva. El vínculo a la persona física responsable de la transacción se almacena en el campo `organizador` (`persona_organizadora_id`).
      - **Reserva por partida abierta (pichanga pública)**: Una `partida_abierta` es una invitación pública creada para completar participantes. Cualquier jugador libre puede unirse. La reserva pertenece a la `partida_abierta` y el usuario creador (`persona`) se vincula como organizador inicial.
-   - **Partidos y asistentes**:
-     - Toda reserva implica lógicamente la realización de un **`partido`**.
-     - El `partido` se compone de N **`asistentes`** (`partido_asistente`), donde cada asistente es una `persona`. Se registra su estado de asistencia (`CONFIRMADO`, `ASISTIO`, `NO_ASISTIO`).
+   - **Asistencia en reservas de equipo (RSVP)**:
+     - La asistencia no se mide a nivel de partido general (para mantener la política de no registrar reputación ni métricas personales). En reservas de origen `EQUIPO`, los integrantes coordinan internamente mediante confirmación RSVP (`reserva_asistencia_equipo`) con estados `ASISTIRA`, `NO_ASISTIRA` o `SIN_RESPUESTA`.
    - **Pagos múltiples por reserva (`pago_reserva`)**:
      - Una reserva puede liquidarse en 1 a N pagos (abonos parciales o cuotas divididas).
      - Cada pago es realizado por una `persona` (no siempre la misma; ej: el organizador efectúa el pago inicial del 50% como seña/garantía y los demás integrantes aportan cuotas individuales para cubrir el saldo restante).
@@ -114,6 +113,7 @@ Este documento contiene la matriz de problemáticas clasificadas por segmento (e
    - **Mensajes tipo "Objeto"** (Mensajes estructurados en el chat):
      - **Texto / Imagen / Audio**: Elementos de comunicación regular.
      - **Comprobante de Pago**: Un mensaje interactivo (con o sin imagen adjunta) que el sistema reconoce estructuralmente como el envío de un pago total o parcial. Permite a la empresa u organizador de la partida abierta gestionar el cobro nativamente dentro del chat, con un estado de aprobación (Aprobado/Rechazado).
+     - **Reembolso**: Un mensaje emitido unilateralmente por la empresa para notificar la devolución de dinero sin requerir confirmación por parte del cliente.
      - **Invitación**: Un bloque interactivo (con botones Aceptar/Rechazar) para unirse a un equipo, una partida abierta o invitar a un amigo al sistema.
      - **Notificación / Resumen de Reserva**: Tarjeta informativa con los detalles de la reserva (cancha, fecha, costo) enviada al chat del usuario o grupo a modo de confirmación, facilitando su revisión y compartición.
 
@@ -127,8 +127,8 @@ Las tablas con prefijo `_` representan módulos y mecanismos internos administra
    - Catálogo global de cupones y reglas de descuento expedidos por Separa Altoke (tipo monto fijo o porcentaje, monto máximo de descuento, tope de usos globales y por usuario, fecha inicio/fin de campaña).
 2. **`_programas_referidos`**:
    - Configuración de las campañas de referidos (ej. "Invita a un amigo y ambos reciben un cupón de descuento al completar su 1er partido"). Define los incentivos para el referente y el referido.
-3. **`_codigos_referidos`**:
-   - Registra los códigos únicos autogenerados para cada usuario `persona` (ej: `JUAN123`) o códigos promocionales de marketing, permitiendo rastrear conversiones, registros exitosos y recompensas entregadas.
+3. **`_codigos_referidos` y `_referidos_registro`**:
+   - Catálogo administrado para campañas de marketing, eventos y enlaces B2B de empresas con códigos alfanuméricos promocionales (ej: `VERANO2026`). Permite asociar recompensas específicas y medir conversiones. Se diferencia de `usuario.codigo_referido` (6 caracteres hex), que es el código permanente de cada persona para invitar amigos directamente.
 4. **Gestión del dinero virtual y pagos externos (Política Core)**:
    - Desde el lanzamiento, "Separa Altoke" soporta un monedero virtual para los jugadores. El saldo virtual puede utilizarse para pagar reservas, aportar a partidas abiertas, completar pagos y recibir reembolsos internos.
    - La plataforma no considera como crédito del monedero los pagos externos realizados directamente a una empresa. En esos casos, el cliente envía un comprobante y la sede valida cada transacción individualmente.
@@ -195,8 +195,8 @@ Al evaluar el dominio de negocio, se han identificado las siguientes reglas y en
     - Dado que los datos se manejarán internamente (sin AWS/GCP), los comprobantes, audios y fotos de sedes deberán persistirse en el sistema de archivos (File System) del servidor. Es recomendable usar un servidor web optimizado para despachar archivos estáticos (ej. Nginx) y, para no perder las ventajas de escalabilidad, se sugiere implementar un Object Storage de código abierto autoalojado (como **MinIO**). Es obligatorio configurar políticas estrictas de copias de seguridad (backups) físicas para este volumen de disco.
 12. **Manejo de Tareas Asíncronas y Colas (Workers/Cron)**:
     - El sistema tiene varias reglas dependientes del tiempo: "liberar la cancha si el pago no se confirma en 15 min", "enviar push 2 horas antes del partido", "vencer suscripciones". Esto requiere un gestor de colas de tareas en segundo plano (ej. Celery, RabbitMQ, BullMQ o AWS EventBridge) desconectado del hilo principal de peticiones.
-13. **Auditoría y Trazabilidad (Audit Logs)**:
-    - Implementar un registro inmutable (tabla de auditoría) para acciones críticas. Se debe rastrear de forma exacta quién (ID del recepcionista/admin) canceló una reserva, aprobó un comprobante o modificó un precio, y en qué fecha/hora. Esto es crítico para la resolución de disputas con el usuario final y para auditorías internas de las empresas.
+13. **Auditoría y Trazabilidad (Audit Mixin)**:
+    - En esta etapa, la trazabilidad se gestiona a nivel de cada tabla mediante un Mixin de auditoría (`created_at`, `updated_at`, `created_by`, `updated_by`, `last_action`), permitiendo conocer quién creó o modificó cada registro y el tipo de acción. Una tabla centralizada de eventos con snapshots JSONB (`auditoria_log`) queda postergada para una fase futura de madurez del sistema.
 14. **Estandarización de Zonas Horarias (Timezones)**:
     - Es vital que la capa de persistencia (Base de Datos) guarde todas las fechas y horas (horarios de canchas, reservas, mensajes) estrictamente en formato UTC. La conversión a la zona horaria local (`America/Lima`) debe ser responsabilidad exclusiva del frontend/app móvil para evitar bugs lógicos ante futuras expansiones geográficas.
 15. **Seguridad Multi-inquilino (Multi-tenant Security)**:
@@ -232,7 +232,7 @@ Al evaluar el dominio de negocio, se han identificado las siguientes reglas y en
     - Todo usuario registrado debe elegir un `username` único.
     - **Objetivo de privacidad:** Al invitar a alguien a un equipo o partida abierta, la búsqueda se hará a través del `username` en lugar de exponer o tener que adivinar correos electrónicos o números telefónicos, agilizando la conexión social en la plataforma sin revelar datos sensibles.
 22. **Viralidad Estructural (Referidos y Enlaces Públicos)**:
-    - **Sistema de Referidos (B2C):** Todo usuario al registrarse recibe automáticamente un `codigo_referido` (6 caracteres hexadecimales). Los nuevos usuarios pueden ingresar este código al crear su cuenta.
+    - **Sistema de Referidos P2P (B2C):** Todo usuario al registrarse recibe automáticamente un `codigo_referido` (6 caracteres hexadecimales) único y permanente. Los nuevos usuarios pueden ingresar este código al crear su cuenta para invitaciones directas entre jugadores.
       - *Recompensa Condicionada:* Si el usuario invitado completa exitosamente una reserva (`estado = CONFIRMADA`) dentro de su primer mes de registro, el usuario original que lo invitó recibirá automáticamente un cupón de descuento para sus próximos partidos. Esta mecánica asegura retornos reales de inversión y evita el fraude por creación masiva de cuentas vacías.
     - **Share Tokens (Enlaces Compartibles):** Entidades grupales como *Equipos*, *Juntas* y *Reservas* exponen un `share_token` (token aleatorio sin prefijos) para generar URLs públicas. Estas URLs permiten a usuarios sin cuenta visualizar información de forma segura (ej. ver el "boarding pass" de una reserva con la dirección de la sede) o registrarse e unirse al evento inmediatamente, protegiendo las llaves primarias (UUIDs) de la base de datos contra accesos no autorizados.
 23. **Campañas de Lanzamiento y Retención B2C**:

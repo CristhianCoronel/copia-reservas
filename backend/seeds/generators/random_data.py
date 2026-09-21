@@ -403,7 +403,7 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                         "organizador_id": persona_id,
                         "_deporte_id": macro_processor.process("${UUID:deporte_futbol5}"),
                         "presupuesto_meta": precio,
-                        "cupos_totales": max_jugadores,
+                        "cupo_maximo_jugadores": max_jugadores,
                         "cupos_disponibles": max_jugadores - 1,
                         "estado": "RECAUDANDO"
                     })

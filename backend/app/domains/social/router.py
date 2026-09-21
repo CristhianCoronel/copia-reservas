@@ -41,8 +41,8 @@ async def get_social_groups(current_user: auth_models.Usuario = Depends(get_curr
             "courtName": p.reserva.cancha.sede.nombre,
             "date": p.reserva.fecha_reserva.strftime("%Y-%m-%d"),
             "time": p.reserva.hora_inicio.strftime('%H:%M'),
-            "maxPlayers": p.cupos_totales,
-            "currentPlayers": p.cupos_totales - p.cupos_disponibles,
+            "maxPlayers": p.cupo_maximo_jugadores,
+            "currentPlayers": p.cupo_maximo_jugadores - p.cupos_disponibles,
             "totalCourtPrice": float(p.presupuesto_meta),
             "sport": "PADEL" # Simplificación
         })
