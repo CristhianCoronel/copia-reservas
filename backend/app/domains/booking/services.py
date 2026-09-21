@@ -284,7 +284,8 @@ class BookingService:
                 Usuario.telefono, 
                 models.Cancha.nombre.label('cancha_nombre'),
                 models.PagoReserva.monto,
-                models.PagoReserva.metodo_pago
+                models.PagoReserva.metodo_pago,
+                models.PagoReserva.comprobante_url
             )
             .join(models.Cancha, models.Reserva.cancha_id == models.Cancha.id)
             .join(Persona, models.Reserva.persona_organizadora_id == Persona.id)
@@ -298,7 +299,7 @@ class BookingService:
         rows = (await db.execute(query)).all()
         
         res_dict = {}
-        for r, nombres, apellidos, telefono, cancha_nombre, monto, metodo_pago in rows:
+        for r, nombres, apellidos, telefono, cancha_nombre, monto, metodo_pago, comprobante_url in rows:
             if str(r.id) not in res_dict:
                 res_dict[str(r.id)] = {
                     "id": str(r.id),
@@ -308,7 +309,8 @@ class BookingService:
                     "date": "Hoy",
                     "time": r.hora_inicio.strftime("%H:%M"),
                     "amount": float(monto) if monto else float(r._saldo_pendiente),
-                    "paymentMethod": metodo_pago or "Desconocido"
+                    "paymentMethod": metodo_pago or "Desconocido",
+                    "comprobanteUrl": comprobante_url
                 }
         return list(res_dict.values())
 
@@ -323,7 +325,8 @@ class BookingService:
                 models.Cancha.nombre.label('cancha_nombre'),
                 Sede.nombre.label('sede_nombre'),
                 models.PagoReserva.monto,
-                models.PagoReserva.metodo_pago
+                models.PagoReserva.metodo_pago,
+                models.PagoReserva.comprobante_url
             )
             .join(models.Cancha, models.Reserva.cancha_id == models.Cancha.id)
             .join(Sede, models.Cancha.sede_id == Sede.id)
@@ -338,7 +341,7 @@ class BookingService:
         rows = (await db.execute(query)).all()
         
         res_dict = {}
-        for r, nombres, apellidos, telefono, cancha_nombre, sede_nombre, monto, metodo_pago in rows:
+        for r, nombres, apellidos, telefono, cancha_nombre, sede_nombre, monto, metodo_pago, comprobante_url in rows:
             if str(r.id) not in res_dict:
                 res_dict[str(r.id)] = {
                     "id": str(r.id),
@@ -348,7 +351,8 @@ class BookingService:
                     "date": "Hoy",
                     "time": r.hora_inicio.strftime("%H:%M"),
                     "amount": float(monto) if monto else float(r._saldo_pendiente),
-                    "paymentMethod": metodo_pago or "Desconocido"
+                    "paymentMethod": metodo_pago or "Desconocido",
+                    "comprobanteUrl": comprobante_url
                 }
         return list(res_dict.values())
 

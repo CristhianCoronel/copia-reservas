@@ -20,6 +20,7 @@ import { CompanyEditView } from './components/CompanyEditView';
 import { AuthView } from './components/AuthView';
 import { SuperAdminView } from './components/SuperAdminView';
 import { CompanyRegistrationView } from './components/CompanyRegistrationView';
+import { DevSwitcher } from './components/DevSwitcher';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('canchas');
@@ -38,7 +39,20 @@ export default function App() {
         setActiveTab(e.detail);
       }
     };
+    const handleDevLogin = () => {
+      setIsAuthenticated(true);
+      const savedMode = storage.getItem('appMode') as 'jugador' | 'empresa' | 'superadmin';
+      if (savedMode) setAppMode(savedMode);
+      
+      apiCall('/api/v1/player/profile/me/accounts').then(res => {
+        if (res.status === undefined || res.data) {
+          setAccountsData(res.data);
+        }
+      }).catch(console.error);
+    };
+
     window.addEventListener('NAVIGATE_TO', handleNavigate);
+    window.addEventListener('DEV_LOGIN_SUCCESS', handleDevLogin);
 
     const token = storage.getItem('separaaltokeid');
     if (token) {
@@ -55,6 +69,7 @@ export default function App() {
 
     return () => {
       window.removeEventListener('NAVIGATE_TO', handleNavigate);
+      window.removeEventListener('DEV_LOGIN_SUCCESS', handleDevLogin);
     };
   }, []);
 
@@ -115,6 +130,16 @@ export default function App() {
         <div className={classes.shellConstrain}>
           <AuthView onLogin={() => setIsAuthenticated(true)} />
         </div>
+        <DevSwitcher onLogin={() => {
+          setIsAuthenticated(true);
+          const savedMode = storage.getItem('appMode') as 'jugador' | 'empresa' | 'superadmin';
+          if (savedMode) setAppMode(savedMode);
+          apiCall('/api/v1/player/profile/me/accounts').then(res => {
+            if (res.status === undefined || res.data) {
+              setAccountsData(res.data);
+            }
+          }).catch(console.error);
+        }} />
       </Center>
     );
   }
@@ -314,6 +339,15 @@ export default function App() {
         )}
       </Modal>
 
+      <DevSwitcher onLogin={() => {
+        const savedMode = storage.getItem('appMode') as 'jugador' | 'empresa' | 'superadmin';
+        if (savedMode) setAppMode(savedMode);
+        apiCall('/api/v1/player/profile/me/accounts').then(res => {
+          if (res.status === undefined || res.data) {
+            setAccountsData(res.data);
+          }
+        }).catch(console.error);
+      }} />
     </Center>
   );
 }

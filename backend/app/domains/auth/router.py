@@ -61,3 +61,22 @@ async def get_my_accounts(current_user: models.Usuario = Depends(get_current_use
 async def get_my_reservations(current_user: models.Usuario = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     data = await PlayerAuthService.get_my_reservations(current_user, db)
     return BaseResponse(status=True, data=data, message="Reservas obtenidas correctamente")
+
+@router.get("/dev/users", tags=["Dev - Tools"], response_model=BaseResponse[list])
+async def get_dev_users(db: AsyncSession = Depends(get_db)):
+    # Dev only endpoint to list users for quick switching
+    result = await db.execute(
+        select(models.Usuario, models.Persona)
+        .join(models.Persona, models.Usuario.id == models.Persona.usuario_id, isouter=True)
+    )
+    rows = result.all()
+    
+    data = []
+    for u, p in rows:
+        data.append({
+            "id": str(u.id),
+            "username": u.username,
+            "role": u.rol,
+            "name": f"{p.nombres} {p.apellidos}" if p else u.username
+        })
+    return BaseResponse(status=True, data=data, message="Usuarios de desarrollo")

@@ -119,6 +119,112 @@ async def seed(env: str, reset: bool, fake_count: int):
                     print(f"Inserting {len(data)} generated rows into {table}...")
                     await bulk_insert(conn, table, data)
                     
+            # Custom code for dueno_chiclayo payments
+            print("Generando pagos de prueba para reservas de dueno_chiclayo...")
+            from sqlalchemy import text
+            result = await conn.execute(text("SELECT p.id FROM persona p JOIN usuario u ON p.usuario_id = u.id WHERE u.username = 'dueno_chiclayo' LIMIT 1"))
+            owner_id = result.scalar()
+            
+            if owner_id:
+                result = await conn.execute(text("""
+                    SELECT c.id FROM cancha c
+                    JOIN sede s ON s.id = c.sede_id
+                    JOIN empresa e ON e.id = s.empresa_id
+                    WHERE e.creada_por_persona_id = :owner_id
+                """), {"owner_id": owner_id})
+                courts = [r[0] for r in result.fetchall()]
+                
+                if courts:
+                    import uuid
+                    import random
+                    from datetime import datetime, timedelta, date, time
+                    
+                    reservations = []
+                    payments = []
+                    
+                    result = await conn.execute(text("""
+                        SELECT p.id FROM persona p
+                        JOIN usuario u ON p.usuario_id = u.id
+                        WHERE p.id != :owner_id AND u.rol = 'PLAYER'
+                        LIMIT 10
+                    """), {"owner_id": owner_id})
+                    customer_ids = [r[0] for r in result.fetchall()]
+                    
+                    if customer_ids:
+                        for idx, court_id in enumerate(courts):
+                            customer_id = random.choice(customer_ids)
+                            res_id1 = str(uuid.uuid4())
+                            reservations.append({
+                                "id": res_id1,
+                                "share_token": f"share_{idx}_1",
+                                "cancha_id": court_id,
+                                "tipo_origen": "INDIVIDUAL",
+                                "persona_organizadora_id": customer_id,
+                                "equipo_id": None,
+                                "fecha_reserva": (date.today() - timedelta(days=1)),
+                                "hora_inicio_solicitada": time(14, 0),
+                                "hora_fin_solicitada": time(15, 0),
+                                "hora_inicio": time(14, 0),
+                                "hora_fin": time(15, 0),
+                                "duracion_horas": 1.0,
+                                "precio_hora_historico": 100.0,
+                                "precio_total_cancha": 100.0,
+                                "descuento_promocion_empresa": 0.0,
+                                "descuento_cupon_plataforma": 0.0,
+                                "monto_total_final": 100.0,
+                                "_saldo_pendiente": 0.0,
+                                "estado": "COMPLETADA",
+                                "created_at": datetime.utcnow()
+                            })
+                            payments.append({
+                                "id": str(uuid.uuid4()),
+                                "reserva_id": res_id1,
+                                "persona_id": customer_id,
+                                "monto": 100.0,
+                                "metodo_pago": "YAPE",
+                                "comprobante_url": "https://placehold.co/400x600?text=Voucher+Yape",
+                                "estado": "APROBADO",
+                                "created_at": datetime.utcnow()
+                            })
+                            
+                            customer_id2 = random.choice(customer_ids)
+                            res_id2 = str(uuid.uuid4())
+                            reservations.append({
+                                "id": res_id2,
+                                "share_token": f"share_{idx}_2",
+                                "cancha_id": court_id,
+                                "tipo_origen": "INDIVIDUAL",
+                                "persona_organizadora_id": customer_id2,
+                                "equipo_id": None,
+                                "fecha_reserva": date.today(),
+                                "hora_inicio_solicitada": time(20, 0),
+                                "hora_fin_solicitada": time(21, 0),
+                                "hora_inicio": time(20, 0),
+                                "hora_fin": time(21, 0),
+                                "duracion_horas": 1.0,
+                                "precio_hora_historico": 120.0,
+                                "precio_total_cancha": 120.0,
+                                "descuento_promocion_empresa": 0.0,
+                                "descuento_cupon_plataforma": 0.0,
+                                "monto_total_final": 120.0,
+                                "_saldo_pendiente": 120.0,
+                                "estado": "PENDIENTE_PAGO",
+                                "created_at": datetime.utcnow()
+                            })
+                            payments.append({
+                                "id": str(uuid.uuid4()),
+                                "reserva_id": res_id2,
+                                "persona_id": customer_id2,
+                                "monto": 120.0,
+                                "metodo_pago": "TRANSFERENCIA_EXTERNA",
+                                "comprobante_url": "https://placehold.co/400x600?text=Voucher+BCP",
+                                "estado": "PENDIENTE",
+                                "created_at": datetime.utcnow()
+                            })
+
+                        await bulk_insert(conn, "reserva", reservations)
+                        await bulk_insert(conn, "pago_reserva", payments)
+
     print("Seeding complete! Verifying inserted data...")
     
     all_tables = [t[1] for t in master_files]
@@ -126,6 +232,7 @@ async def seed(env: str, reset: bool, fake_count: int):
         all_tables.extend([t[1] for t in dev_files])
         if fake_count > 0:
             all_tables.extend(fake_data.keys())
+        all_tables.extend(["reserva", "pago_reserva"])
             
     all_tables = list(dict.fromkeys(all_tables))
     
