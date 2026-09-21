@@ -1,5 +1,8 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -37,12 +40,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"status": False, "data": {}, "message": exc.detail},
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={"status": False, "data": {}, "message": str(exc.errors())},
+    )
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Error no manejado: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"status": False, "data": {}, "message": "Error interno del servidor"},
+    )
+
 @app.get("/health", tags=["System"])
 async def health_check():
     """Valida que la API y la configuración base funcionen correctamente."""
     return {
-        "status": "ok",
-        "env": settings.app_env,
+        "status": True,
+        "data": {"env": settings.app_env},
         "message": "Separa Altoke API is running"
     }
 
