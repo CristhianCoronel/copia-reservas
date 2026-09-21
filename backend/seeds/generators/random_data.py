@@ -27,7 +27,14 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
         "partida_abierta_participante": [],
         "chat": [],
         "chat_participante": [],
-        "mensaje": []
+        "mensaje": [],
+        "suscripcion_empresa": [],
+        "promocion_sede": [],
+        "monedero": [],
+        "transaccion_monedero": [],
+        "reserva_asistencia_equipo": [],
+        "sede_saldo_cliente": [],
+        "sede_lista_negra": []
     }
     
     today = datetime.datetime.now(datetime.timezone.utc)
@@ -74,6 +81,27 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
             "numero_documento": doc
         })
         
+        monedero_id = macro_processor.process(f"${{UUID:fake_monedero_{i}}}")
+        data["monedero"].append({
+            "id": monedero_id,
+            "persona_id": persona_id,
+            "saldo_actual": random.choice([0.00, 20.00, 50.00, 100.00]),
+            "moneda": "PEN",
+            "is_active": True
+        })
+        if data["monedero"][-1]["saldo_actual"] > 0:
+            data["transaccion_monedero"].append({
+                "id": macro_processor.process(f"${{UUID:fake_transaccion_{i}}}"),
+                "monedero_id": monedero_id,
+                "reserva_id": None,
+                "partida_abierta_id": None,
+                "tipo_transaccion": "RECARGA",
+                "monto": data["monedero"][-1]["saldo_actual"],
+                "estado": "APROBADA",
+                "referencia_externa": f"RECARGA-{random.randint(1000, 9999)}",
+                "descripcion": "Recarga inicial"
+            })
+        
 
         if i == 0 or random.random() > 0.5: # 50% de probabilidad, pero el primer user siempre crea una empresa para tener canchas fallback
             empresa_id = macro_processor.process(f"${{UUID:fake_empresa_{i}}}")
@@ -92,11 +120,33 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                 "email_contacto": email
             })
             
-
+            is_premium = random.choice([True, False])
+            plan_id = "77777777-7777-7777-7777-777777777777" if is_premium else "66666666-6666-6666-6666-666666666666"
+            data["suscripcion_empresa"].append({
+                "id": macro_processor.process(f"${{UUID:fake_suscripcion_{i}}}"),
+                "empresa_id": empresa_id,
+                "plan_id": plan_id,
+                "estado": "ACTIVA",
+                "fecha_inicio": "2026-01-01",
+                "fecha_fin": "2027-01-01"
+            })
+            
             sede_id = macro_processor.process(f"${{UUID:fake_sede_{i}}}")
             distrito = "Chiclayo" # Hardcodeado a distritos de Chiclayo por ahora
             nombre_sede = get_random(bank, "nombres_sede").format(distrito=distrito, nombre=nombre, apellido=apellido)
             direccion = get_random(bank, "direcciones_sede").format(numero=random.randint(100, 999), distrito=distrito)
+            
+            data["promocion_sede"].append({
+                "id": macro_processor.process(f"${{UUID:fake_promo_{i}}}"),
+                "sede_id": sede_id,
+                "titulo": "20% DSCTO Tardes",
+                "descripcion": "Valido para todos los horarios de la tarde",
+                "tipo_descuento": "PORCENTAJE",
+                "valor_descuento": 20.00,
+                "fecha_inicio": "2026-01-01",
+                "fecha_fin": "2026-12-31",
+                "is_active": True
+            })
             
             data["sede"].append({
                 "id": sede_id,
@@ -104,8 +154,8 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                 "ubigeo_distrito_id": "140101",
                 "nombre": nombre_sede,
                 "direccion": direccion,
-                "latitud": -6.771,
-                "longitud": -79.840,
+                "latitud": -6.771 if is_premium else None,
+                "longitud": -79.840 if is_premium else None,
                 "telefono": telefono,
                 "tipo_adelanto_requerido": "PORCENTAJE",
                 "valor_adelanto_requerido": 50.00
@@ -146,6 +196,23 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
                     "costo_adicional": 0.00,
                     "descripcion": None
                 })
+
+            if len(data["persona"]) > 1:
+                target_persona = random.choice(data["persona"][:-1])["id"]
+                if random.random() < 0.2:
+                    data["sede_saldo_cliente"].append({
+                        "id": macro_processor.process(f"${{UUID:fake_saldo_{i}}}"),
+                        "sede_id": sede_id,
+                        "persona_id": target_persona,
+                        "monto_favor": 25.00
+                    })
+                if random.random() < 0.1:
+                    data["sede_lista_negra"].append({
+                        "id": macro_processor.process(f"${{UUID:fake_lista_negra_{i}}}"),
+                        "sede_id": sede_id,
+                        "persona_id": target_persona,
+                        "motivo": "No asiste recurrentemente"
+                    })
 
             cancha_id = macro_processor.process(f"${{UUID:fake_cancha_{i}}}")
             data["cancha"].append({
@@ -373,6 +440,16 @@ def generate_random_data(bank: Dict[str, Any], macro_processor, count: int) -> D
 
                 # Si es una reserva de equipo, inyectar el interactivo NOTIFICACION_RESERVA en su chat
                 if reserva_tipo == "EQUIPO" and equipo_id:
+                    # Encontrar miembros del equipo
+                    miembros_equipo = [m["persona_id"] for m in data["equipo_miembro"] if m["equipo_id"] == equipo_id]
+                    for idx_miembro, miembro_id in enumerate(miembros_equipo):
+                        data["reserva_asistencia_equipo"].append({
+                            "id": macro_processor.process(f"${{UUID:fake_rsvp_{i}_{idx}_{idx_miembro}}}"),
+                            "reserva_id": reserva_id,
+                            "persona_id": miembro_id,
+                            "estado_asistencia": random.choice(["ASISTIRA", "NO_ASISTIRA", "SIN_RESPUESTA"])
+                        })
+
                     chat_equipo_id = macro_processor.process(f"${{UUID:fake_chat_equipo_{i}}}")
                     msg_time = fecha - datetime.timedelta(days=2) # 2 dias antes del partido
                     data["mensaje"].append({
