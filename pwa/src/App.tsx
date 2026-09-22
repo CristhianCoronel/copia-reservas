@@ -183,7 +183,12 @@ export default function App() {
             {appMode === 'empresa' && activeTab === 'reservas' && <CompanyReservationsView activeCompanyId={activeCompanyId} />}
             {appMode === 'empresa' && activeTab === 'canchas' && <CompanyCourtsView activeVenueId={activeVenueId} company={accountsData?.companies?.find((c: any) => c.id === activeCompanyId)} />}
             {appMode === 'empresa' && activeTab === 'chat' && <ChatView />}
-            {appMode === 'empresa' && activeTab === 'empresa' && <CompanyEditView company={accountsData?.companies?.find((c: any) => c.id === activeCompanyId)} />}
+            {appMode === 'empresa' && activeTab === 'empresa' && (
+              <CompanyEditView 
+                company={accountsData?.companies?.find((c: any) => c.id === activeCompanyId)} 
+                onCompanyChanged={reloadAccounts} 
+              />
+            )}
             
             {appMode === 'superadmin' && activeTab === 'admin' && <SuperAdminView />}
 

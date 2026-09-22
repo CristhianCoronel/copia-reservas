@@ -7,7 +7,7 @@ from app.domains.auth.models import Persona, Usuario
 from app.domains.booking.models import Cancha, Reserva
 import uuid
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Optional, Dict, Any
 
 def generate_share_token(prefix="emp"):
     return f"{prefix}-{uuid.uuid4().hex[:8]}"
@@ -166,6 +166,83 @@ class B2bCoreService:
         return {"id": str(nueva_sede.id), "name": nueva_sede.nombre}
 
     @staticmethod
+    async def get_company_details(company_id: str, db: AsyncSession):
+        result = await db.execute(select(models.Empresa).where(models.Empresa.id == company_id))
+        emp = result.scalars().first()
+        if not emp:
+            raise HTTPException(status_code=404, detail="Empresa no encontrada")
+
+        sub_res = await db.execute(
+            select(models.SuscripcionEmpresa, models.PlanSuscripcion)
+            .join(models.PlanSuscripcion, models.SuscripcionEmpresa.plan_id == models.PlanSuscripcion.id)
+            .where(models.SuscripcionEmpresa.empresa_id == company_id, models.SuscripcionEmpresa.estado == 'ACTIVA')
+        )
+        sub_row = sub_res.first()
+        
+        is_premium = False
+        plan_nombre = "Freemium"
+        if sub_row:
+            sub, plan = sub_row
+            plan_nombre = plan.nombre
+            if plan.precio_mensual and plan.precio_mensual > 0 or "Premium" in plan.nombre:
+                is_premium = True
+
+        return {
+            "id": str(emp.id),
+            "ruc": emp.ruc,
+            "razon_social": emp.razon_social,
+            "nombre_comercial": emp.nombre_comercial,
+            "es_sede_unica": emp.es_sede_unica,
+            "terminos_condiciones": emp.terminos_condiciones or "",
+            "politica_cancelacion": emp.politica_cancelacion or "",
+            "telefono_contacto": emp.telefono_contacto,
+            "email_contacto": emp.email_contacto,
+            "logo_url": emp.logo_url,
+            "is_premium": is_premium,
+            "plan_nombre": plan_nombre
+        }
+
+    @staticmethod
+    async def update_company(company_id: str, payload: schemas.EmpresaUpdate, db: AsyncSession):
+        result = await db.execute(select(models.Empresa).where(models.Empresa.id == company_id))
+        emp = result.scalars().first()
+        if not emp:
+            raise HTTPException(status_code=404, detail="Empresa no encontrada")
+
+        if payload.nombre_comercial is not None: emp.nombre_comercial = payload.nombre_comercial
+        if payload.es_sede_unica is not None: emp.es_sede_unica = payload.es_sede_unica
+        if payload.terminos_condiciones is not None: emp.terminos_condiciones = payload.terminos_condiciones
+        if payload.politica_cancelacion is not None: emp.politica_cancelacion = payload.politica_cancelacion
+        if payload.telefono_contacto is not None: emp.telefono_contacto = payload.telefono_contacto
+        if payload.email_contacto is not None: emp.email_contacto = payload.email_contacto
+
+        await db.commit()
+        return {"id": str(emp.id)}
+
+    @staticmethod
+    async def get_venue_details(venue_id: str, db: AsyncSession):
+        sede = await db.execute(select(models.Sede).where(models.Sede.id == venue_id))
+        sede_obj = sede.scalars().first()
+        if not sede_obj:
+            raise HTTPException(status_code=404, detail="Sede no encontrada")
+
+        return {
+            "id": str(sede_obj.id),
+            "empresa_id": str(sede_obj.empresa_id),
+            "nombre": sede_obj.nombre,
+            "direccion": sede_obj.direccion,
+            "referencia": sede_obj.referencia or "",
+            "telefono": sede_obj.telefono,
+            "email": sede_obj.email or "",
+            "maps_url": sede_obj.maps_url or "",
+            "horas_limite_cancelacion": sede_obj.horas_limite_cancelacion,
+            "max_horas_reserva_continua": sede_obj.max_horas_reserva_continua,
+            "reserva_minutos_espera": sede_obj.reserva_minutos_espera,
+            "tipo_adelanto_requerido": sede_obj.tipo_adelanto_requerido,
+            "valor_adelanto_requerido": float(sede_obj.valor_adelanto_requerido or 0.0)
+        }
+
+    @staticmethod
     async def update_venue(venue_id: str, payload: schemas.SedeUpdate, db: AsyncSession):
         sede = await db.execute(select(models.Sede).where(models.Sede.id == venue_id))
         sede_obj = sede.scalars().first()
@@ -174,7 +251,15 @@ class B2bCoreService:
         
         if payload.nombre is not None: sede_obj.nombre = payload.nombre
         if payload.direccion is not None: sede_obj.direccion = payload.direccion
+        if payload.referencia is not None: sede_obj.referencia = payload.referencia
         if payload.telefono is not None: sede_obj.telefono = payload.telefono
+        if payload.email is not None: sede_obj.email = payload.email
+        if payload.maps_url is not None: sede_obj.maps_url = payload.maps_url
+        if payload.horas_limite_cancelacion is not None: sede_obj.horas_limite_cancelacion = payload.horas_limite_cancelacion
+        if payload.max_horas_reserva_continua is not None: sede_obj.max_horas_reserva_continua = payload.max_horas_reserva_continua
+        if payload.reserva_minutos_espera is not None: sede_obj.reserva_minutos_espera = payload.reserva_minutos_espera
+        if payload.tipo_adelanto_requerido is not None: sede_obj.tipo_adelanto_requerido = payload.tipo_adelanto_requerido
+        if payload.valor_adelanto_requerido is not None: sede_obj.valor_adelanto_requerido = payload.valor_adelanto_requerido
         
         await db.commit()
 
@@ -186,6 +271,148 @@ class B2bCoreService:
             raise HTTPException(status_code=404, detail="Sede no encontrada")
         
         sede_obj.estado = "INACTIVA"
+        await db.commit()
+
+    @staticmethod
+    async def get_venue_services(venue_id: str, db: AsyncSession):
+        from app.domains.booking.models import Servicio
+        query = (
+            select(models.SedeServicio, Servicio)
+            .join(Servicio, models.SedeServicio._servicio_id == Servicio.id)
+            .where(models.SedeServicio.sede_id == venue_id)
+        )
+        result = await db.execute(query)
+        rows = result.all()
+        
+        return [
+            {
+                "id": str(ss.id),
+                "servicio_id": str(s.id),
+                "nombre": s.nombre,
+                "icono": s.icono,
+                "categoria": s.categoria,
+                "es_gratuito": ss.es_gratuito,
+                "costo_adicional": float(ss.costo_adicional or 0.0),
+                "descripcion": ss.descripcion or ""
+            } for ss, s in rows
+        ]
+
+    @staticmethod
+    async def add_venue_service(venue_id: str, payload: schemas.SedeServicioLink, db: AsyncSession):
+        exist = await db.execute(
+            select(models.SedeServicio).where(
+                models.SedeServicio.sede_id == venue_id,
+                models.SedeServicio._servicio_id == payload.servicio_id
+            )
+        )
+        if exist.scalars().first():
+            raise HTTPException(status_code=400, detail="Este servicio ya está asignado a la sede")
+
+        nuevo_ss = models.SedeServicio(
+            sede_id=venue_id,
+            _servicio_id=payload.servicio_id,
+            es_gratuito=payload.es_gratuito,
+            costo_adicional=payload.costo_adicional,
+            descripcion=payload.descripcion
+        )
+        db.add(nuevo_ss)
+        await db.commit()
+        await db.refresh(nuevo_ss)
+        return {"id": str(nuevo_ss.id)}
+
+    @staticmethod
+    async def remove_venue_service(venue_id: str, service_id_or_link_id: str, db: AsyncSession):
+        from sqlalchemy import or_
+        await db.execute(
+            models.SedeServicio.__table__.delete().where(
+                models.SedeServicio.sede_id == venue_id,
+                or_(
+                    models.SedeServicio.id == service_id_or_link_id,
+                    models.SedeServicio._servicio_id == service_id_or_link_id
+                )
+            )
+        )
+        await db.commit()
+
+    @staticmethod
+    async def get_venue_staff(company_id: str, venue_id: str, db: AsyncSession):
+        from sqlalchemy import or_
+        query = (
+            select(models.Contrato, Persona, Usuario)
+            .join(Persona, models.Contrato.persona_id == Persona.id)
+            .join(Usuario, Persona.usuario_id == Usuario.id)
+            .where(
+                models.Contrato.empresa_id == company_id,
+                models.Contrato.is_active == True,
+                or_(models.Contrato.sede_id == venue_id, models.Contrato.sede_id == None)
+            )
+        )
+        result = await db.execute(query)
+        rows = result.all()
+        
+        return [
+            {
+                "id": str(c.id),
+                "persona_id": str(p.id),
+                "username": u.username,
+                "nombres": p.nombres,
+                "apellidos": p.apellidos,
+                "fullName": f"{p.nombres} {p.apellidos}",
+                "rol": c.rol,
+                "sede_id": str(c.sede_id) if c.sede_id else None,
+                "is_global": c.sede_id is None
+            } for c, p, u in rows
+        ]
+
+    @staticmethod
+    async def add_venue_staff(company_id: str, venue_id: Optional[str], username: str, rol: str, current_user: Usuario, db: AsyncSession):
+        user_res = await db.execute(
+            select(Usuario).options(selectinload(Usuario.persona)).where(Usuario.username == username)
+        )
+        target_user = user_res.scalars().first()
+        if not target_user or not target_user.persona:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado con ese username")
+
+        # Check existing active contract
+        from sqlalchemy import or_
+        exist = await db.execute(
+            select(models.Contrato).where(
+                models.Contrato.empresa_id == company_id,
+                models.Contrato.persona_id == target_user.persona.id,
+                models.Contrato.is_active == True,
+                or_(models.Contrato.sede_id == venue_id, models.Contrato.sede_id == None)
+            )
+        )
+        if exist.scalars().first():
+            raise HTTPException(status_code=400, detail="El usuario ya cuenta con un contrato activo para esta sede o empresa")
+
+        grantor_id = current_user.persona.id if current_user.persona else current_user.id
+        nuevo_contrato = models.Contrato(
+            empresa_id=company_id,
+            sede_id=venue_id if venue_id else None,
+            persona_id=target_user.persona.id,
+            rol=rol,
+            otorgado_por=grantor_id,
+            fecha_inicio=datetime.now().date(),
+            is_active=True
+        )
+        db.add(nuevo_contrato)
+        await db.commit()
+        await db.refresh(nuevo_contrato)
+        return {
+            "id": str(nuevo_contrato.id),
+            "username": target_user.username,
+            "fullName": f"{target_user.persona.nombres} {target_user.persona.apellidos}",
+            "rol": nuevo_contrato.rol
+        }
+
+    @staticmethod
+    async def remove_staff_contract(contract_id: str, db: AsyncSession):
+        contract = await db.execute(select(models.Contrato).where(models.Contrato.id == contract_id))
+        c_obj = contract.scalars().first()
+        if not c_obj:
+            raise HTTPException(status_code=404, detail="Contrato no encontrado")
+        c_obj.is_active = False
         await db.commit()
 
     @staticmethod
@@ -254,3 +481,4 @@ class B2bCoreService:
         if exc_obj:
             await db.execute(models.SedeExcepcionHorario.__table__.delete().where(models.SedeExcepcionHorario.id == exception_id))
             await db.commit()
+

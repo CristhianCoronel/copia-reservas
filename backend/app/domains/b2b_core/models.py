@@ -90,3 +90,45 @@ class Contrato(AuditMixin, Base):
 
     empresa = relationship("Empresa", back_populates="contratos")
     persona = relationship("Persona", back_populates="contratos", foreign_keys=[persona_id])
+
+
+class SedeServicio(AuditMixin, Base):
+    __tablename__ = "sede_servicio"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sede_id = Column(UUID(as_uuid=True), ForeignKey('sede.id'), nullable=False)
+    _servicio_id = Column(UUID(as_uuid=True), ForeignKey('_servicio.id'), nullable=False)
+    es_gratuito = Column(Boolean, default=True, nullable=False)
+    costo_adicional = Column(Numeric(10,2))
+    descripcion = Column(String(255))
+
+    sede = relationship("Sede")
+    servicio = relationship("app.domains.booking.models.Servicio", foreign_keys=[_servicio_id])
+
+
+class PlanSuscripcion(AuditMixin, Base):
+    __tablename__ = "_plan_suscripcion"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    nombre = Column(String(100), nullable=False)
+    descripcion = Column(Text)
+    precio_mensual = Column(Numeric(10,2), nullable=False)
+    precio_anual = Column(Numeric(10,2), nullable=False)
+    max_sedes = Column(Integer, nullable=False)
+    max_canchas = Column(Integer, nullable=False)
+    beneficios = Column(Text) # JSONB or dict
+    is_active = Column(Boolean, default=True, nullable=False)
+
+
+class SuscripcionEmpresa(AuditMixin, Base):
+    __tablename__ = "suscripcion_empresa"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    empresa_id = Column(UUID(as_uuid=True), ForeignKey('empresa.id'), nullable=False)
+    plan_id = Column(UUID(as_uuid=True), ForeignKey('_plan_suscripcion.id'), nullable=False)
+    fecha_inicio = Column(Date)
+    fecha_fin = Column(Date)
+    estado = Column(String(30), nullable=False)
+    auto_renovacion = Column(Boolean, default=False, nullable=False)
+    comprobante_url = Column(String(500))
+
+    empresa = relationship("Empresa")
+    plan = relationship("PlanSuscripcion")
+
